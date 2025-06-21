@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { mockSubmissions } from "@/lib/mock-data"
-import { CampaignWithAssets } from "@/types"
+import { CampaignWithAssets, SubmissionWithDetails } from "@/types"
 import { 
   Calendar, 
   Users, 
@@ -18,7 +17,8 @@ import {
   CheckCircle,
   Heart,
   ExternalLink,
-  Award
+  Award,
+  Loader2
 } from "lucide-react"
 import Link from "next/link"
 
@@ -28,9 +28,35 @@ interface CampaignDiscoverClientProps {
 
 export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps) {
   const [isLiked, setIsLiked] = useState(false)
-  
-  const campaignSubmissions = mockSubmissions.filter(s => s.campaignId === campaign.id)
-  const approvedSubmissions = campaignSubmissions.filter(s => s.status === "approved")
+  const [approvedSubmissions, setApprovedSubmissions] = useState<SubmissionWithDetails[]>([])
+  const [submissionsLoading, setSubmissionsLoading] = useState(true)
+  const [submissionsError, setSubmissionsError] = useState<string | null>(null)
+
+  // Fetch approved submissions for this campaign
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      try {
+        setSubmissionsLoading(true)
+        setSubmissionsError(null)
+        
+        const response = await fetch(`/api/campaigns/${campaign.id}/submissions?status=approved&limit=8`)
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch submissions')
+        }
+        
+        const data = await response.json()
+        setApprovedSubmissions(data.submissions || [])
+      } catch (error) {
+        console.error('Error fetching submissions:', error)
+        setSubmissionsError('Failed to load submissions')
+      } finally {
+        setSubmissionsLoading(false)
+      }
+    }
+
+    fetchSubmissions()
+  }, [campaign.id])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -227,7 +253,18 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
               </div>
             </CardHeader>
             <CardContent>
-              {approvedSubmissions.length > 0 ? (
+              {submissionsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Loading submissions...</span>
+                </div>
+              ) : submissionsError ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="mx-auto h-8 w-8 mb-2 text-red-500" />
+                  <p className="text-sm text-red-600">{submissionsError}</p>
+                  <p className="text-xs">Please try refreshing the page</p>
+                </div>
+              ) : approvedSubmissions.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {approvedSubmissions.slice(0, 4).map((submission) => (
                     <div key={submission.id} className="group">
@@ -241,13 +278,19 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
                       <div className="space-y-1">
                         <h3 className="font-medium">{submission.title}</h3>
                         <p className="text-sm text-muted-foreground">
-                          By Creator {submission.creatorId}
+                          By {submission.creator?.displayName || 'Anonymous Creator'}
                         </p>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-xs">
                             <Award className="mr-1 h-3 w-3" />
                             Approved
                           </Badge>
+                          {submission.likeCount > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Heart className="mr-1 h-3 w-3" />
+                              {submission.likeCount}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -152,6 +152,7 @@ export const submissions = pgTable('submissions', {
   tags: jsonb('tags').$type<string[]>().default([]),
   campaignId: uuid('campaign_id').references(() => campaigns.id, { onDelete: 'cascade' }).notNull(),
   creatorId: uuid('creator_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  ipId: uuid('ip_id').references(() => ipKits.id, { onDelete: 'set null' }),
   status: submissionStatusEnum('status').default('pending').notNull(),
   reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
   reviewedAt: timestamp('reviewed_at'),
@@ -165,6 +166,7 @@ export const submissions = pgTable('submissions', {
 }, (table) => ({
   campaignIdIdx: index('submissions_campaign_id_idx').on(table.campaignId),
   creatorIdIdx: index('submissions_creator_id_idx').on(table.creatorId),
+  ipIdIdx: index('submissions_ip_id_idx').on(table.ipId),
   statusIdx: index('submissions_status_idx').on(table.status),
   isPublicIdx: index('submissions_is_public_idx').on(table.isPublic),
 }))
@@ -280,6 +282,7 @@ export const ipKitsRelations = relations(ipKits, ({ one, many }) => ({
   }),
   assets: many(assets),
   campaigns: many(campaigns),
+  submissions: many(submissions),
 }))
 
 export const assetsRelations = relations(assets, ({ one }) => ({
@@ -317,6 +320,10 @@ export const submissionsRelations = relations(submissions, ({ one, many }) => ({
   creator: one(users, {
     fields: [submissions.creatorId],
     references: [users.id],
+  }),
+  ipKit: one(ipKits, {
+    fields: [submissions.ipId],
+    references: [ipKits.id],
   }),
   reviewedBy: one(users, {
     fields: [submissions.reviewedBy],

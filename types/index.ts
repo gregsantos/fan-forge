@@ -117,6 +117,7 @@ export interface Submission {
   tags: string[]
   campaignId: string
   creatorId: string
+  ipId?: string // IP Kit used for source assets (not destination after approval)
   status: SubmissionStatus
   reviewedBy?: string
   reviewedAt?: Date
@@ -221,6 +222,7 @@ export interface CampaignWithAssets extends Campaign {
 export interface SubmissionWithDetails extends Submission {
   campaign: Campaign
   creator: User
+  ipKit?: IPKit
   reviewer?: User
 }
 

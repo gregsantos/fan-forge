@@ -1,100 +1,222 @@
 import { NextRequest, NextResponse } from "next/server"
-import { mockSubmissions } from "@/lib/mock-data"
+import { db, submissions, campaigns, users, ipKits } from "@/db"
+import { eq, and, desc, count, ilike, or } from "drizzle-orm"
+import { createServerClient } from '@supabase/ssr'
+
+async function getCurrentUser(request: NextRequest) {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.headers.get('cookie')?.split(';').map(cookie => {
+            const [name, value] = cookie.trim().split('=')
+            return { name, value }
+          }) || []
+        },
+        setAll() {}, // Not needed for read operations
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+}
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const campaignId = searchParams.get("campaign_id")
-  const creatorId = searchParams.get("creator_id")
-  const status = searchParams.get("status")
-  const page = parseInt(searchParams.get("page") || "1")
-  const limit = parseInt(searchParams.get("limit") || "10")
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const campaignId = searchParams.get("campaign_id")
+    const creatorId = searchParams.get("creator_id")
+    const status = searchParams.get("status")
+    const ipId = searchParams.get("ip_id")
+    const search = searchParams.get("search")
+    const page = parseInt(searchParams.get("page") || "1")
+    const limit = parseInt(searchParams.get("limit") || "10")
 
-  let filteredSubmissions = [...mockSubmissions]
-
-  // Apply filters
-  if (campaignId) {
-    filteredSubmissions = filteredSubmissions.filter(s => s.campaignId === campaignId)
-  }
-
-  if (creatorId) {
-    filteredSubmissions = filteredSubmissions.filter(s => s.creatorId === creatorId)
-  }
-
-  if (status && status !== "all") {
-    filteredSubmissions = filteredSubmissions.filter(s => s.status === status)
-  }
-
-  // Pagination
-  const startIndex = (page - 1) * limit
-  const endIndex = startIndex + limit
-  const paginatedSubmissions = filteredSubmissions.slice(startIndex, endIndex)
-
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 300))
-
-  return NextResponse.json({
-    submissions: paginatedSubmissions.map(submission => ({
-      id: submission.id,
-      campaign_title: "Mock Campaign", // Would fetch from campaigns
-      creator_name: "Mock Creator", // Would fetch from users
-      title: submission.title,
-      status: submission.status,
-      artwork_url: submission.artworkUrl,
-      created_at: submission.createdAt,
-    })),
-    pagination: {
-      page,
-      limit,
-      total: filteredSubmissions.length,
-      pages: Math.ceil(filteredSubmissions.length / limit),
+    // Build where conditions
+    const whereConditions = []
+    
+    if (campaignId) {
+      whereConditions.push(eq(submissions.campaignId, campaignId))
     }
-  })
+    
+    if (creatorId) {
+      whereConditions.push(eq(submissions.creatorId, creatorId))
+    }
+    
+    if (status && status !== "all") {
+      whereConditions.push(eq(submissions.status, status as any))
+    }
+    
+    if (ipId) {
+      whereConditions.push(eq(submissions.ipId, ipId))
+    }
+    
+    if (search) {
+      whereConditions.push(
+        or(
+          ilike(submissions.title, `%${search}%`),
+          ilike(submissions.description, `%${search}%`)
+        )
+      )
+    }
+
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined
+
+    // Get total count
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(submissions)
+      .where(whereClause)
+
+    const total = totalResult.count
+
+    // Get submissions with relations
+    const submissionResults = await db
+      .select({
+        submission: submissions,
+        campaign: campaigns,
+        creator: {
+          id: users.id,
+          displayName: users.displayName,
+          email: users.email,
+          avatarUrl: users.avatarUrl,
+        },
+        ipKit: {
+          id: ipKits.id,
+          name: ipKits.name,
+        },
+      })
+      .from(submissions)
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
+      .leftJoin(users, eq(submissions.creatorId, users.id))
+      .leftJoin(ipKits, eq(submissions.ipId, ipKits.id))
+      .where(whereClause)
+      .orderBy(desc(submissions.createdAt))
+      .limit(limit)
+      .offset((page - 1) * limit)
+
+    return NextResponse.json({
+      submissions: submissionResults.map(result => ({
+        ...result.submission,
+        campaign: result.campaign,
+        creator: result.creator,
+        ipKit: result.ipKit,
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      }
+    })
+
+  } catch (error) {
+    console.error('Failed to fetch submissions:', error)
+    return NextResponse.json(
+      { error: "Failed to fetch submissions" },
+      { status: 500 }
+    )
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Get current user
+    const user = await getCurrentUser(request)
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     
     // Validate required fields
-    const { campaign_id, title, description } = body
+    const { campaignId, title, description, artworkUrl, thumbnailUrl, canvasData, tags = [], usedIpKitId } = body
     
-    if (!campaign_id || !title || !description) {
+    if (!campaignId || !title || !artworkUrl) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields: campaignId, title, artworkUrl" },
         { status: 400 }
       )
     }
 
-    // Create new submission (mock)
-    const newSubmission = {
-      id: `submission-${Date.now()}`,
-      campaign_id,
-      creator_id: "mock-creator-id",
-      title,
-      description,
-      artwork_url: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop",
-      status: "pending" as const,
-      created_at: new Date(),
-      updated_at: new Date(),
+    // Verify campaign exists and is active
+    const campaign = await db
+      .select()
+      .from(campaigns)
+      .where(eq(campaigns.id, campaignId))
+      .limit(1)
+
+    if (campaign.length === 0) {
+      return NextResponse.json(
+        { error: "Campaign not found" },
+        { status: 404 }
+      )
     }
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500))
+    if (campaign[0].status !== 'active') {
+      return NextResponse.json(
+        { error: "Campaign is not accepting submissions" },
+        { status: 400 }
+      )
+    }
+
+    // Create new submission
+    const [newSubmission] = await db
+      .insert(submissions)
+      .values({
+        title,
+        description,
+        artworkUrl,
+        thumbnailUrl,
+        canvasData,
+        tags,
+        campaignId,
+        creatorId: user.id,
+        ipId: usedIpKitId || null, // Track which IP Kit assets were used
+        status: 'pending',
+        isPublic: false,
+        viewCount: 0,
+        likeCount: 0,
+      })
+      .returning()
+
+    // Get submission with relations for response
+    const submissionWithDetails = await db
+      .select({
+        submission: submissions,
+        campaign: campaigns,
+        creator: {
+          id: users.id,
+          displayName: users.displayName,
+          email: users.email,
+          avatarUrl: users.avatarUrl,
+        },
+      })
+      .from(submissions)
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
+      .leftJoin(users, eq(submissions.creatorId, users.id))
+      .where(eq(submissions.id, newSubmission.id))
+      .limit(1)
 
     return NextResponse.json({
       submission: {
-        id: newSubmission.id,
-        campaign_id: newSubmission.campaign_id,
-        title: newSubmission.title,
-        status: newSubmission.status,
-        created_at: newSubmission.created_at,
+        ...submissionWithDetails[0].submission,
+        campaign: submissionWithDetails[0].campaign,
+        creator: submissionWithDetails[0].creator,
       }
     }, { status: 201 })
 
   } catch (error) {
+    console.error('Failed to create submission:', error)
     return NextResponse.json(
-      { error: "Invalid request data" },
-      { status: 400 }
+      { error: "Failed to create submission" },
+      { status: 500 }
     )
   }
 }
