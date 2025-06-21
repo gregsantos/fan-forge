@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db, submissions, campaigns, users, ipKits } from "@/db"
 import { eq, and, desc, count, ilike, or } from "drizzle-orm"
 import { createServerClient } from '@supabase/ssr'
+import { ensureUserExists } from '@/lib/auth-utils'
 
 async function getCurrentUser(request: NextRequest) {
   const supabase = createServerClient(
@@ -21,6 +22,12 @@ async function getCurrentUser(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  
+  // Ensure user exists in our database if authenticated
+  if (user) {
+    await ensureUserExists(user)
+  }
+  
   return user
 }
 

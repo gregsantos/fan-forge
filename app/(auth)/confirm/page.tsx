@@ -48,8 +48,42 @@ export default function ConfirmPage() {
 
         if (user) {
           console.log("User already logged in:", user)
-          setStatus("success")
-          setMessage("Email already confirmed! You are logged in.")
+          
+          // Even if user is logged in, we still need to ensure their profile exists in our database
+          console.log('📧 User is authenticated, ensuring database profile exists...')
+          
+          try {
+            const response = await fetch('/api/auth/create-profile', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: user.id,
+                email: user.email,
+                displayName: user.user_metadata?.display_name,
+                role: user.user_metadata?.role,
+              }),
+            })
+            
+            const result = await response.json()
+            console.log('📧 Profile creation result:', { status: response.status, result })
+            
+            if (response.ok) {
+              console.log('✅ User profile ensured in database')
+              setStatus("success")
+              setMessage("Email confirmed and profile created! Welcome to FanForge.")
+            } else {
+              console.error('❌ Failed to create user profile:', result)
+              setStatus("success") // Still success for auth, but note the issue
+              setMessage("Email confirmed but profile setup incomplete. Please contact support.")
+            }
+          } catch (profileError) {
+            console.error('❌ Error ensuring user profile:', profileError)
+            setStatus("success") // Still success for auth
+            setMessage("Email confirmed but profile setup incomplete. Please contact support.")
+          }
+          
           return
         }
 
@@ -68,6 +102,42 @@ export default function ConfirmPage() {
           } else {
             setStatus("success")
             setMessage("Email confirmed successfully!")
+            
+            // Create user profile in our database after successful confirmation
+            console.log('📧 Attempting to create user profile in database...', {
+              userId: data.user?.id,
+              email: data.user?.email,
+              displayName: data.user?.user_metadata?.display_name,
+              role: data.user?.user_metadata?.role,
+            })
+            
+            try {
+              const response = await fetch('/api/auth/create-profile', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  userId: data.user?.id,
+                  email: data.user?.email,
+                  displayName: data.user?.user_metadata?.display_name,
+                  role: data.user?.user_metadata?.role,
+                }),
+              })
+              
+              const result = await response.json()
+              console.log('📧 Create profile response:', { status: response.status, result })
+              
+              if (response.ok) {
+                console.log('✅ User profile created in database successfully')
+              } else {
+                console.error('❌ Failed to create user profile:', result)
+                setMessage('Email confirmed but profile creation failed. Please contact support.')
+              }
+            } catch (profileError) {
+              console.error('❌ Error creating user profile:', profileError)
+              setMessage('Email confirmed but profile creation failed. Please contact support.')
+            }
 
             // Wait a moment for auth state to update, then redirect
             setTimeout(() => {

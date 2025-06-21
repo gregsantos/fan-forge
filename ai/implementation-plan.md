@@ -32,6 +32,8 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Complete email verification workflow with confirmation page
 - [x] Implement role-based redirects after email confirmation
 - [x] Add email resend functionality for failed confirmations
+- [x] Fix database user synchronization with Supabase Auth
+- [x] Ensure foreign key relationships work for user-related data
 - [ ] Add Google OAuth provider
 
 ### Phase 2: Core Functionality Implementation
@@ -46,6 +48,8 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Fix auth state persistence and loading issues
 - [x] Create enhanced registration UX for email confirmation
 - [x] Set up session timeout and automatic logout (via Supabase Auth)
+- [x] Fix user profile creation timing with email confirmation flow
+- [x] Implement automatic database profile sync for authenticated users
 - [ ] Create profile management page with avatar upload
 - [ ] Add social links management to user profiles
 - [ ] Implement account deletion with data cleanup

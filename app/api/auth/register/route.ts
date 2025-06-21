@@ -31,21 +31,36 @@ export async function POST(request: NextRequest) {
         data: {
           display_name: validatedData.displayName,
           role: validatedData.role,
-        }
+        },
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/confirm`
       }
     })
 
     if (authError) throw authError
 
-    // Create user profile in our database
-    if (authData.user) {
+    // Only create user profile immediately if email is already confirmed
+    // Otherwise, it will be created in the confirmation callback
+    if (authData.user && authData.user.email_confirmed_at) {
       try {
-        await db.insert(users).values({
-          id: authData.user.id,
-          email: authData.user.email!,
-          displayName: validatedData.displayName,
-          emailVerified: false,
-        })
+        // Check if user already exists (in case of retry)
+        const existingUser = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, authData.user.id))
+          .limit(1)
+
+        if (existingUser.length === 0) {
+          // Create user profile
+          await db.insert(users).values({
+            id: authData.user.id,
+            email: authData.user.email!,
+            displayName: validatedData.displayName,
+            emailVerified: false,
+          })
+          console.log(`✅ Created user profile for ${authData.user.email}`)
+        } else {
+          console.log(`ℹ️  User profile already exists for ${authData.user.email}`)
+        }
 
         // Assign role
         const [roleRecord] = await db
@@ -54,23 +69,55 @@ export async function POST(request: NextRequest) {
           .where(eq(roles.name, validatedData.role))
           .limit(1)
 
-        if (roleRecord) {
+        if (!roleRecord) {
+          console.error(`❌ Role '${validatedData.role}' not found in database`)
+          throw new Error(`Role '${validatedData.role}' not found`)
+        }
+
+        // Check if role assignment already exists
+        const existingRole = await db
+          .select()
+          .from(userRoles)
+          .where(
+            eq(userRoles.userId, authData.user.id)
+          )
+          .limit(1)
+
+        if (existingRole.length === 0) {
           await db.insert(userRoles).values({
             userId: authData.user.id,
             roleId: roleRecord.id,
           })
+          console.log(`✅ Assigned role '${validatedData.role}' to user ${authData.user.email}`)
+        } else {
+          console.log(`ℹ️  User role already assigned for ${authData.user.email}`)
         }
+
       } catch (dbError) {
-        console.error('Error creating user profile:', dbError)
-        // User was created in Supabase but profile creation failed
-        // This should be handled by a cleanup process
+        console.error('❌ Error creating user profile:', dbError)
+        
+        // If user profile creation fails, we should clean up the Supabase user
+        // to prevent orphaned auth records
+        try {
+          await supabase.auth.admin.deleteUser(authData.user.id)
+          console.log('🧹 Cleaned up orphaned Supabase user due to profile creation failure')
+        } catch (cleanupError) {
+          console.error('❌ Failed to cleanup orphaned user:', cleanupError)
+        }
+        
+        throw new Error('Failed to create user profile. Registration aborted.')
       }
     }
 
+    const needsEmailConfirmation = !authData.user?.email_confirmed_at
+    
     return NextResponse.json({
       success: true,
       user: authData.user,
-      message: 'Registration successful. Please check your email for verification.'
+      needsEmailConfirmation,
+      message: needsEmailConfirmation 
+        ? 'Registration successful. Please check your email for verification.'
+        : 'Registration successful. You are now logged in.'
     }, { status: 201 })
 
   } catch (error) {
