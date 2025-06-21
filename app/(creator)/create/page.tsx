@@ -85,12 +85,11 @@ function CreatePageContent() {
 
   const handleSave = async (elements: CanvasElement[]) => {
     try {
-      // TODO: Implement submission creation
-      console.log('Saving submission with elements:', elements)
-      alert('Submission saved! (This is a placeholder)')
+      // Submission creation is handled by the submission modal in the canvas
+      console.log('Manual save requested - this should open submission modal')
+      // The actual submission flow is handled by the SubmissionModal component
     } catch (err) {
       console.error('Failed to save submission:', err)
-      alert('Failed to save submission')
     }
   }
 

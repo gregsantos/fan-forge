@@ -128,12 +128,12 @@ export function SubmissionModal({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          campaign_id: campaignId,
+          campaignId: campaignId,
           title: formData.title,
           description: formData.description,
           tags: formData.tags,
-          artwork_url: artworkUrl,
-          canvas_data: {
+          artworkUrl: artworkUrl,
+          canvasData: {
             elements: canvasElements,
             canvasSize: { width: 800, height: 600 },
             version: "1.0"

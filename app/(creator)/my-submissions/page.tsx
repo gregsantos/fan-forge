@@ -82,56 +82,37 @@ export default function MySubmissionsPage() {
   const fetchSubmissions = async () => {
     try {
       setIsLoading(true)
-      // For now, show mock data until authentication is fully implemented
-      // const response = await fetch('/api/submissions?creator_id=authenticated-user-id')
       
-      // Mock data for development until auth is implemented
-      const mockSubmissions: Submission[] = [
-        {
-          id: 'sub-1',
-          title: 'Epic Dragon Battle Scene',
-          campaignTitle: 'Fantasy Adventure Campaign',
-          campaignId: 'camp-1',
-          status: 'approved',
-          artworkUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
-          description: 'A dynamic battle scene featuring a dragon and brave warriors',
-          tags: ['fantasy', 'dragon', 'battle', 'epic'],
-          createdAt: new Date('2024-01-15'),
-          updatedAt: new Date('2024-01-16'),
-          feedback: 'Excellent composition and color palette! Great work.',
-          rating: 5
-        },
-        {
-          id: 'sub-2',
-          title: 'Cyberpunk City Landscape',
-          campaignTitle: 'Sci-Fi Universe Campaign',
-          campaignId: 'camp-2',
-          status: 'pending',
-          artworkUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop',
-          description: 'Neon-lit cityscape with futuristic architecture',
-          tags: ['cyberpunk', 'city', 'neon', 'futuristic'],
-          createdAt: new Date('2024-01-18'),
-          updatedAt: new Date('2024-01-18')
-        },
-        {
-          id: 'sub-3',
-          title: 'Magical Forest Adventure',
-          campaignTitle: 'Fantasy Adventure Campaign',
-          campaignId: 'camp-1',
-          status: 'rejected',
-          artworkUrl: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
-          description: 'Enchanted forest with magical creatures and glowing elements',
-          tags: ['fantasy', 'forest', 'magical', 'creatures'],
-          createdAt: new Date('2024-01-10'),
-          updatedAt: new Date('2024-01-12'),
-          feedback: 'Great concept! Could use more contrast in the lighting. Please revise and resubmit.',
-          rating: 3
-        }
-      ]
+      // Fetch real submissions from API
+      const response = await fetch('/api/submissions?creator_id=current-user')
       
-      setSubmissions(mockSubmissions)
+      if (!response.ok) {
+        throw new Error('Failed to fetch submissions')
+      }
+      
+      const data = await response.json()
+      
+      // Transform API response to match component interface
+      const transformedSubmissions: Submission[] = data.submissions.map((sub: any) => ({
+        id: sub.id,
+        title: sub.title,
+        campaignTitle: sub.campaign?.title || 'Unknown Campaign',
+        campaignId: sub.campaignId,
+        status: sub.status,
+        artworkUrl: sub.artworkUrl,
+        description: sub.description || '',
+        tags: sub.tags || [],
+        createdAt: new Date(sub.createdAt),
+        updatedAt: new Date(sub.updatedAt),
+        feedback: sub.feedback,
+        rating: sub.rating
+      }))
+      
+      setSubmissions(transformedSubmissions)
     } catch (error) {
       console.error('Failed to fetch submissions:', error)
+      // Set empty array on error
+      setSubmissions([])
     } finally {
       setIsLoading(false)
     }

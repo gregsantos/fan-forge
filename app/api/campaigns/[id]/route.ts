@@ -1,47 +1,67 @@
 import { NextRequest, NextResponse } from "next/server"
-import { mockCampaigns } from "@/lib/mock-data"
-
-export async function generateStaticParams() {
-  return mockCampaigns.map((campaign) => ({
-    id: campaign.id,
-  }))
-}
+import { db, campaigns, brands, ipKits, assets } from "@/db"
+import { eq } from "drizzle-orm"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const campaign = mockCampaigns.find(c => c.id === params.id)
-  
-  if (!campaign) {
+  try {
+    // Get campaign with relations
+    const campaignWithDetails = await db
+      .select({
+        campaign: campaigns,
+        brand: brands,
+        ipKit: ipKits,
+      })
+      .from(campaigns)
+      .leftJoin(brands, eq(campaigns.brandId, brands.id))
+      .leftJoin(ipKits, eq(campaigns.ipKitId, ipKits.id))
+      .where(eq(campaigns.id, params.id))
+      .limit(1)
+
+    if (campaignWithDetails.length === 0) {
+      return NextResponse.json(
+        { error: "Campaign not found" },
+        { status: 404 }
+      )
+    }
+
+    const result = campaignWithDetails[0]
+
+    // Get assets for the campaign's IP kit
+    const campaignAssets = result.ipKit ? await db
+      .select()
+      .from(assets)
+      .where(eq(assets.ipKitId, result.ipKit.id)) : []
+
+    return NextResponse.json({
+      campaign: {
+        id: result.campaign.id,
+        title: result.campaign.title,
+        description: result.campaign.description,
+        guidelines: result.campaign.guidelines,
+        brand_name: result.brand?.name,
+        status: result.campaign.status,
+        deadline: result.campaign.endDate,
+        created_at: result.campaign.createdAt,
+        assets: campaignAssets.map(asset => ({
+          id: asset.id,
+          filename: asset.filename,
+          url: asset.url,
+          category: asset.category,
+          metadata: asset.metadata,
+        }))
+      }
+    })
+    
+  } catch (error) {
+    console.error('Failed to fetch campaign:', error)
     return NextResponse.json(
-      { error: "Campaign not found" },
-      { status: 404 }
+      { error: "Failed to fetch campaign" },
+      { status: 500 }
     )
   }
-
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 200))
-
-  return NextResponse.json({
-    campaign: {
-      id: campaign.id,
-      title: campaign.title,
-      description: campaign.description,
-      guidelines: campaign.guidelines,
-      brand_name: campaign.brand?.name,
-      status: campaign.status,
-      deadline: campaign.endDate,
-      created_at: campaign.createdAt,
-      assets: campaign.assets.map(asset => ({
-        id: asset.id,
-        filename: asset.filename,
-        url: asset.url,
-        category: asset.category,
-        metadata: asset.metadata,
-      }))
-    }
-  })
 }
 
 export async function PUT(
@@ -49,9 +69,14 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const campaign = mockCampaigns.find(c => c.id === params.id)
+    // Check if campaign exists
+    const existingCampaign = await db
+      .select()
+      .from(campaigns)
+      .where(eq(campaigns.id, params.id))
+      .limit(1)
     
-    if (!campaign) {
+    if (existingCampaign.length === 0) {
       return NextResponse.json(
         { error: "Campaign not found" },
         { status: 404 }
@@ -110,38 +135,36 @@ export async function PUT(
       "closed": [] // Cannot transition from closed
     }
 
-    if (status !== campaign.status) {
-      const allowed = allowedTransitions[campaign.status] || []
+    const currentCampaign = existingCampaign[0]
+    if (status !== currentCampaign.status) {
+      const allowed = allowedTransitions[currentCampaign.status] || []
       if (!allowed.includes(status)) {
         return NextResponse.json(
-          { error: `Cannot transition from ${campaign.status} to ${status}` },
+          { error: `Cannot transition from ${currentCampaign.status} to ${status}` },
           { status: 400 }
         )
       }
     }
 
-    // Update campaign (mock - in real implementation, update database)
-    const updatedCampaign = {
-      ...campaign,
-      title,
-      description,
-      guidelines,
-      ipKitId,
-      status: status as "draft" | "active" | "paused" | "closed",
-      startDate: startDate ? new Date(startDate) : campaign.startDate,
-      endDate: endDate ? new Date(endDate) : campaign.endDate,
-      maxSubmissions: maxSubmissions || null,
-      rewardAmount: rewardAmount || null,
-      rewardCurrency,
-      briefDocument: briefDocument || null,
-      updatedAt: new Date(),
-    }
-
-    // TODO: In a real implementation, save to database here
-    // For now, we'll just simulate the response
-
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 300))
+    // Update campaign in database
+    const [updatedCampaign] = await db
+      .update(campaigns)
+      .set({
+        title,
+        description,
+        guidelines,
+        ipKitId,
+        status: status as "draft" | "active" | "paused" | "closed",
+        startDate: startDate ? new Date(startDate) : currentCampaign.startDate,
+        endDate: endDate ? new Date(endDate) : currentCampaign.endDate,
+        maxSubmissions: maxSubmissions || null,
+        rewardAmount: rewardAmount || null,
+        rewardCurrency,
+        briefDocument: briefDocument || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(campaigns.id, params.id))
+      .returning()
 
     return NextResponse.json({
       campaign: {

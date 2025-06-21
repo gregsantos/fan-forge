@@ -42,6 +42,19 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
 
+    // Handle current user requests
+    let actualCreatorId = creatorId
+    if (creatorId === "current-user") {
+      const user = await getCurrentUser(request)
+      if (!user) {
+        return NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 }
+        )
+      }
+      actualCreatorId = user.id
+    }
+
     // Build where conditions
     const whereConditions = []
     
@@ -49,8 +62,8 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(submissions.campaignId, campaignId))
     }
     
-    if (creatorId) {
-      whereConditions.push(eq(submissions.creatorId, creatorId))
+    if (actualCreatorId) {
+      whereConditions.push(eq(submissions.creatorId, actualCreatorId))
     }
     
     if (status && status !== "all") {
@@ -153,20 +166,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify campaign exists and is active
-    const campaign = await db
+    const dbCampaigns = await db
       .select()
       .from(campaigns)
       .where(eq(campaigns.id, campaignId))
       .limit(1)
 
-    if (campaign.length === 0) {
+    if (dbCampaigns.length === 0) {
       return NextResponse.json(
         { error: "Campaign not found" },
         { status: 404 }
       )
     }
 
-    if (campaign[0].status !== 'active') {
+    const campaign = dbCampaigns[0]
+
+    if (campaign.status !== 'active') {
       return NextResponse.json(
         { error: "Campaign is not accepting submissions" },
         { status: 400 }
@@ -185,7 +200,7 @@ export async function POST(request: NextRequest) {
         tags,
         campaignId,
         creatorId: user.id,
-        ipId: usedIpKitId || null, // Track which IP Kit assets were used
+        ipId: usedIpKitId || null,
         status: 'pending',
         isPublic: false,
         viewCount: 0,
