@@ -128,6 +128,7 @@ CREATE TABLE "submissions" (
 	"tags" jsonb DEFAULT '[]'::jsonb,
 	"campaign_id" uuid NOT NULL,
 	"creator_id" uuid NOT NULL,
+	"ip_id" uuid,
 	"status" "submission_status" DEFAULT 'pending' NOT NULL,
 	"reviewed_by" uuid,
 	"reviewed_at" timestamp,
@@ -178,6 +179,7 @@ ALTER TABLE "reviews" ADD CONSTRAINT "reviews_submission_id_submissions_id_fk" F
 ALTER TABLE "reviews" ADD CONSTRAINT "reviews_reviewer_id_users_id_fk" FOREIGN KEY ("reviewer_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "submissions" ADD CONSTRAINT "submissions_campaign_id_campaigns_id_fk" FOREIGN KEY ("campaign_id") REFERENCES "public"."campaigns"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "submissions" ADD CONSTRAINT "submissions_creator_id_users_id_fk" FOREIGN KEY ("creator_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "submissions" ADD CONSTRAINT "submissions_ip_id_ip_kits_id_fk" FOREIGN KEY ("ip_id") REFERENCES "public"."ip_kits"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "submissions" ADD CONSTRAINT "submissions_reviewed_by_users_id_fk" FOREIGN KEY ("reviewed_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -206,6 +208,7 @@ CREATE INDEX "reviews_submission_id_idx" ON "reviews" USING btree ("submission_i
 CREATE INDEX "reviews_reviewer_id_idx" ON "reviews" USING btree ("reviewer_id");--> statement-breakpoint
 CREATE INDEX "submissions_campaign_id_idx" ON "submissions" USING btree ("campaign_id");--> statement-breakpoint
 CREATE INDEX "submissions_creator_id_idx" ON "submissions" USING btree ("creator_id");--> statement-breakpoint
+CREATE INDEX "submissions_ip_id_idx" ON "submissions" USING btree ("ip_id");--> statement-breakpoint
 CREATE INDEX "submissions_status_idx" ON "submissions" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "submissions_is_public_idx" ON "submissions" USING btree ("is_public");--> statement-breakpoint
 CREATE INDEX "user_roles_user_id_idx" ON "user_roles" USING btree ("user_id");--> statement-breakpoint

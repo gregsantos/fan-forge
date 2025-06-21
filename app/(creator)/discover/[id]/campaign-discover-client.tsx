@@ -21,6 +21,7 @@ import {
   Loader2
 } from "lucide-react"
 import Link from "next/link"
+import { mockSubmissions } from "@/lib/mock-data"
 
 interface CampaignDiscoverClientProps {
   campaign: CampaignWithAssets
@@ -39,14 +40,61 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
         setSubmissionsLoading(true)
         setSubmissionsError(null)
         
-        const response = await fetch(`/api/campaigns/${campaign.id}/submissions?status=approved&limit=8`)
+        // Check if we're using mock data (simple numeric ID) or real data (UUID)
+        const isUUID = campaign.id.length > 10 && campaign.id.includes('-')
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch submissions')
+        if (isUUID) {
+          // Use real API for UUID campaign IDs
+          const response = await fetch(`/api/campaigns/${campaign.id}/submissions?status=approved&limit=8`)
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch submissions')
+          }
+          
+          const data = await response.json()
+          setApprovedSubmissions(data.submissions || [])
+        } else {
+          // Use mock data for simple numeric IDs
+          const campaignSubmissions = mockSubmissions.filter(s => s.campaignId === campaign.id)
+          const approvedMockSubmissions = campaignSubmissions.filter(s => s.status === "approved")
+          
+          // Transform mock submissions to match the expected format
+          const transformedSubmissions = approvedMockSubmissions.map(submission => ({
+            ...submission,
+            campaign: {
+              id: campaign.id,
+              title: campaign.title,
+              description: campaign.description,
+              guidelines: campaign.guidelines,
+              briefDocument: campaign.briefDocument,
+              brandId: campaign.brandId,
+              ipKitId: campaign.ipKitId,
+              status: campaign.status,
+              startDate: campaign.startDate,
+              endDate: campaign.endDate,
+              maxSubmissions: campaign.maxSubmissions,
+              rewardAmount: campaign.rewardAmount,
+              rewardCurrency: campaign.rewardCurrency,
+              featuredUntil: campaign.featuredUntil,
+              featured: campaign.featured,
+              createdBy: campaign.createdBy,
+              createdAt: campaign.createdAt,
+              updatedAt: campaign.updatedAt
+            },
+            creator: {
+              id: submission.creatorId,
+              displayName: 'Demo Creator',
+              avatarUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=64&h=64&fit=crop&crop=face',
+              email: 'demo@example.com',
+              emailVerified: true,
+              createdAt: new Date('2024-01-01'),
+              updatedAt: new Date('2024-01-01')
+            },
+            ipKit: undefined
+          }))
+          
+          setApprovedSubmissions(transformedSubmissions)
         }
-        
-        const data = await response.json()
-        setApprovedSubmissions(data.submissions || [])
       } catch (error) {
         console.error('Error fetching submissions:', error)
         setSubmissionsError('Failed to load submissions')

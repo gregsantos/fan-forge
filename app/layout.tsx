@@ -21,6 +21,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Suppress browser extension connection errors
+              window.addEventListener('error', function(e) {
+                if (e.message && e.message.includes('Could not establish connection')) {
+                  e.preventDefault();
+                  return false;
+                }
+              });
+            `,
+          }}
+        />
+      </head>
       <body className={inter.className}>
         <ThemeProvider defaultTheme="system" storageKey="fanforge-ui-theme">
           <AuthProvider>

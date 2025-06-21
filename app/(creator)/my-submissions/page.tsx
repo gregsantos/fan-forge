@@ -82,16 +82,10 @@ export default function MySubmissionsPage() {
   const fetchSubmissions = async () => {
     try {
       setIsLoading(true)
-      // In a real app, get creator_id from auth
-      const response = await fetch('/api/submissions?creator_id=mock-creator-id')
+      // For now, show mock data until authentication is fully implemented
+      // const response = await fetch('/api/submissions?creator_id=authenticated-user-id')
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch submissions')
-      }
-      
-      const data = await response.json()
-      
-      // Mock data transformation since API returns different format
+      // Mock data for development until auth is implemented
       const mockSubmissions: Submission[] = [
         {
           id: 'sub-1',
