@@ -1,94 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db, campaigns, brands, ipKits, assets } from "@/db"
-import { eq, and } from "drizzle-orm"
+import { getCampaignById } from "@/lib/data/campaigns"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // First check if campaign exists at all
-    const campaignExists = await db
-      .select()
-      .from(campaigns)
-      .where(eq(campaigns.id, params.id))
-      .limit(1)
-
-    console.log('Campaign lookup:', {
-      campaignId: params.id,
-      exists: campaignExists.length > 0,
-      campaign: campaignExists[0] || null
-    })
-
-    if (campaignExists.length === 0) {
+    const campaign = await getCampaignById(params.id)
+    
+    if (!campaign) {
       return NextResponse.json(
         { error: "Campaign not found" },
         { status: 404 }
       )
     }
 
-    // Get campaign with relations
-    const campaignWithDetails = await db
-      .select({
-        campaign: campaigns,
-        brand: brands,
-        ipKit: ipKits,
-      })
-      .from(campaigns)
-      .leftJoin(brands, eq(campaigns.brandId, brands.id))
-      .leftJoin(ipKits, eq(campaigns.ipKitId, ipKits.id))
-      .where(eq(campaigns.id, params.id))
-      .limit(1)
-
-    console.log('Campaign with details:', {
-      campaignId: params.id,
-      found: campaignWithDetails.length > 0,
-      campaign: campaignWithDetails[0]?.campaign || null,
-      brand: campaignWithDetails[0]?.brand || null,
-      ipKit: campaignWithDetails[0]?.ipKit || null
-    })
-
-    if (campaignWithDetails.length === 0) {
-      console.log('Campaign with details not found for ID:', params.id)
-      return NextResponse.json(
-        { error: "Campaign not found" },
-        { status: 404 }
-      )
-    }
-
-    const result = campaignWithDetails[0]
-
-    // Get assets for the campaign's IP kit
-    const campaignAssets = result.ipKit ? await db
-      .select()
-      .from(assets)
-      .where(eq(assets.ipKitId, result.ipKit.id)) : []
-
-    console.log('Campaign assets:', {
-      campaignId: params.id,
-      ipKitId: result.ipKit?.id || null,
-      assetsFound: campaignAssets.length
-    })
-
-    return NextResponse.json({
-      campaign: {
-        id: result.campaign.id,
-        title: result.campaign.title,
-        description: result.campaign.description,
-        guidelines: result.campaign.guidelines,
-        brand_name: result.brand?.name,
-        status: result.campaign.status,
-        deadline: result.campaign.endDate,
-        created_at: result.campaign.createdAt,
-        assets: campaignAssets.map(asset => ({
-          id: asset.id,
-          filename: asset.filename,
-          url: asset.url,
-          category: asset.category,
-          metadata: asset.metadata,
-        }))
-      }
-    })
+    return NextResponse.json({ campaign })
     
   } catch (error) {
     console.error('Failed to fetch campaign:', {
