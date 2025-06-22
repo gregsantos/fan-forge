@@ -1,11 +1,27 @@
-import { mockCampaigns } from "@/lib/mock-data"
 import { notFound } from "next/navigation"
 import { CampaignDetailClient } from "./campaign-detail-client"
 
-export async function generateStaticParams() {
-  return mockCampaigns.map((campaign) => ({
-    id: campaign.id,
-  }))
+async function getCampaign(id: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+  
+  try {
+    const response = await fetch(`${baseUrl}/api/campaigns/${id}`, { 
+      cache: 'no-store' 
+    })
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null
+      }
+      throw new Error('Failed to fetch campaign')
+    }
+    
+    const data = await response.json()
+    return data.campaign
+  } catch (error) {
+    console.error('Campaign fetch error:', error)
+    return null
+  }
 }
 
 interface CampaignDetailPageProps {
@@ -14,8 +30,8 @@ interface CampaignDetailPageProps {
   }
 }
 
-export default function CampaignDetailPage({ params }: CampaignDetailPageProps) {
-  const campaign = mockCampaigns.find(c => c.id === params.id)
+export default async function CampaignDetailPage({ params }: CampaignDetailPageProps) {
+  const campaign = await getCampaign(params.id)
   
   if (!campaign) {
     notFound()

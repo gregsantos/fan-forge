@@ -1,14 +1,7 @@
-"use client"
-
-import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { mockSubmissions, mockCampaigns } from "@/lib/mock-data"
 import { 
-  Search, 
-  Filter, 
   Eye, 
   ThumbsUp, 
   ThumbsDown, 
@@ -18,56 +11,84 @@ import {
   User,
   FileImage
 } from "lucide-react"
+import Link from "next/link"
+import { SubmissionsFilters } from "./submissions-filters"
 
-export default function BrandSubmissionsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [selectedSubmission, setSelectedSubmission] = useState<string | null>(null)
-
-  const filteredSubmissions = mockSubmissions.filter(submission => {
-    const matchesSearch = submission.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (submission.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
-    const matchesStatus = statusFilter === "all" || submission.status === statusFilter
-    
-    return matchesSearch && matchesStatus
+async function getSubmissions(searchParams: Record<string, string | undefined>) {
+  const url = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/api/submissions`)
+  
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (value) {
+      url.searchParams.set(key, value)
+    }
   })
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "default"
-      case "pending":
-        return "secondary"
-      case "rejected":
-        return "destructive"
-      default:
-        return "secondary"
-    }
+  const response = await fetch(url.toString(), { cache: 'no-store' })
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch submissions')
   }
 
-  const getStatusText = (status: string) => {
-    return status.charAt(0).toUpperCase() + status.slice(1)
+  return response.json()
+}
+
+function getStatusColor(status: string) {
+  switch (status) {
+    case "approved":
+      return "default"
+    case "pending":
+      return "secondary"
+    case "rejected":
+      return "destructive"
+    default:
+      return "secondary"
+  }
+}
+
+function getStatusText(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+function formatDate(date: string | Date) {
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  }).format(dateObj)
+}
+
+export default async function BrandSubmissionsPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
+  const params = {
+    search: Array.isArray(searchParams.search) ? searchParams.search[0] : searchParams.search,
+    status: Array.isArray(searchParams.status) ? searchParams.status[0] : searchParams.status,
+    page: Array.isArray(searchParams.page) ? searchParams.page[0] : searchParams.page || '1',
   }
 
-  const handleStatusUpdate = (submissionId: string, newStatus: string) => {
-    console.log(`Updating submission ${submissionId} to ${newStatus}`)
-    // In a real app, this would make an API call
-  }
+  const data = await getSubmissions(params)
+  const { submissions, pagination } = data
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto p-6 space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Submissions</h1>
-          <p className="text-muted-foreground">
-            Review and manage creator submissions to your campaigns
+          <h1 className="text-3xl font-bold tracking-tight">Submissions</h1>
+          <p className="text-muted-foreground mt-2">
+            Review and approve creator submissions across all campaigns
           </p>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {/* Filters */}
+      <SubmissionsFilters />
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -76,8 +97,7 @@ export default function BrandSubmissionsPage() {
             <FileImage className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockSubmissions.length}</div>
-            <p className="text-xs text-muted-foreground">All time</p>
+            <div className="text-2xl font-bold">{pagination.total}</div>
           </CardContent>
         </Card>
 
@@ -90,9 +110,8 @@ export default function BrandSubmissionsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockSubmissions.filter(s => s.status === "pending").length}
+              {submissions.filter((s: any) => s.status === "pending").length}
             </div>
-            <p className="text-xs text-muted-foreground">Needs attention</p>
           </CardContent>
         </Card>
 
@@ -105,9 +124,8 @@ export default function BrandSubmissionsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockSubmissions.filter(s => s.status === "approved").length}
+              {submissions.filter((s: any) => s.status === "approved").length}
             </div>
-            <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
 
@@ -120,234 +138,138 @@ export default function BrandSubmissionsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockSubmissions.filter(s => s.status === "rejected").length}
+              {submissions.filter((s: any) => s.status === "rejected").length}
             </div>
-            <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search submissions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+      {/* Submissions Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {submissions.map((submission: any) => (
+          <Card key={submission.id} className="group hover:shadow-lg transition-all duration-200">
+            <div className="aspect-video bg-muted rounded-t-lg overflow-hidden">
+              <img
+                src={submission.artworkUrl}
+                alt={submission.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
               />
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant={statusFilter === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("all")}
-              >
-                All
-              </Button>
-              <Button
-                variant={statusFilter === "pending" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("pending")}
-              >
-                Pending
-              </Button>
-              <Button
-                variant={statusFilter === "approved" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("approved")}
-              >
-                Approved
-              </Button>
-              <Button
-                variant={statusFilter === "rejected" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("rejected")}
-              >
-                Rejected
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Submissions List */}
-      <div className="space-y-6">
-        {filteredSubmissions.map((submission) => {
-          const campaign = mockCampaigns.find(c => c.id === submission.campaignId)
-          const isSelected = selectedSubmission === submission.id
-          
-          return (
-            <Card key={submission.id} className={`transition-all ${isSelected ? "ring-2 ring-primary" : ""}`}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <CardTitle className="text-xl">{submission.title}</CardTitle>
-                      <Badge variant={getStatusColor(submission.status)}>
-                        {getStatusText(submission.status)}
-                      </Badge>
-                    </div>
-                    <CardDescription className="max-w-2xl">
-                      {submission.description}
-                    </CardDescription>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <User className="h-4 w-4" />
-                        Creator {submission.creatorId}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {submission.createdAt ? submission.createdAt.toLocaleDateString() : 'Unknown'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <FileImage className="h-4 w-4" />
-                        {campaign?.title}
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedSubmission(
-                      isSelected ? null : submission.id
-                    )}
-                  >
+            
+            <CardHeader className="space-y-4">
+              <div className="flex items-start justify-between">
+                <Badge variant={getStatusColor(submission.status) as any}>
+                  {getStatusText(submission.status)}
+                </Badge>
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="sm">
                     <Eye className="h-4 w-4" />
                   </Button>
+                  <Button variant="ghost" size="sm">
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  {submission.status === "pending" && (
+                    <>
+                      <Button variant="ghost" size="sm">
+                        <ThumbsUp className="h-4 w-4 text-green-600" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <ThumbsDown className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </>
+                  )}
                 </div>
-              </CardHeader>
-
-              {isSelected && (
-                <CardContent className="border-t pt-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Artwork Preview */}
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Artwork</h3>
-                      <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
-                        <img
-                          src={submission.artworkUrl}
-                          alt={submission.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Download className="mr-2 h-4 w-4" />
-                          Download
-                        </Button>
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Eye className="mr-2 h-4 w-4" />
-                          Full View
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Review Actions */}
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Review Actions</h3>
-                      
-                      {submission.status === "pending" && (
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => handleStatusUpdate(submission.id, "approved")}
-                            >
-                              <ThumbsUp className="mr-2 h-4 w-4" />
-                              Approve
-                            </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => handleStatusUpdate(submission.id, "rejected")}
-                            >
-                              <ThumbsDown className="mr-2 h-4 w-4" />
-                              Reject
-                            </Button>
-                          </div>
-                          <Button variant="outline" size="sm" className="w-full">
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            Add Feedback
-                          </Button>
-                        </div>
-                      )}
-
-                      {submission.status === "approved" && (
-                        <div className="space-y-3">
-                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <p className="text-sm text-green-800">
-                              ✓ Approved on {submission.updatedAt ? submission.updatedAt.toLocaleDateString() : 'Unknown'}
-                            </p>
-                          </div>
-                          <Button variant="outline" size="sm" className="w-full">
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            Update Feedback
-                          </Button>
-                        </div>
-                      )}
-
-                      {submission.status === "rejected" && (
-                        <div className="space-y-3">
-                          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-sm text-red-800">
-                              ✗ Rejected on {submission.updatedAt ? submission.updatedAt.toLocaleDateString() : 'Unknown'}
-                            </p>
-                          </div>
-                          <Button variant="outline" size="sm" className="w-full">
-                            <ThumbsUp className="mr-2 h-4 w-4" />
-                            Reconsider Approval
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Feedback */}
-                      {submission.feedback && (
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium">Feedback</h4>
-                          <div className="p-3 bg-muted rounded-lg">
-                            <p className="text-sm">{submission.feedback}</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Campaign Info */}
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Campaign Details</h4>
-                        <div className="space-y-1 text-sm text-muted-foreground">
-                          <p>Campaign: {campaign?.title}</p>
-                          <p>Brand: {campaign?.brand?.name}</p>
-                          <p>Deadline: {campaign?.endDate ? campaign.endDate.toLocaleDateString() : 'No deadline'}</p>
-                        </div>
-                      </div>
-                    </div>
+              </div>
+              <div>
+                <CardTitle className="text-lg mb-2 line-clamp-2">{submission.title}</CardTitle>
+                <CardDescription className="line-clamp-2">
+                  {submission.description || "No description provided"}
+                </CardDescription>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="pt-0 space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span>{submission.creator?.displayName || 'Unknown Creator'}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span>{formatDate(submission.createdAt)}</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Campaign: {submission.campaign?.title || 'Unknown Campaign'}
+                </div>
+              </div>
+              
+              {submission.feedback && (
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Feedback</span>
                   </div>
-                </CardContent>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {submission.feedback}
+                  </p>
+                </div>
               )}
-            </Card>
-          )
-        })}
+              
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  {submission.viewCount !== undefined && (
+                    <div className="flex items-center gap-1">
+                      <Eye className="h-4 w-4" />
+                      <span>{submission.viewCount}</span>
+                    </div>
+                  )}
+                  {submission.likeCount !== undefined && (
+                    <div className="flex items-center gap-1">
+                      <ThumbsUp className="h-4 w-4" />
+                      <span>{submission.likeCount}</span>
+                    </div>
+                  )}
+                </div>
+                <Button variant="outline" size="sm">
+                  Review
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Empty State */}
-      {filteredSubmissions.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <FileImage className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No submissions found</h3>
-            <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== "all" 
-                ? "Try adjusting your search or filters."
-                : "Submissions will appear here once creators start submitting to your campaigns."
-              }
-            </p>
-          </CardContent>
-        </Card>
+      {submissions.length === 0 && (
+        <div className="text-center py-12">
+          <FileImage className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No submissions found</h3>
+          <p className="text-muted-foreground mb-4">
+            {params.search || params.status !== 'all' 
+              ? 'Try adjusting your filters to see more results.'
+              : 'No submissions have been made yet.'
+            }
+          </p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {submissions.length > 0 && pagination.pages > 1 && (
+        <div className="flex justify-center gap-2">
+          {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
+            <Link 
+              key={page} 
+              href={`?${new URLSearchParams(Object.fromEntries(Object.entries({ ...params, page: page.toString() }).filter(([_, v]) => v !== undefined))).toString()}`}
+            >
+              <Button 
+                variant={page === pagination.page ? "default" : "outline"} 
+                size="sm"
+              >
+                {page}
+              </Button>
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   )

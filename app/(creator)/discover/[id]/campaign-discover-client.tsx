@@ -23,7 +23,7 @@ import {
 import Link from "next/link"
 
 interface CampaignDiscoverClientProps {
-  campaign: CampaignWithAssets
+  campaign: any
 }
 
 export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps) {
@@ -73,9 +73,9 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
   }
 
   const getDaysUntilDeadline = () => {
-    if (!campaign.endDate) return 0
+    if (!campaign.deadline) return 0
     const today = new Date()
-    const deadline = new Date(campaign.endDate)
+    const deadline = new Date(campaign.deadline)
     const diffTime = deadline.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
@@ -134,7 +134,7 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
                   Only {daysLeft} days left to participate!
                 </h3>
                 <p className="text-sm text-orange-700">
-                  This campaign ends on {campaign.endDate ? campaign.endDate.toLocaleDateString() : 'No deadline set'}.
+                  This campaign ends on {campaign.deadline ? new Date(campaign.deadline).toLocaleDateString() : 'No deadline set'}.
                 </p>
               </div>
             </div>
@@ -150,7 +150,7 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
               <div>
                 <h3 className="font-medium text-gray-800">Campaign Closed</h3>
                 <p className="text-sm text-gray-700">
-                  This campaign ended on {campaign.endDate ? campaign.endDate.toLocaleDateString() : 'an unknown date'}. Check out other active campaigns!
+                  This campaign ended on {campaign.deadline ? new Date(campaign.deadline).toLocaleDateString() : 'an unknown date'}. Check out other active campaigns!
                 </p>
               </div>
             </div>
@@ -211,7 +211,7 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
             <CardContent>
               {campaign.assets.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {campaign.assets.map((asset) => (
+                  {campaign.assets.map((asset: any) => (
                     <div key={asset.id} className="group relative">
                       <div className="aspect-square bg-muted rounded-lg overflow-hidden">
                         <img
@@ -327,7 +327,7 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Deadline</span>
                   <span className="text-sm font-medium">
-                    {campaign.endDate ? campaign.endDate.toLocaleDateString() : 'No deadline'}
+                    {campaign.deadline ? new Date(campaign.deadline).toLocaleDateString() : 'No deadline'}
                   </span>
                 </div>
 
@@ -340,7 +340,7 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
 
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Participants</span>
-                  <span className="text-sm font-medium">{campaign.submissionCount}</span>
+                  <span className="text-sm font-medium">{approvedSubmissions.length}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
@@ -368,7 +368,7 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
                   </Button>
                 </Link>
                 <p className="text-xs text-center text-muted-foreground">
-                  Join {campaign.submissionCount} other creators in this campaign
+                  Join {approvedSubmissions.length} other creators in this campaign
                 </p>
               </CardContent>
             </Card>
