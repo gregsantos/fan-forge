@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string>("")
   const { signIn, loading, user } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const {
     register,
@@ -27,13 +28,25 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   })
 
-  // Redirect user based on role after successful login
+  // Redirect user after successful login
   useEffect(() => {
     if (user && !loading) {
-      const redirectPath = user.role === "creator" ? "/discover" : "/dashboard"
-      router.push(redirectPath)
+      // Get redirect URL from query params or default based on role
+      const redirectTo = searchParams.get('redirectTo')
+      let redirectPath: string
+      
+      if (redirectTo) {
+        // Decode the URL-encoded redirect path
+        redirectPath = decodeURIComponent(redirectTo)
+      } else {
+        // Default redirect based on user role
+        redirectPath = user.role === "creator" ? "/discover" : "/dashboard"
+      }
+      
+      console.log('Redirecting user to:', redirectPath)
+      router.replace(redirectPath)
     }
-  }, [user, loading, router])
+  }, [user, loading, router, searchParams])
 
   const onSubmit = async (data: LoginForm) => {
     try {
@@ -44,6 +57,20 @@ export default function LoginPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred during login")
     }
+  }
+
+  // Show loading state while checking auth or redirecting
+  if (loading || user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">
+            {user ? 'Redirecting...' : 'Loading...'}
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -84,17 +84,26 @@ export async function middleware(request: NextRequest) {
   if (isAuthRoute && user && !request.nextUrl.pathname.startsWith('/confirm')) {
     const redirectUrl = request.nextUrl.clone()
     
-    // Get user role from metadata
-    const userRole = user.user_metadata?.role
+    // Check if there's a redirectTo parameter
+    const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     
-    // Redirect based on role: creators to discover, brand admins to dashboard
-    if (userRole === 'creator') {
-      redirectUrl.pathname = '/discover'
-    } else if (userRole === 'brand_admin') {
-      redirectUrl.pathname = '/dashboard'
+    if (redirectTo) {
+      // Use the redirectTo parameter if present
+      redirectUrl.pathname = redirectTo
+      redirectUrl.searchParams.delete('redirectTo')
     } else {
-      // Default fallback to discover for unknown roles
-      redirectUrl.pathname = '/discover'
+      // Get user role from metadata
+      const userRole = user.user_metadata?.role
+      
+      // Redirect based on role: creators to discover, brand admins to dashboard
+      if (userRole === 'creator') {
+        redirectUrl.pathname = '/discover'
+      } else if (userRole === 'brand_admin') {
+        redirectUrl.pathname = '/dashboard'
+      } else {
+        // Default fallback to discover for unknown roles
+        redirectUrl.pathname = '/discover'
+      }
     }
     
     return NextResponse.redirect(redirectUrl)
