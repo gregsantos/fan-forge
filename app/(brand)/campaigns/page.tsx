@@ -15,9 +15,8 @@ import { CampaignFilters } from "./campaign-filters"
 import { createSearchParams } from "@/lib/utils"
 
 async function getCampaigns(searchParams: Record<string, string | undefined>) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  const url = new URL(`${baseUrl}/api/campaigns`)
+  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
+  const url = new URL('/api/campaigns', baseUrl)
   
   Object.entries(searchParams).forEach(([key, value]) => {
     if (value) {

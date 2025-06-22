@@ -2,11 +2,16 @@ import { notFound } from "next/navigation"
 import { CampaignDiscoverClient } from "./campaign-discover-client"
 
 async function getCampaign(id: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  // Use relative URL for server-side API calls in Vercel
+  const apiUrl = `/api/campaigns/${id}`
+  
+  console.log('Fetching campaign:', {
+    campaignId: id,
+    apiUrl
+  })
   
   try {
-    const response = await fetch(`${baseUrl}/api/campaigns/${id}`, { 
+    const response = await fetch(new URL(apiUrl, process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'), { 
       cache: 'no-store' 
     })
     

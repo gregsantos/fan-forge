@@ -14,12 +14,11 @@ import {
 import Link from "next/link"
 
 async function getDashboardData() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
 
   try {
     // Fetch campaigns
-    const campaignsResponse = await fetch(`${baseUrl}/api/campaigns?limit=10`, { 
+    const campaignsResponse = await fetch(new URL('/api/campaigns?limit=10', baseUrl), { 
       cache: 'no-store' 
     })
     
@@ -30,7 +29,7 @@ async function getDashboardData() {
     const campaignsData = await campaignsResponse.json()
 
     // Fetch recent submissions
-    const submissionsResponse = await fetch(`${baseUrl}/api/submissions?limit=10`, { 
+    const submissionsResponse = await fetch(new URL('/api/submissions?limit=10', baseUrl), { 
       cache: 'no-store' 
     })
     
