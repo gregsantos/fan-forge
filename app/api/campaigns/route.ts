@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db, campaigns, brands, ipKits, assets } from "@/db"
+import { db, campaigns, brands, ipKits, assets, submissions } from "@/db"
 import { desc, asc, eq, and, ilike, or, count, isNotNull, gt, lte, isNull } from "drizzle-orm"
 
 export async function GET(request: NextRequest) {
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
                       campaigns.createdAt
     const sortOrder = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn)
 
-    // Get campaigns with relations and asset count
+    // Get campaigns with relations, asset count, and submission count
     const campaignResults = await db
       .select({
         campaign: campaigns,
@@ -124,6 +124,22 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset((page - 1) * limit)
 
+    // Get submission counts for each campaign
+    const campaignIds = campaignResults.map(result => result.campaign.id)
+    const submissionCounts = campaignIds.length > 0 ? await db
+      .select({
+        campaignId: submissions.campaignId,
+        submissionCount: count(submissions.id),
+      })
+      .from(submissions)
+      .where(or(...campaignIds.map(id => eq(submissions.campaignId, id))))
+      .groupBy(submissions.campaignId) : []
+
+    // Create a map for quick lookup of submission counts
+    const submissionCountMap = new Map(
+      submissionCounts.map(sc => [sc.campaignId, sc.submissionCount])
+    )
+
     const response = {
       campaigns: campaignResults.map(result => ({
         id: result.campaign.id,
@@ -133,7 +149,7 @@ export async function GET(request: NextRequest) {
         status: result.campaign.status,
         deadline: result.campaign.endDate,
         asset_count: result.assetCount || 0,
-        submission_count: 0, // TODO: Add actual submission count query
+        submission_count: submissionCountMap.get(result.campaign.id) || 0,
         thumbnail_url: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=300&fit=crop", // TODO: Use first asset or campaign thumbnail
         created_at: result.campaign.createdAt,
         updated_at: result.campaign.updatedAt,
@@ -213,41 +229,53 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new campaign (mock)
-    const newCampaign = {
-      id: `campaign-${Date.now()}`,
-      title,
-      description,
-      guidelines,
-      ipKitId,
-      brand_id: "mock-brand-id",
-      brand_name: "Mock Brand",
-      status: status as "draft" | "active" | "paused" | "closed",
-      startDate: startDate ? new Date(startDate) : null,
-      endDate: endDate ? new Date(endDate) : null,
-      maxSubmissions: maxSubmissions || null,
-      rewardAmount: rewardAmount || null,
-      rewardCurrency,
-      briefDocument: briefDocument || null,
-      assets: [],
-      submission_count: 0,
-      created_at: new Date(),
-      updated_at: new Date(),
+    // Get the authenticated user for createdBy field
+    // For now, we'll use a placeholder - this should be implemented with proper auth
+    const createdBy = "placeholder-user-id" // TODO: Get from authenticated session
+
+    // Verify IP Kit exists
+    if (ipKitId) {
+      const existingIpKit = await db
+        .select()
+        .from(ipKits)
+        .where(eq(ipKits.id, ipKitId))
+        .limit(1)
+      
+      if (existingIpKit.length === 0) {
+        return NextResponse.json(
+          { error: "IP Kit not found" },
+          { status: 404 }
+        )
+      }
     }
 
-    // TODO: In a real implementation, save to database here
-    // For now, we'll just simulate the response
-
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Create new campaign in database
+    const [newCampaign] = await db
+      .insert(campaigns)
+      .values({
+        title,
+        description,
+        guidelines,
+        ipKitId: ipKitId || null,
+        brandId: "placeholder-brand-id", // TODO: Get from authenticated user's brand
+        status: status as "draft" | "active" | "paused" | "closed",
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        maxSubmissions: maxSubmissions || null,
+        rewardAmount: rewardAmount || null,
+        rewardCurrency,
+        briefDocument: briefDocument || null,
+        createdBy,
+      })
+      .returning()
 
     return NextResponse.json({
       campaign: {
         id: newCampaign.id,
         title: newCampaign.title,
         status: newCampaign.status,
-        created_at: newCampaign.created_at,
-        updated_at: newCampaign.updated_at,
+        created_at: newCampaign.createdAt,
+        updated_at: newCampaign.updatedAt,
       }
     }, { status: 201 })
 

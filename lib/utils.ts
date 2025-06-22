@@ -30,3 +30,13 @@ export function formatTimeAgo(date: Date): string {
   
   return formatDate(date)
 }
+
+export function createSearchParams(params: Record<string, string | undefined>): URLSearchParams {
+  const searchParams = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) {
+      searchParams.set(key, value)
+    }
+  })
+  return searchParams
+}

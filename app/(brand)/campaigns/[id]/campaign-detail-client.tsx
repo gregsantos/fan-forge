@@ -1,11 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { mockSubmissions } from "@/lib/mock-data"
-import { CampaignWithAssets } from "@/types"
 import { 
   Calendar, 
   Users, 
@@ -25,11 +23,32 @@ import {
 import Link from "next/link"
 
 interface CampaignDetailClientProps {
-  campaign: CampaignWithAssets
+  campaign: any
 }
 
 export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
-  const campaignSubmissions = mockSubmissions.filter(s => s.campaignId === campaign.id)
+  const [submissions, setSubmissions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      try {
+        const response = await fetch(`/api/submissions?campaign_id=${campaign.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setSubmissions(data.submissions || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch submissions:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSubmissions()
+  }, [campaign.id])
+
+  const campaignSubmissions = submissions
   const pendingSubmissions = campaignSubmissions.filter(s => s.status === "pending")
   const approvedSubmissions = campaignSubmissions.filter(s => s.status === "approved")
 
@@ -47,9 +66,9 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
   }
 
   const getDaysUntilDeadline = () => {
-    if (!campaign.endDate) return 0
+    if (!campaign.deadline) return 0
     const today = new Date()
-    const deadline = new Date(campaign.endDate)
+    const deadline = new Date(campaign.deadline)
     const diffTime = deadline.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
@@ -69,7 +88,7 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
             </Badge>
           </div>
           <p className="text-muted-foreground">
-            {campaign.brand?.name} • Created {campaign.createdAt ? campaign.createdAt.toLocaleDateString() : 'Unknown date'}
+            {campaign.brand_name} • Created {campaign.created_at ? new Date(campaign.created_at).toLocaleDateString() : 'Unknown date'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -96,7 +115,7 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{campaign.submissionCount}</div>
+            <div className="text-2xl font-bold">{campaignSubmissions.length}</div>
             <p className="text-xs text-muted-foreground">
               {campaignSubmissions.length} in review
             </p>
@@ -145,7 +164,7 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
               {daysLeft > 0 ? `${daysLeft}d` : "Ended"}
             </div>
             <p className="text-xs text-muted-foreground">
-              Until {campaign.endDate ? campaign.endDate.toLocaleDateString() : 'No deadline'}
+              Until {campaign.deadline ? new Date(campaign.deadline).toLocaleDateString() : 'No deadline'}
             </p>
           </CardContent>
         </Card>
@@ -200,7 +219,7 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
             <CardContent>
               {campaign.assets.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {campaign.assets.map((asset) => (
+                  {campaign.assets.map((asset: any) => (
                     <div key={asset.id} className="group relative">
                       <div className="aspect-square bg-muted rounded-lg overflow-hidden">
                         <img
@@ -248,7 +267,11 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
               </div>
             </CardHeader>
             <CardContent>
-              {campaignSubmissions.length > 0 ? (
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Loading submissions...</p>
+                </div>
+              ) : campaignSubmissions.length > 0 ? (
                 <div className="space-y-4">
                   {campaignSubmissions.slice(0, 3).map((submission) => (
                     <div key={submission.id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -263,10 +286,10 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
                         <div className="space-y-1">
                           <h3 className="font-medium">{submission.title}</h3>
                           <p className="text-sm text-muted-foreground">
-                            Creator {submission.creatorId}
+                            {submission.creator?.displayName || `Creator ${submission.creatorId}`}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {submission.createdAt ? submission.createdAt.toLocaleDateString() : 'Unknown'}
+                            {submission.createdAt ? new Date(submission.createdAt).toLocaleDateString() : 'Unknown'}
                           </p>
                         </div>
                       </div>

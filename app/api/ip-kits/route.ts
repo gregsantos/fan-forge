@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
-// import { db } from '@/db'
-// import { ipKits, brands, assets } from '@/db/schema'
-// import { eq, and, desc, ilike, count } from 'drizzle-orm'
+import { db } from '@/db'
+import { ipKits, brands, assets } from '@/db/schema'
+import { eq, and, desc, ilike, count } from 'drizzle-orm'
 import { z } from 'zod'
 
 // IP Kit creation schema
@@ -55,83 +55,72 @@ export async function GET(request: NextRequest) {
       offset: searchParams.get('offset')
     })
 
-    // NOTE: Database query conditions removed for development mock data
-
-    // For development: return mock data until database is connected
-    // TODO: Replace with actual database query when DB is set up
-    const mockIpKits = [
-      {
-        id: "550e8400-e29b-41d4-a716-446655440010",
-        name: "Marvel Heroes Collection",
-        description: "Complete set of Marvel superhero assets including characters, logos, and backgrounds",
-        guidelines: "Use only for positive superhero content. Maintain character integrity and brand consistency.",
-        brandId: "550e8400-e29b-41d4-a716-446655440001",
-        isPublished: true,
-        version: 2,
-        createdAt: "2024-01-15T10:00:00Z",
-        updatedAt: "2024-01-20T14:30:00Z",
-        brandName: "Marvel Entertainment",
-        assetCount: 24
-      },
-      {
-        id: "550e8400-e29b-41d4-a716-446655440011",
-        name: "Star Wars Universe Kit",
-        description: "Official Star Wars assets for fan content creation",
-        guidelines: "Follow Disney content guidelines. No dark or inappropriate themes.",
-        brandId: "550e8400-e29b-41d4-a716-446655440001",
-        isPublished: false,
-        version: 1,
-        createdAt: "2024-01-10T09:00:00Z",
-        updatedAt: "2024-01-18T16:45:00Z",
-        brandName: "Disney",
-        assetCount: 18
-      },
-      {
-        id: "550e8400-e29b-41d4-a716-446655440012",
-        name: "Pokemon Adventure Pack",
-        description: "Curated Pokemon characters and environments for creative projects",
-        guidelines: "Family-friendly content only. Respect Pokemon character designs and personalities.",
-        brandId: "550e8400-e29b-41d4-a716-446655440002",
-        isPublished: true,
-        version: 3,
-        createdAt: "2024-01-05T11:30:00Z",
-        updatedAt: "2024-01-22T12:15:00Z",
-        brandName: "Nintendo",
-        assetCount: 32
-      }
-    ]
-
-    // Apply filters to mock data
-    let filteredKits = mockIpKits
+    // Build where conditions for database query
+    const whereConditions = []
 
     if (query.brandId) {
-      filteredKits = filteredKits.filter(kit => kit.brandId === query.brandId)
+      whereConditions.push(eq(ipKits.brandId, query.brandId))
     }
 
     if (query.search) {
-      filteredKits = filteredKits.filter(kit => 
-        kit.name.toLowerCase().includes(query.search!.toLowerCase()) ||
-        (kit.description && kit.description.toLowerCase().includes(query.search!.toLowerCase()))
+      whereConditions.push(
+        ilike(ipKits.name, `%${query.search}%`)
       )
     }
 
     if (query.published !== 'all') {
       const isPublished = query.published === 'true'
-      filteredKits = filteredKits.filter(kit => kit.isPublished === isPublished)
+      whereConditions.push(eq(ipKits.isPublished, isPublished))
     }
 
-    // Apply pagination
-    const startIndex = query.offset
-    const endIndex = startIndex + query.limit
-    const result = filteredKits.slice(startIndex, endIndex)
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined
+
+    // Get IP kits with brand info and asset count
+    const ipKitResults = await db
+      .select({
+        ipKit: ipKits,
+        brand: brands,
+        assetCount: count(assets.id),
+      })
+      .from(ipKits)
+      .leftJoin(brands, eq(ipKits.brandId, brands.id))
+      .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
+      .where(whereClause)
+      .groupBy(ipKits.id, brands.id)
+      .orderBy(desc(ipKits.updatedAt))
+      .limit(query.limit)
+      .offset(query.offset)
+
+    // Get total count for pagination
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(ipKits)
+      .leftJoin(brands, eq(ipKits.brandId, brands.id))
+      .where(whereClause)
+
+    const total = totalResult.count
+
+    const result = ipKitResults.map(result => ({
+      id: result.ipKit.id,
+      name: result.ipKit.name,
+      description: result.ipKit.description,
+      guidelines: result.ipKit.guidelines,
+      brandId: result.ipKit.brandId,
+      isPublished: result.ipKit.isPublished,
+      version: result.ipKit.version,
+      createdAt: result.ipKit.createdAt,
+      updatedAt: result.ipKit.updatedAt,
+      brandName: result.brand?.name || "Unknown Brand",
+      assetCount: result.assetCount || 0
+    }))
 
     return NextResponse.json({
       ipKits: result,
       pagination: {
         limit: query.limit,
         offset: query.offset,
-        hasMore: endIndex < filteredKits.length,
-        total: filteredKits.length
+        hasMore: query.offset + query.limit < total,
+        total: total
       }
     })
 
@@ -165,30 +154,32 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const ipKitData = createIpKitSchema.parse(body)
 
-    // For development: create mock IP Kit until database is connected
-    // TODO: Replace with actual database operations when DB is set up
+    // Verify brand exists
+    const existingBrand = await db
+      .select()
+      .from(brands)
+      .where(eq(brands.id, ipKitData.brandId))
+      .limit(1)
     
-    // Verify brand exists (mock validation)
-    const validBrandIds = [
-      "550e8400-e29b-41d4-a716-446655440001",
-      "550e8400-e29b-41d4-a716-446655440002"
-    ]
-    
-    if (!validBrandIds.includes(ipKitData.brandId)) {
+    if (existingBrand.length === 0) {
       return NextResponse.json(
         { error: 'Brand not found' },
         { status: 404 }
       )
     }
 
-    // Create mock IP Kit
-    const newIpKit = {
-      id: `550e8400-e29b-41d4-a716-${Date.now().toString().slice(-12)}`,
-      ...ipKitData,
-      version: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
+    // Create new IP Kit in database
+    const [newIpKit] = await db
+      .insert(ipKits)
+      .values({
+        name: ipKitData.name,
+        description: ipKitData.description,
+        guidelines: ipKitData.guidelines,
+        brandId: ipKitData.brandId,
+        isPublished: ipKitData.isPublished,
+        version: 1,
+      })
+      .returning()
 
     return NextResponse.json(newIpKit, { status: 201 })
 

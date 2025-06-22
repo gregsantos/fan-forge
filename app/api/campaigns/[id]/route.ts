@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db, campaigns, brands, ipKits, assets } from "@/db"
+import { getCampaignById } from "@/lib/data/campaigns"
+import { db, campaigns, ipKits } from "@/db"
 import { eq } from "drizzle-orm"
 
 export async function GET(
@@ -7,56 +8,23 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Get campaign with relations
-    const campaignWithDetails = await db
-      .select({
-        campaign: campaigns,
-        brand: brands,
-        ipKit: ipKits,
-      })
-      .from(campaigns)
-      .leftJoin(brands, eq(campaigns.brandId, brands.id))
-      .leftJoin(ipKits, eq(campaigns.ipKitId, ipKits.id))
-      .where(eq(campaigns.id, params.id))
-      .limit(1)
-
-    if (campaignWithDetails.length === 0) {
+    const campaign = await getCampaignById(params.id)
+    
+    if (!campaign) {
       return NextResponse.json(
         { error: "Campaign not found" },
         { status: 404 }
       )
     }
 
-    const result = campaignWithDetails[0]
-
-    // Get assets for the campaign's IP kit
-    const campaignAssets = result.ipKit ? await db
-      .select()
-      .from(assets)
-      .where(eq(assets.ipKitId, result.ipKit.id)) : []
-
-    return NextResponse.json({
-      campaign: {
-        id: result.campaign.id,
-        title: result.campaign.title,
-        description: result.campaign.description,
-        guidelines: result.campaign.guidelines,
-        brand_name: result.brand?.name,
-        status: result.campaign.status,
-        deadline: result.campaign.endDate,
-        created_at: result.campaign.createdAt,
-        assets: campaignAssets.map(asset => ({
-          id: asset.id,
-          filename: asset.filename,
-          url: asset.url,
-          category: asset.category,
-          metadata: asset.metadata,
-        }))
-      }
-    })
+    return NextResponse.json({ campaign })
     
   } catch (error) {
-    console.error('Failed to fetch campaign:', error)
+    console.error('Failed to fetch campaign:', {
+      campaignId: params.id,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
       { error: "Failed to fetch campaign" },
       { status: 500 }
