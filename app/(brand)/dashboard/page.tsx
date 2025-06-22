@@ -14,7 +14,7 @@ import {
 import Link from "next/link"
 
 async function getDashboardData() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
   try {
     // Fetch campaigns

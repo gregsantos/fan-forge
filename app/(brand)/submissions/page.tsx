@@ -15,7 +15,8 @@ import Link from "next/link"
 import { SubmissionsFilters } from "./submissions-filters"
 
 async function getSubmissions(searchParams: Record<string, string | undefined>) {
-  const url = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/api/submissions`)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const url = new URL(`${baseUrl}/api/submissions`)
   
   Object.entries(searchParams).forEach(([key, value]) => {
     if (value) {

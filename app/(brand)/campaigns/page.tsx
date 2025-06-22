@@ -14,7 +14,8 @@ import Link from "next/link"
 import { CampaignFilters } from "./campaign-filters"
 
 async function getCampaigns(searchParams: Record<string, string | undefined>) {
-  const url = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/api/campaigns`)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const url = new URL(`${baseUrl}/api/campaigns`)
   
   Object.entries(searchParams).forEach(([key, value]) => {
     if (value) {
