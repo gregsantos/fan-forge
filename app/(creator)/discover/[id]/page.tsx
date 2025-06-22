@@ -2,7 +2,8 @@ import { notFound } from "next/navigation"
 import { CampaignDiscoverClient } from "./campaign-discover-client"
 
 async function getCampaign(id: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
   
   try {
     const response = await fetch(`${baseUrl}/api/campaigns/${id}`, { 

@@ -16,7 +16,8 @@ import { SubmissionsFilters } from "./submissions-filters"
 import { createSearchParams } from "@/lib/utils"
 
 async function getSubmissions(searchParams: Record<string, string | undefined>) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
   const url = new URL(`${baseUrl}/api/submissions`)
   
   Object.entries(searchParams).forEach(([key, value]) => {
