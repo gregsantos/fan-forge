@@ -14,25 +14,7 @@ import {
 import Link from "next/link"
 import { SubmissionsFilters } from "./submissions-filters"
 import { createSearchParams } from "@/lib/utils"
-
-async function getSubmissions(searchParams: Record<string, string | undefined>) {
-  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
-  const url = new URL('/api/submissions', baseUrl)
-  
-  Object.entries(searchParams).forEach(([key, value]) => {
-    if (value) {
-      url.searchParams.set(key, value)
-    }
-  })
-
-  const response = await fetch(url.toString(), { cache: 'no-store' })
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch submissions')
-  }
-
-  return response.json()
-}
+import { getSubmissions } from "@/lib/data/campaigns"
 
 function getStatusColor(status: string) {
   switch (status) {

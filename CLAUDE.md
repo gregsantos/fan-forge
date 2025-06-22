@@ -230,3 +230,4 @@ NEXT_PUBLIC_ALLOWED_FILE_TYPES=image/jpeg,image/png,image/svg+xml
 ## Memories
 
 - After completing steps, update the @ai/implementation-plan.md todo checklist
+- Always ask me before commiting changes. Preview commit message or summary first

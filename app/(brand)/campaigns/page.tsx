@@ -13,25 +13,7 @@ import {
 import Link from "next/link"
 import { CampaignFilters } from "./campaign-filters"
 import { createSearchParams } from "@/lib/utils"
-
-async function getCampaigns(searchParams: Record<string, string | undefined>) {
-  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
-  const url = new URL('/api/campaigns', baseUrl)
-  
-  Object.entries(searchParams).forEach(([key, value]) => {
-    if (value) {
-      url.searchParams.set(key, value)
-    }
-  })
-
-  const response = await fetch(url.toString(), { cache: 'no-store' })
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch campaigns')
-  }
-
-  return response.json()
-}
+import { getCampaigns } from "@/lib/data/campaigns"
 
 function getStatusColor(status: string) {
   switch (status) {

@@ -12,45 +12,7 @@ import {
   ArrowRight
 } from "lucide-react"
 import Link from "next/link"
-
-async function getDashboardData() {
-  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
-
-  try {
-    // Fetch campaigns
-    const campaignsResponse = await fetch(new URL('/api/campaigns?limit=10', baseUrl), { 
-      cache: 'no-store' 
-    })
-    
-    if (!campaignsResponse.ok) {
-      throw new Error('Failed to fetch campaigns')
-    }
-    
-    const campaignsData = await campaignsResponse.json()
-
-    // Fetch recent submissions
-    const submissionsResponse = await fetch(new URL('/api/submissions?limit=10', baseUrl), { 
-      cache: 'no-store' 
-    })
-    
-    if (!submissionsResponse.ok) {
-      throw new Error('Failed to fetch submissions')
-    }
-    
-    const submissionsData = await submissionsResponse.json()
-
-    return {
-      campaigns: campaignsData.campaigns || [],
-      submissions: submissionsData.submissions || [],
-    }
-  } catch (error) {
-    console.error('Dashboard data fetch error:', error)
-    return {
-      campaigns: [],
-      submissions: [],
-    }
-  }
-}
+import { getDashboardData } from "@/lib/data/campaigns"
 
 function calculateStats(campaigns: any[], submissions: any[]) {
   const activeCampaigns = campaigns.filter(c => c.status === "active")
