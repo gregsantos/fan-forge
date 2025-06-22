@@ -1,29 +1,52 @@
 import { notFound } from "next/navigation"
 import { CampaignDiscoverClient } from "./campaign-discover-client"
+import { db, campaigns, brands, ipKits, assets } from "@/db"
+import { eq } from "drizzle-orm"
 
 async function getCampaign(id: string) {
-  // Use relative URL for server-side API calls in Vercel
-  const apiUrl = `/api/campaigns/${id}`
-  
-  console.log('Fetching campaign:', {
-    campaignId: id,
-    apiUrl
-  })
-  
   try {
-    const response = await fetch(new URL(apiUrl, process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'), { 
-      cache: 'no-store' 
-    })
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null
-      }
-      throw new Error('Failed to fetch campaign')
+    // Get campaign with relations directly from database
+    const campaignWithDetails = await db
+      .select({
+        campaign: campaigns,
+        brand: brands,
+        ipKit: ipKits,
+      })
+      .from(campaigns)
+      .leftJoin(brands, eq(campaigns.brandId, brands.id))
+      .leftJoin(ipKits, eq(campaigns.ipKitId, ipKits.id))
+      .where(eq(campaigns.id, id))
+      .limit(1)
+
+    if (campaignWithDetails.length === 0) {
+      return null
     }
-    
-    const data = await response.json()
-    return data.campaign
+
+    const result = campaignWithDetails[0]
+
+    // Get assets for the campaign's IP kit
+    const campaignAssets = result.ipKit ? await db
+      .select()
+      .from(assets)
+      .where(eq(assets.ipKitId, result.ipKit.id)) : []
+
+    return {
+      id: result.campaign.id,
+      title: result.campaign.title,
+      description: result.campaign.description,
+      guidelines: result.campaign.guidelines,
+      brand_name: result.brand?.name,
+      status: result.campaign.status,
+      deadline: result.campaign.endDate,
+      created_at: result.campaign.createdAt,
+      assets: campaignAssets.map(asset => ({
+        id: asset.id,
+        filename: asset.filename,
+        url: asset.url,
+        category: asset.category,
+        metadata: asset.metadata,
+      }))
+    }
   } catch (error) {
     console.error('Campaign fetch error:', error)
     return null
