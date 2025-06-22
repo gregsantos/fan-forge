@@ -18,7 +18,8 @@ import {
   Heart,
   ExternalLink,
   Award,
-  Loader2
+  Loader2,
+  ArrowRight
 } from "lucide-react"
 import Link from "next/link"
 
@@ -255,9 +256,19 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
                     Amazing submissions from fellow creators
                   </CardDescription>
                 </div>
-                <Badge variant="outline">
-                  {approvedSubmissions.length} approved works
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">
+                    {approvedSubmissions.length} approved works
+                  </Badge>
+                  {approvedSubmissions.length > 4 && (
+                    <Link href={`/discover/${campaign.id}/submissions`}>
+                      <Button variant="outline" size="sm">
+                        View All
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>

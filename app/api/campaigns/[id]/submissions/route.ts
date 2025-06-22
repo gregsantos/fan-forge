@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db, submissions, users, ipKits } from "@/db"
-import { eq, and, desc } from "drizzle-orm"
+import { eq, and, desc, asc, ilike, or } from "drizzle-orm"
 
 export async function GET(
   request: NextRequest,
@@ -12,6 +12,8 @@ export async function GET(
     const status = searchParams.get("status") || "approved" // Default to approved for public showcase
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "12")
+    const search = searchParams.get("search") || ""
+    const sortBy = searchParams.get("sortBy") || "newest"
 
     // Build where conditions
     const whereConditions = [
@@ -23,6 +25,32 @@ export async function GET(
       whereConditions.push(eq(submissions.isPublic, true))
     } else if (status && status !== "all") {
       whereConditions.push(eq(submissions.status, status as any))
+    }
+
+    // Add search functionality
+    if (search) {
+      const searchCondition = or(
+        ilike(submissions.title, `%${search}%`),
+        ilike(users.displayName, `%${search}%`)
+      )
+      if (searchCondition) {
+        whereConditions.push(searchCondition)
+      }
+    }
+
+    // Determine sort order
+    const getSortOrder = () => {
+      switch (sortBy) {
+        case "oldest":
+          return asc(submissions.createdAt)
+        case "popular":
+          return [desc(submissions.likeCount), desc(submissions.viewCount)]
+        case "title":
+          return asc(submissions.title)
+        case "newest":
+        default:
+          return desc(submissions.createdAt)
+      }
     }
 
     // Get submissions for this campaign
@@ -43,7 +71,7 @@ export async function GET(
       .leftJoin(users, eq(submissions.creatorId, users.id))
       .leftJoin(ipKits, eq(submissions.ipId, ipKits.id))
       .where(and(...whereConditions))
-      .orderBy(desc(submissions.likeCount), desc(submissions.viewCount), desc(submissions.createdAt))
+      .orderBy(...(Array.isArray(getSortOrder()) ? getSortOrder() as any : [getSortOrder()]))
       .limit(limit)
       .offset((page - 1) * limit)
 

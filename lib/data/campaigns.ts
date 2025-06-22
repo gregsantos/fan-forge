@@ -1,5 +1,5 @@
-import { db, campaigns, brands, ipKits, assets, submissions } from "@/db"
-import { eq, desc, count, or, ilike, and } from "drizzle-orm"
+import { db, campaigns, brands, ipKits, assets, submissions, users } from "@/db"
+import { eq, desc, count, or, ilike, and, asc } from "drizzle-orm"
 
 export async function getDashboardData() {
   try {
@@ -370,5 +370,98 @@ export async function getCampaignById(id: string) {
   } catch (error) {
     console.error('Failed to fetch campaign:', error)
     throw new Error('Failed to fetch campaign')
+  }
+}
+
+export async function getCampaignSubmissions(campaignId: string, searchParams: Record<string, string | undefined> = {}) {
+  try {
+    const { search, status = 'approved', page = '1', sortBy = 'newest' } = searchParams
+    const limit = 12
+    const offset = (parseInt(page) - 1) * limit
+
+    // Build where conditions
+    const whereConditions = [eq(submissions.campaignId, campaignId)]
+    
+    if (status === 'approved') {
+      whereConditions.push(eq(submissions.status, 'approved'))
+      whereConditions.push(eq(submissions.isPublic, true))
+    } else if (status && status !== 'all') {
+      whereConditions.push(eq(submissions.status, status as any))
+    }
+
+    // Add search functionality
+    if (search) {
+      whereConditions.push(
+        or(
+          ilike(submissions.title, `%${search}%`),
+          ilike(users.displayName, `%${search}%`)
+        )!
+      )
+    }
+
+    // Determine sort order
+    const getSortOrder = () => {
+      switch (sortBy) {
+        case 'oldest':
+          return asc(submissions.createdAt)
+        case 'popular':
+          return [desc(submissions.likeCount), desc(submissions.viewCount)]
+        case 'title':
+          return asc(submissions.title)
+        case 'newest':
+        default:
+          return desc(submissions.createdAt)
+      }
+    }
+
+    const submissionResults = await db
+      .select({
+        submission: submissions,
+        creator: {
+          id: users.id,
+          displayName: users.displayName,
+          avatarUrl: users.avatarUrl,
+        },
+      })
+      .from(submissions)
+      .leftJoin(users, eq(submissions.creatorId, users.id))
+      .where(and(...whereConditions))
+      .orderBy(...(Array.isArray(getSortOrder()) ? getSortOrder() as any : [getSortOrder()]))
+      .limit(limit)
+      .offset(offset)
+
+    // Get total count for pagination
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(submissions)
+      .leftJoin(users, eq(submissions.creatorId, users.id))
+      .where(and(...whereConditions))
+
+    return {
+      submissions: submissionResults.map(result => ({
+        id: result.submission.id,
+        title: result.submission.title,
+        description: result.submission.description,
+        status: result.submission.status,
+        artworkUrl: result.submission.artworkUrl,
+        createdAt: result.submission.createdAt,
+        likeCount: result.submission.likeCount || 0,
+        viewCount: result.submission.viewCount || 0,
+        creator: result.creator ? {
+          id: result.creator.id,
+          displayName: result.creator.displayName,
+          avatarUrl: result.creator.avatarUrl,
+        } : null,
+      })),
+      pagination: {
+        page: parseInt(page),
+        limit,
+        total: totalResult.count,
+        pages: Math.ceil(totalResult.count / limit),
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch campaign submissions:', error)
+    throw new Error('Failed to fetch campaign submissions')
   }
 }
