@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { CampaignFilters } from "./campaign-filters"
+import { createSearchParams } from "@/lib/utils"
 
 async function getCampaigns(searchParams: Record<string, string | undefined>) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -193,7 +194,7 @@ export default async function BrandCampaignsPage({
           {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
             <Link 
               key={page} 
-              href={`?${new URLSearchParams(Object.fromEntries(Object.entries({ ...params, page: page.toString() }).filter(([_, v]) => v !== undefined))).toString()}`}
+              href={`?${createSearchParams({ ...params, page: page.toString() }).toString()}`}
             >
               <Button 
                 variant={page === pagination.page ? "default" : "outline"} 
