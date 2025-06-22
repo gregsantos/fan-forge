@@ -84,7 +84,7 @@
 }
 
 .campaign-card {
-  @apply bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer;
+  @apply bg-card border border-border rounded-lg;
 }
 
 .submission-status-pending {

@@ -55,17 +55,17 @@ export function UserDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-accent">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-accent p-0 border-0 overflow-hidden">
           {user.avatarUrl ? (
             <Image
               src={user.avatarUrl}
               alt={user.displayName || 'User avatar'}
               width={40}
               height={40}
-              className="h-10 w-10 rounded-full object-cover"
+              className="h-full w-full rounded-full object-cover"
             />
           ) : (
-            <div className={`flex h-10 w-10 items-center justify-center rounded-full text-white font-semibold text-sm ${roleInfo.color}`}>
+            <div className={`absolute inset-0 flex items-center justify-center rounded-full text-white font-semibold text-sm ${roleInfo.color}`}>
               {getInitials(user.displayName, user.email)}
             </div>
           )}

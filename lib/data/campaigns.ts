@@ -126,7 +126,7 @@ export async function getCampaigns(searchParams: Record<string, string | undefin
         submission_count: submissionCountMap.get(result.campaign.id) || 0,
         created_at: result.campaign.createdAt,
         updated_at: result.campaign.updatedAt,
-        featured: false,
+        featured: result.campaign.featuredUntil ? new Date(result.campaign.featuredUntil) > new Date() : false,
       })),
       pagination: {
         page: parseInt(page),
@@ -353,6 +353,12 @@ export async function getCampaignById(id: string) {
       status: result.campaign.status,
       deadline: result.campaign.endDate,
       created_at: result.campaign.createdAt,
+      featured: result.campaign.featuredUntil ? new Date(result.campaign.featuredUntil) > new Date() : false,
+      brand: result.brand ? {
+        name: result.brand.name
+      } : null,
+      createdAt: result.campaign.createdAt,
+      updatedAt: result.campaign.updatedAt,
       assets: campaignAssets.map(asset => ({
         id: asset.id,
         filename: asset.filename,

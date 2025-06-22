@@ -177,7 +177,7 @@ export function Navigation() {
               <div className="hidden md:flex md:items-center md:space-x-3">
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <span className="hidden lg:inline">
-                    {user.role === "creator" ? "Creator Mode" : user.role === "brand_admin" ? "Brand Admin" : "Welcome"}
+                    {user.role === "brand_admin" ? "Brand Admin" : ""}
                   </span>
                   <span className="font-medium text-foreground">{user.displayName || user.email.split('@')[0]}</span>
                 </div>

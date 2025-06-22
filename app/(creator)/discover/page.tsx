@@ -212,144 +212,147 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             Discover Campaigns
           </h1>
-          <p className="mt-2 text-lg text-muted-foreground">
+          <p className="mt-2 text-base sm:text-lg text-muted-foreground">
             Find exciting creative opportunities from top brands
           </p>
         </div>
 
         {/* Featured Campaigns */}
         {!featuredLoading && featuredCampaigns.length > 0 && (
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-6">
+          <div className="mb-8 sm:mb-12">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-foreground">Featured Campaigns</h2>
-                <p className="text-muted-foreground">Curated opportunities from top brands</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">Featured Campaigns</h2>
+                <p className="text-sm sm:text-base text-muted-foreground">Curated opportunities from top brands</p>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto">
               {featuredCampaigns.map((campaign) => (
-                <Card key={campaign.id} className="group relative overflow-hidden border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 w-full min-w-[320px]">
-                  <div className="absolute top-3 left-3 z-10">
-                    <Badge className="bg-yellow-500 text-yellow-900 font-semibold">
-                      ⭐ Featured
-                    </Badge>
-                  </div>
-                  <CardHeader className="pt-12">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary">{campaign.brand_name}</Badge>
-                          <Badge variant="outline" className="text-xs capitalize">
-                            {campaign.status}
-                          </Badge>
+                <Link key={campaign.id} href={`/discover/${campaign.id}`} className="block h-full">
+                  <Card className="group relative overflow-hidden border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 w-full h-full cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] flex flex-col">
+                    <div className="absolute top-4 right-4 z-10">
+                      <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-xs px-3 py-1 shadow-md border border-yellow-400">
+                        ⭐ FEATURED
+                      </Badge>
+                    </div>
+                    <CardHeader className="pt-12 pb-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Badge variant="secondary">{campaign.brand_name}</Badge>
+                            <Badge variant="outline" className="text-xs capitalize">
+                              {campaign.status}
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-xl leading-tight group-hover:text-primary transition-colors mb-2">
+                            {campaign.title}
+                          </CardTitle>
+                          <CardDescription className="line-clamp-2 text-sm leading-relaxed">
+                            {campaign.description}
+                          </CardDescription>
                         </div>
-                        <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                          {campaign.title}
-                        </CardTitle>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className={cn(
+                            "transition-all duration-200 shrink-0 ml-2",
+                            isBookmarked(campaign.id) 
+                              ? "opacity-100 text-blue-600 hover:text-blue-700" 
+                              : "opacity-0 group-hover:opacity-100 hover:text-blue-600"
+                          )}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            toggleBookmark(campaign.id)
+                          }}
+                        >
+                          {isBookmarked(campaign.id) ? (
+                            <BookmarkCheck className="h-4 w-4 fill-current" />
+                          ) : (
+                            <Bookmark className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className={cn(
-                          "transition-all duration-200",
-                          isBookmarked(campaign.id) 
-                            ? "opacity-100 text-blue-600 hover:text-blue-700" 
-                            : "opacity-0 group-hover:opacity-100 hover:text-blue-600"
-                        )}
-                        onClick={(e) => {
-                          e.preventDefault()
-                          toggleBookmark(campaign.id)
-                        }}
-                      >
-                        {isBookmarked(campaign.id) ? (
-                          <BookmarkCheck className="h-4 w-4 fill-current" />
-                        ) : (
-                          <Bookmark className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <CardDescription className="line-clamp-2">
-                      {campaign.description}
-                    </CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    {/* Campaign Stats */}
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          <span>{campaign.submission_count} submissions</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Image className="h-4 w-4" aria-hidden="true" />
-                          <span>{campaign.asset_count} assets</span>
+                    </CardHeader>
+                    
+                    <CardContent className="flex-1 flex flex-col space-y-4 pt-0">
+                      {/* Campaign Stats */}
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-4 w-4" />
+                            <span>{campaign.submission_count} submissions</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Image className="h-4 w-4" aria-hidden="true" />
+                            <span>{campaign.asset_count} assets</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Deadline */}
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Deadline:</span>
-                      <span className="font-medium">
-                        {campaign.deadline ? formatDate(new Date(campaign.deadline)) : "No deadline"}
-                      </span>
-                    </div>
+                      {/* Deadline */}
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Deadline:</span>
+                        <span className="font-medium">
+                          {campaign.deadline ? formatDate(new Date(campaign.deadline)) : "No deadline"}
+                        </span>
+                      </div>
 
-                    {/* Thumbnail Preview */}
-                    <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                      <img
-                        src={campaign.thumbnail_url}
-                        alt={campaign.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    </div>
+                      {/* Thumbnail Preview */}
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden flex-1">
+                        <img
+                          src={campaign.thumbnail_url}
+                          alt={campaign.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col xl:flex-row gap-2 pt-2">
-                      <Link href={`/discover/${campaign.id}`} className="flex-1">
-                        <Button className="w-full text-sm bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600">
+                      {/* Action Button */}
+                      <div className="pt-2 mt-auto">
+                        <Button 
+                          className="w-full text-sm bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 transition-all duration-200"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            window.location.href = `/discover/${campaign.id}`
+                          }}
+                        >
                           Join Featured Campaign
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
-                      </Link>
-                      <Link href={`/discover/${campaign.id}`}>
-                        <Button variant="outline" className="w-full xl:w-auto text-sm border-yellow-300 hover:bg-yellow-50">
-                          View Details
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>
         )}
 
         {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="mb-6 sm:mb-8 space-y-4">
+          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search campaigns, brands, or keywords..."
                 value={filters.search}
                 onChange={(e) => updateFilter("search", e.target.value)}
-                className="pl-10"
+                className="pl-10 min-h-[44px] sm:min-h-[40px]"
               />
             </div>
             <div className="flex gap-2">
               <DropdownMenu open={showFilters} onOpenChange={setShowFilters}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full sm:w-auto min-h-[44px] sm:min-h-[40px]">
                     <Filter className="mr-2 h-4 w-4" />
                     Filters
                     {hasActiveFilters && (
@@ -449,7 +452,7 @@ export default function DiscoverPage() {
                 const option = sortOptions.find(opt => opt.field === field && opt.direction === direction)
                 if (option) setSortBy(option)
               }}>
-                <SelectTrigger className="w-full sm:w-auto min-w-[160px]">
+                <SelectTrigger className="w-full sm:w-auto min-w-[160px] min-h-[44px] sm:min-h-[40px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -507,9 +510,9 @@ export default function DiscoverPage() {
 
         {/* Campaign Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="animate-pulse w-full min-w-[320px]">
+              <Card key={i} className="animate-pulse w-full h-full flex flex-col">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
@@ -523,117 +526,117 @@ export default function DiscoverPage() {
                   </div>
                   <Skeleton className="h-12 w-full" />
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="flex-1 flex flex-col space-y-4">
                   <div className="flex justify-between">
                     <Skeleton className="h-4 w-20" />
                     <Skeleton className="h-4 w-16" />
                   </div>
                   <Skeleton className="h-4 w-32" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-12 w-12" />
-                    <Skeleton className="h-12 w-12" />
-                    <Skeleton className="h-12 w-12" />
+                  <div className="aspect-video bg-muted rounded-lg overflow-hidden flex-1">
+                    <Skeleton className="w-full h-full" />
                   </div>
-                  <div className="flex gap-2">
-                    <Skeleton className="h-10 flex-1" />
-                    <Skeleton className="h-10 w-24" />
+                  <div className="pt-2 mt-auto">
+                    <Skeleton className="h-10 w-full" />
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto">
             {campaigns.map((campaign) => (
-              <Card key={campaign.id} className="campaign-card group w-full min-w-[320px]">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="secondary">{campaign.brand_name}</Badge>
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {campaign.status}
-                        </Badge>
+              <Link key={campaign.id} href={`/discover/${campaign.id}`} className="block h-full">
+                <Card className="campaign-card group w-full h-full cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] flex flex-col">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge variant="secondary">{campaign.brand_name}</Badge>
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {campaign.status}
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-xl leading-tight group-hover:text-primary transition-colors mb-2">
+                          {campaign.title}
+                        </CardTitle>
+                        <CardDescription className="line-clamp-2 text-sm leading-relaxed">
+                          {campaign.description}
+                        </CardDescription>
                       </div>
-                      <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                        {campaign.title}
-                      </CardTitle>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className={cn(
+                          "transition-all duration-200 shrink-0 ml-2",
+                          isBookmarked(campaign.id) 
+                            ? "opacity-100 text-blue-600 hover:text-blue-700" 
+                            : "opacity-0 group-hover:opacity-100 hover:text-blue-600"
+                        )}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          toggleBookmark(campaign.id)
+                        }}
+                      >
+                        {isBookmarked(campaign.id) ? (
+                          <BookmarkCheck className="h-4 w-4 fill-current" />
+                        ) : (
+                          <Bookmark className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className={cn(
-                        "transition-all duration-200",
-                        isBookmarked(campaign.id) 
-                          ? "opacity-100 text-blue-600 hover:text-blue-700" 
-                          : "opacity-0 group-hover:opacity-100 hover:text-blue-600"
-                      )}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        toggleBookmark(campaign.id)
-                      }}
-                    >
-                      {isBookmarked(campaign.id) ? (
-                        <BookmarkCheck className="h-4 w-4 fill-current" />
-                      ) : (
-                        <Bookmark className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  <CardDescription className="line-clamp-2">
-                    {campaign.description}
-                  </CardDescription>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* Campaign Stats */}
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{campaign.submission_count} submissions</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Image className="h-4 w-4" aria-hidden="true" />
-                        <span>{campaign.asset_count} assets</span>
+                  </CardHeader>
+                  
+                  <CardContent className="flex-1 flex flex-col space-y-4 pt-0">
+                    {/* Campaign Stats */}
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span>{campaign.submission_count} submissions</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Image className="h-4 w-4" aria-hidden="true" />
+                          <span>{campaign.asset_count} assets</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Deadline */}
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Deadline:</span>
-                    <span className="font-medium">
-                      {campaign.deadline ? formatDate(new Date(campaign.deadline)) : "No deadline"}
-                    </span>
-                  </div>
+                    {/* Deadline */}
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Deadline:</span>
+                      <span className="font-medium">
+                        {campaign.deadline ? formatDate(new Date(campaign.deadline)) : "No deadline"}
+                      </span>
+                    </div>
 
-                  {/* Thumbnail Preview */}
-                  <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                    <img
-                      src={campaign.thumbnail_url}
-                      alt={campaign.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    />
-                  </div>
+                    {/* Thumbnail Preview */}
+                    <div className="aspect-video bg-muted rounded-lg overflow-hidden flex-1">
+                      <img
+                        src={campaign.thumbnail_url}
+                        alt={campaign.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-col xl:flex-row gap-2 pt-2">
-                    <Link href={`/discover/${campaign.id}`} className="flex-1">
-                      <Button className="w-full text-sm">
+                    {/* Action Button */}
+                    <div className="pt-2 mt-auto">
+                      <Button 
+                        className="w-full text-sm transition-all duration-200"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          window.location.href = `/discover/${campaign.id}`
+                        }}
+                      >
                         Join Campaign
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
-                    </Link>
-                    <Link href={`/discover/${campaign.id}`}>
-                      <Button variant="outline" className="w-full xl:w-auto text-sm">
-                        View Details
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         )}
@@ -659,7 +662,7 @@ export default function DiscoverPage() {
 
         {/* Pagination */}
         {!loading && campaigns.length > 0 && (
-          <div className="mt-12 flex items-center justify-center gap-4">
+          <div className="mt-8 sm:mt-12 flex items-center justify-center gap-2 sm:gap-4">
             <Button
               variant="outline"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
@@ -706,7 +709,7 @@ export default function DiscoverPage() {
         )}
         {/* Results Count */}
         {!loading && campaigns.length > 0 && (
-          <div className="mt-8 text-center text-sm text-muted-foreground">
+          <div className="mt-6 sm:mt-8 text-center text-sm text-muted-foreground">
             Showing page {currentPage} of {totalPages} ({campaigns.length} campaigns)
           </div>
         )}

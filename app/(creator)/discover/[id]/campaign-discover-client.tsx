@@ -89,11 +89,18 @@ export function CampaignDiscoverClient({ campaign }: CampaignDiscoverClientProps
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div className="space-y-2">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-3xl font-bold text-foreground">{campaign.title}</h1>
-            <Badge variant={getStatusColor(campaign.status)}>
-              {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {campaign.featured && (
+                <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-xs px-3 py-1 shadow-md border border-yellow-400">
+                  ⭐ FEATURED
+                </Badge>
+              )}
+              <Badge variant={getStatusColor(campaign.status)}>
+                {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+              </Badge>
+            </div>
           </div>
           <p className="text-muted-foreground">
             By {campaign.brand?.name}
