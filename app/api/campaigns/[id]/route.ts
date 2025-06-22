@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCampaignById } from "@/lib/data/campaigns"
+import { db, campaigns, ipKits } from "@/db"
+import { eq } from "drizzle-orm"
 
 export async function GET(
   request: NextRequest,
