@@ -1,12 +1,32 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db, campaigns, brands, ipKits, assets } from "@/db"
-import { eq } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // First check if campaign exists at all
+    const campaignExists = await db
+      .select()
+      .from(campaigns)
+      .where(eq(campaigns.id, params.id))
+      .limit(1)
+
+    console.log('Campaign lookup:', {
+      campaignId: params.id,
+      exists: campaignExists.length > 0,
+      campaign: campaignExists[0] || null
+    })
+
+    if (campaignExists.length === 0) {
+      return NextResponse.json(
+        { error: "Campaign not found" },
+        { status: 404 }
+      )
+    }
+
     // Get campaign with relations
     const campaignWithDetails = await db
       .select({
@@ -20,7 +40,16 @@ export async function GET(
       .where(eq(campaigns.id, params.id))
       .limit(1)
 
+    console.log('Campaign with details:', {
+      campaignId: params.id,
+      found: campaignWithDetails.length > 0,
+      campaign: campaignWithDetails[0]?.campaign || null,
+      brand: campaignWithDetails[0]?.brand || null,
+      ipKit: campaignWithDetails[0]?.ipKit || null
+    })
+
     if (campaignWithDetails.length === 0) {
+      console.log('Campaign with details not found for ID:', params.id)
       return NextResponse.json(
         { error: "Campaign not found" },
         { status: 404 }
@@ -34,6 +63,12 @@ export async function GET(
       .select()
       .from(assets)
       .where(eq(assets.ipKitId, result.ipKit.id)) : []
+
+    console.log('Campaign assets:', {
+      campaignId: params.id,
+      ipKitId: result.ipKit?.id || null,
+      assetsFound: campaignAssets.length
+    })
 
     return NextResponse.json({
       campaign: {
@@ -56,7 +91,11 @@ export async function GET(
     })
     
   } catch (error) {
-    console.error('Failed to fetch campaign:', error)
+    console.error('Failed to fetch campaign:', {
+      campaignId: params.id,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
       { error: "Failed to fetch campaign" },
       { status: 500 }
