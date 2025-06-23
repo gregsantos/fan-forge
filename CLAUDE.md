@@ -194,6 +194,145 @@ app/
 - Form state: React Hook Form
 - Data validation: Zod schemas
 
+### Data Fetching Strategy
+
+FanForge follows a consistent server-side data fetching pattern using shared data functions in `lib/data/`. This approach eliminates unnecessary network hops during server-side rendering and provides better performance.
+
+**Core Principles:**
+
+1. **Server Components First**: Use Next.js App Router server components for data fetching
+2. **Shared Data Layer**: Centralize database queries in `lib/data/campaigns.ts`
+3. **Direct Database Access**: Server components query the database directly, not via HTTP APIs
+4. **Consistent Error Handling**: All data functions include try/catch blocks with meaningful errors
+
+**Implementation Pattern:**
+
+```typescript
+// ✅ CORRECT: Server Component with Direct Data Access
+// app/(brand)/submissions/page.tsx
+import { getSubmissionQueue, getReviewStats } from "@/lib/data/campaigns"
+
+export default async function SubmissionsPage({ searchParams }) {
+  try {
+    const [queueData, reviewStats] = await Promise.all([
+      getSubmissionQueue(searchParams),
+      getReviewStats()
+    ])
+    
+    return <SubmissionsView data={queueData} stats={reviewStats} />
+  } catch (error) {
+    return <ErrorPage error={error} />
+  }
+}
+```
+
+```typescript
+// ✅ CORRECT: Shared Data Function
+// lib/data/campaigns.ts
+export async function getSubmissionQueue(searchParams: Record<string, string | undefined> = {}) {
+  try {
+    const { status = 'pending', page = '1', search, sortBy = 'newest' } = searchParams
+    
+    // Use table aliases to avoid conflicts
+    const creators = alias(users, 'creators')
+    const reviewers = alias(users, 'reviewers')
+    
+    const results = await db
+      .select({
+        submission: submissions,
+        creator: { id: creators.id, displayName: creators.displayName },
+        campaign: { id: campaigns.id, title: campaigns.title }
+      })
+      .from(submissions)
+      .leftJoin(creators, eq(submissions.creatorId, creators.id))
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
+      .where(status !== 'all' ? eq(submissions.status, status) : undefined)
+      .orderBy(sortBy === 'newest' ? desc(submissions.createdAt) : asc(submissions.createdAt))
+      .limit(20)
+      .offset((parseInt(page) - 1) * 20)
+    
+    return { submissions: results, pagination: { /* ... */ } }
+  } catch (error) {
+    console.error('Failed to fetch submission queue:', error)
+    throw new Error('Failed to fetch submission queue')
+  }
+}
+```
+
+**Anti-Patterns to Avoid:**
+
+```typescript
+// ❌ WRONG: Server Component Making HTTP Requests
+export default async function Page() {
+  const response = await fetch('/api/submissions') // Unnecessary network hop
+  const data = await response.json()
+  return <Component data={data} />
+}
+
+// ❌ WRONG: Client Component for Server-Side Data
+'use client'
+export default function Page() {
+  const [data, setData] = useState(null)
+  useEffect(() => {
+    fetch('/api/submissions').then(res => res.json()).then(setData)
+  }, [])
+  return <Component data={data} />
+}
+```
+
+**Database Query Best Practices:**
+
+1. **Use Table Aliases**: When joining the same table multiple times
+   ```typescript
+   const creators = alias(users, 'creators')
+   const reviewers = alias(users, 'reviewers')
+   ```
+
+2. **Proper Date Filtering**: Use `gte()` and `lte()` for date ranges, not `eq()`
+   ```typescript
+   // ✅ Correct
+   gte(submissions.createdAt, startDate)
+   // ❌ Wrong
+   eq(submissions.createdAt, startDate)
+   ```
+
+3. **Pagination Support**: Always include limit/offset and total count
+   ```typescript
+   const results = await db.select().limit(limit).offset(offset)
+   const [totalResult] = await db.select({ count: count() }).from(table)
+   ```
+
+4. **Error Boundaries**: Wrap async operations in try/catch blocks
+   ```typescript
+   try {
+     return await db.select()...
+   } catch (error) {
+     console.error('Operation failed:', error)
+     throw new Error('User-friendly error message')
+   }
+   ```
+
+**File Organization:**
+
+- **Data Functions**: `lib/data/campaigns.ts` (all database queries)
+- **Server Components**: `app/(role)/page.tsx` (data fetching + rendering)
+- **Client Components**: `components/` (interactivity, no data fetching)
+- **API Routes**: `app/api/` (mutations only, not queries)
+
+**When to Use API Routes:**
+
+- Form submissions and mutations
+- External webhook endpoints
+- Client-side data updates (rare)
+
+**When NOT to Use API Routes:**
+
+- Initial page data loading (use server components)
+- Static data that doesn't change during user session
+- Data that can be fetched server-side
+
+This pattern ensures optimal performance, eliminates unnecessary network requests, and provides a consistent developer experience across the application.
+
 ## Environment Configuration
 
 Required environment variables:

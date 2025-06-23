@@ -4,6 +4,7 @@ import "./globals.css"
 import { Navigation } from "@/components/shared/navigation"
 import { AuthProvider } from "@/lib/contexts/auth"
 import { ThemeProvider } from "@/lib/contexts/theme"
+import { Toaster } from "sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -43,6 +44,7 @@ export default function RootLayout({
               <Navigation />
               <main id="main-content">{children}</main>
             </div>
+            <Toaster richColors position="top-right" />
           </AuthProvider>
         </ThemeProvider>
       </body>
