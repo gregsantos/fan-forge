@@ -1,5 +1,5 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import {createServerClient, type CookieOptions} from "@supabase/ssr"
+import {NextResponse, type NextRequest} from "next/server"
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -17,13 +17,15 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({name, value, options}) =>
+            request.cookies.set(name, value)
+          )
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
           })
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({name, value, options}) =>
             response.cookies.set(name, value, options)
           )
         },
@@ -31,82 +33,95 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // Define route patterns
+  const protectedRoutes = [
+    "/dashboard",
+    "/campaigns",
+    "/submissions",
+    "/create",
+    "/portfolio",
+    "/discover",
+    "/assets",
+    "/ip-kits",
+    "/my-submissions",
+  ]
+  const authRoutes = ["/login", "/register", "/confirm"]
+  const brandOnlyRoutes = [
+    "/dashboard",
+    "/campaigns",
+    "/assets",
+    "/ip-kits",
+    "/submissions",
+  ]
+  const creatorOnlyRoutes = ["/create", "/my-submissions", "/portfolio"]
 
-  // Define protected routes
-  const protectedRoutes = ['/dashboard', '/campaigns', '/submissions', '/create', '/portfolio', '/discover', '/assets', '/ip-kits', '/my-submissions']
-  const authRoutes = ['/login', '/register', '/confirm']
-  const brandOnlyRoutes = ['/dashboard', '/campaigns', '/assets', '/ip-kits', '/submissions']
-  const creatorOnlyRoutes = ['/create', '/my-submissions', '/portfolio']
-  
-  const isProtectedRoute = protectedRoutes.some(route => 
-    request.nextUrl.pathname.startsWith(route)
+  const pathname = request.nextUrl.pathname
+
+  const isProtectedRoute = protectedRoutes.some(route =>
+    pathname.startsWith(route)
   )
-  const isAuthRoute = authRoutes.some(route => 
-    request.nextUrl.pathname.startsWith(route)
-  )
+  const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
   const isBrandOnlyRoute = brandOnlyRoutes.some(route =>
-    request.nextUrl.pathname.startsWith(route)
+    pathname.startsWith(route)
   )
   const isCreatorOnlyRoute = creatorOnlyRoutes.some(route =>
-    request.nextUrl.pathname.startsWith(route)
+    pathname.startsWith(route)
   )
 
-  // Redirect unauthenticated users from protected routes to login
-  if (isProtectedRoute && !user) {
-    const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/login'
-    redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+  // Use getUser() for security-critical authentication decisions
+  const {
+    data: {user},
+    error,
+  } = await supabase.auth.getUser()
+
+  // Only log unexpected auth errors (not missing sessions for unauthenticated users)
+  if (error && error.name !== "AuthSessionMissingError") {
+    console.error("Auth error in middleware:", error)
+  }
+
+  const hasUser = !!user
+  const userRole = user?.user_metadata?.role
+
+  // Handle unauthenticated users
+  if (isProtectedRoute && !hasUser) {
+    const redirectUrl = new URL("/login", request.url)
+    redirectUrl.searchParams.set("redirectTo", pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Role-based access control
-  if (user && isProtectedRoute) {
-    const userRole = user.user_metadata?.role
-    
-    // Prevent creators from accessing brand-only routes
-    if (userRole === 'creator' && isBrandOnlyRoute) {
-      const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/discover'
-      return NextResponse.redirect(redirectUrl)
-    }
-    
-    // Prevent brand admins from accessing creator-only routes (optional)
-    if (userRole === 'brand_admin' && isCreatorOnlyRoute) {
-      const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/dashboard'
-      return NextResponse.redirect(redirectUrl)
-    }
-  }
+  // Handle authenticated users on auth routes (except confirmation)
+  if (isAuthRoute && hasUser && !pathname.startsWith("/confirm")) {
+    const redirectTo = request.nextUrl.searchParams.get("redirectTo")
 
-  // Redirect authenticated users from auth routes to appropriate page
-  // Exception: don't redirect from /confirm as users need to complete email confirmation
-  if (isAuthRoute && user && !request.nextUrl.pathname.startsWith('/confirm')) {
-    const redirectUrl = request.nextUrl.clone()
-    
-    // Check if there's a redirectTo parameter
-    const redirectTo = request.nextUrl.searchParams.get('redirectTo')
-    
     if (redirectTo) {
-      // Use the redirectTo parameter if present
-      redirectUrl.pathname = redirectTo
-      redirectUrl.searchParams.delete('redirectTo')
-    } else {
-      // Get user role from metadata
-      const userRole = user.user_metadata?.role
-      
-      // Redirect based on role: creators to discover, brand admins to dashboard
-      if (userRole === 'creator') {
-        redirectUrl.pathname = '/discover'
-      } else if (userRole === 'brand_admin') {
-        redirectUrl.pathname = '/dashboard'
-      } else {
-        // Default fallback to discover for unknown roles
-        redirectUrl.pathname = '/discover'
+      // Validate the redirect URL is within our app
+      const allowedRedirects = [...protectedRoutes]
+      const isValidRedirect = allowedRedirects.some(route =>
+        redirectTo.startsWith(route)
+      )
+
+      if (isValidRedirect) {
+        return NextResponse.redirect(new URL(redirectTo, request.url))
       }
     }
-    
-    return NextResponse.redirect(redirectUrl)
+
+    // Default redirect based on role
+    const defaultRedirect =
+      userRole === "brand_admin" ? "/dashboard" : "/discover"
+    return NextResponse.redirect(new URL(defaultRedirect, request.url))
+  }
+
+  // Role-based access control for authenticated users
+  if (hasUser && isProtectedRoute) {
+    // Prevent creators from accessing brand-only routes
+    if (userRole === "creator" && isBrandOnlyRoute) {
+      return NextResponse.redirect(new URL("/discover", request.url))
+    }
+
+    // Prevent brand admins from accessing creator-only routes (optional)
+    if (userRole === "brand_admin" && isCreatorOnlyRoute) {
+      return NextResponse.redirect(new URL("/dashboard", request.url))
+    }
   }
 
   return response
@@ -122,6 +137,6 @@ export const config = {
      * - public folder
      * - api routes (handled separately)
      */
-    '/((?!_next/static|_next/image|favicon.ico|public|api/).*)',
+    "/((?!_next/static|_next/image|favicon.ico|public|api/).*)",
   ],
 }
