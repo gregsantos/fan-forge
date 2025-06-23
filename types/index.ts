@@ -114,6 +114,16 @@ export interface Submission {
     canvasSize: { width: number; height: number }
     version: string
   }
+  assetMetadata?: {
+    usedAssetIds: string[]
+    assetUsageInfo: AssetUsageInfo[]
+    ipKitId?: string
+    elementCounts: {
+      total: number
+      assets: number
+      text: number
+    }
+  }
   tags: string[]
   campaignId: string
   creatorId: string
@@ -282,4 +292,36 @@ export interface LegacySubmission {
   feedback?: string
   created_at: Date
   updated_at: Date
+}
+
+// Asset tracking and submission types
+export interface AssetUsageInfo {
+  assetId: string
+  count: number
+  transformations: {
+    x: number
+    y: number
+    width: number
+    height: number
+    rotation: number
+    opacity?: number
+  }[]
+}
+
+export interface SubmissionUploadProgress {
+  stage: 'preparing' | 'uploading_artwork' | 'uploading_thumbnail' | 'complete' | 'error'
+  progress: number // 0-100
+  message: string
+}
+
+export interface CanvasValidationResult {
+  valid: boolean
+  errors: string[]
+  warnings: string[]
+  summary: {
+    usedAssetIds: string[]
+    totalElements: number
+    assetElements: number
+    textElements: number
+  }
 }

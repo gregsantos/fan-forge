@@ -82,6 +82,7 @@ interface CreationCanvasProps {
   assets: Asset[]
   campaignId: string
   campaignTitle: string
+  ipKitId?: string
   onSave: (elements: CanvasElement[]) => void
   isLoading?: boolean
   onAutoSave?: (elements: CanvasElement[]) => void
@@ -90,7 +91,8 @@ interface CreationCanvasProps {
 export function CreationCanvas({ 
   assets, 
   campaignId,
-  campaignTitle, 
+  campaignTitle,
+  ipKitId,
   onSave, 
   isLoading = false,
   onAutoSave 
@@ -2212,6 +2214,7 @@ export function CreationCanvas({
         campaignTitle={campaignTitle}
         canvasElements={elements}
         assets={assets}
+        ipKitId={ipKitId}
         onSubmissionSuccess={(submissionId) => {
           console.log('Submission successful:', submissionId)
           onSave(elements) // Call the original onSave callback

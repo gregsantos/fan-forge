@@ -156,7 +156,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     // Validate required fields
-    const { campaignId, title, description, artworkUrl, thumbnailUrl, canvasData, tags = [], usedIpKitId } = body
+    const { 
+      campaignId, 
+      title, 
+      description, 
+      artworkUrl, 
+      thumbnailUrl, 
+      canvasData, 
+      assetMetadata,
+      tags = [], 
+      usedIpKitId 
+    } = body
     
     if (!campaignId || !title || !artworkUrl) {
       return NextResponse.json(
@@ -188,24 +198,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new submission
+    // Create new submission with asset metadata
+    const submissionData = {
+      title,
+      description,
+      artworkUrl,
+      thumbnailUrl,
+      canvasData: {
+        ...canvasData,
+        assetMetadata // Include asset tracking metadata in canvas data
+      },
+      tags,
+      campaignId,
+      creatorId: user.id,
+      ipId: usedIpKitId || campaign.ipKitId, // Use campaign's IP Kit if not specified
+      status: 'pending' as const,
+      isPublic: false,
+      viewCount: 0,
+      likeCount: 0,
+    }
+
     const [newSubmission] = await db
       .insert(submissions)
-      .values({
-        title,
-        description,
-        artworkUrl,
-        thumbnailUrl,
-        canvasData,
-        tags,
-        campaignId,
-        creatorId: user.id,
-        ipId: usedIpKitId || null,
-        status: 'pending',
-        isPublic: false,
-        viewCount: 0,
-        likeCount: 0,
-      })
+      .values(submissionData)
       .returning()
 
     // Get submission with relations for response

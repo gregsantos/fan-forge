@@ -8,15 +8,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { SubmissionSuccess } from "./submission-success"
-import { CanvasElement } from "@/types"
+import { CanvasElement, Asset, SubmissionUploadProgress } from "@/types"
 import { exportCanvas } from "@/lib/canvas-export"
+import { submissionStorageService } from "@/lib/services/submission-storage"
+import { canvasAssetTracker } from "@/lib/canvas-asset-tracker"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { X, Send, AlertCircle } from "lucide-react"
+import { X, Send, AlertCircle, Upload, CheckCircle, Loader2 } from "lucide-react"
 
 interface SubmissionModalProps {
   isOpen: boolean
@@ -24,7 +26,8 @@ interface SubmissionModalProps {
   campaignId: string
   campaignTitle: string
   canvasElements: CanvasElement[]
-  assets: any[]
+  assets: Asset[]
+  ipKitId?: string
   onSubmissionSuccess?: (submissionId: string) => void
 }
 
@@ -35,12 +38,16 @@ export function SubmissionModal({
   campaignTitle,
   canvasElements,
   assets,
+  ipKitId,
   onSubmissionSuccess
 }: SubmissionModalProps) {
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false)
   const [submissionId, setSubmissionId] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<SubmissionUploadProgress | null>(null)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([])
   
   // Form state
   const [formData, setFormData] = useState({
@@ -51,13 +58,37 @@ export function SubmissionModal({
   const [newTag, setNewTag] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
-  // Generate artwork preview when modal opens
+  // Validate canvas and generate artwork preview when modal opens
   useEffect(() => {
-    if (isOpen && canvasElements.length > 0 && !showSuccess) {
-      generateArtworkPreview()
+    if (isOpen && !showSuccess) {
+      validateCanvasAndGeneratePreview()
     }
-  }, [isOpen, canvasElements, showSuccess])
+  }, [isOpen, canvasElements, showSuccess, ipKitId])
+
+  const validateCanvasAndGeneratePreview = async () => {
+    try {
+      // Validate canvas composition
+      if (ipKitId) {
+        const validation = await canvasAssetTracker.validateCanvasComposition(canvasElements, ipKitId)
+        setValidationErrors(validation.errors)
+        setValidationWarnings(validation.warnings)
+        
+        if (!validation.valid) {
+          console.warn('Canvas validation failed:', validation.errors)
+        }
+      }
+      
+      // Generate preview if canvas has elements
+      if (canvasElements.length > 0) {
+        generateArtworkPreview()
+      }
+    } catch (error) {
+      console.error('Canvas validation failed:', error)
+      setValidationErrors(['Failed to validate canvas composition'])
+    }
+  }
 
   const generateArtworkPreview = async () => {
     try {
@@ -98,6 +129,10 @@ export function SubmissionModal({
       newErrors.canvas = 'Canvas must contain at least one element'
     }
 
+    if (validationErrors.length > 0) {
+      newErrors.validation = validationErrors.join(', ')
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -110,8 +145,16 @@ export function SubmissionModal({
     }
 
     setIsSubmitting(true)
+    setUploadProgress(null)
+    
     try {
       // Generate high-quality artwork for submission
+      setUploadProgress({
+        stage: 'preparing',
+        progress: 5,
+        message: 'Generating artwork...'
+      })
+      
       const artworkBlob = await exportCanvas(
         canvasElements,
         assets,
@@ -119,9 +162,33 @@ export function SubmissionModal({
         { format: 'png', scale: 2 } // High quality for submission
       )
 
-      const artworkUrl = URL.createObjectURL(artworkBlob)
+      // Get current user ID (you'll need to implement this)
+      const userId = await getCurrentUserId()
+      if (!userId) {
+        throw new Error('User not authenticated')
+      }
 
-      // Submit to API
+      // Generate temporary submission ID for upload
+      const tempSubmissionId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+      // Upload artwork and thumbnail to Supabase Storage
+      const { artworkUrl, thumbnailUrl } = await submissionStorageService.uploadSubmissionArtworkWithRetry(
+        artworkBlob,
+        userId,
+        tempSubmissionId,
+        setUploadProgress
+      )
+
+      // Generate asset metadata
+      const assetMetadata = canvasAssetTracker.generateSubmissionMetadata(canvasElements, ipKitId || '')
+
+      setUploadProgress({
+        stage: 'complete',
+        progress: 95,
+        message: 'Finalizing submission...'
+      })
+
+      // Submit to API with uploaded artwork URLs
       const response = await fetch('/api/submissions', {
         method: 'POST',
         headers: {
@@ -133,11 +200,10 @@ export function SubmissionModal({
           description: formData.description,
           tags: formData.tags,
           artworkUrl: artworkUrl,
-          canvasData: {
-            elements: canvasElements,
-            canvasSize: { width: 800, height: 600 },
-            version: "1.0"
-          }
+          thumbnailUrl: thumbnailUrl,
+          canvasData: assetMetadata.canvasData,
+          assetMetadata: assetMetadata.assetMetadata,
+          usedIpKitId: ipKitId
         }),
       })
 
@@ -146,6 +212,12 @@ export function SubmissionModal({
       }
 
       const result = await response.json()
+      
+      setUploadProgress({
+        stage: 'complete',
+        progress: 100,
+        message: 'Submission successful!'
+      })
       
       // Show success modal
       setSubmissionId(result.submission.id)
@@ -156,10 +228,28 @@ export function SubmissionModal({
       
     } catch (error) {
       console.error('Submission failed:', error)
-      alert('Submission failed. Please try again.')
+      setUploadProgress({
+        stage: 'error',
+        progress: 0,
+        message: error instanceof Error ? error.message : 'Submission failed. Please try again.'
+      })
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Helper function to get current user ID
+  const getCurrentUserId = async (): Promise<string | null> => {
+    try {
+      const response = await fetch('/api/auth/me')
+      if (response.ok) {
+        const user = await response.json()
+        return user.id
+      }
+    } catch (error) {
+      console.error('Failed to get current user:', error)
+    }
+    return null
   }
 
   const addTag = () => {
@@ -182,16 +272,31 @@ export function SubmissionModal({
   const handleSuccessClose = () => {
     setShowSuccess(false)
     setSubmissionId(null)
+    setUploadProgress(null)
+    setValidationErrors([])
+    setValidationWarnings([])
     onClose()
   }
 
   const handleCreateAnother = () => {
     setShowSuccess(false)
     setSubmissionId(null)
+    setUploadProgress(null)
+    setValidationErrors([])
+    setValidationWarnings([])
     // Reset the form for another submission
     setFormData({ title: '', description: '', tags: [] })
     setArtworkPreview(null)
-    generateArtworkPreview()
+    validateCanvasAndGeneratePreview()
+  }
+
+  const handleModalClose = () => {
+    // Clear any upload in progress and reset state
+    setUploadProgress(null)
+    setValidationErrors([])
+    setValidationWarnings([])
+    setErrors({})
+    onClose()
   }
 
   // Clean up preview URL when modal closes
@@ -205,7 +310,7 @@ export function SubmissionModal({
 
   return (
     <>
-      <Dialog open={isOpen && !showSuccess} onOpenChange={onClose}>
+      <Dialog open={isOpen && !showSuccess} onOpenChange={handleModalClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Submit Your Creation</DialogTitle>
@@ -243,6 +348,56 @@ export function SubmissionModal({
                       {errors.canvas}
                     </p>
                   )}
+                  {errors.validation && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.validation}
+                    </p>
+                  )}
+                  {validationWarnings.length > 0 && (
+                    <div className="space-y-1">
+                      {validationWarnings.map((warning, index) => (
+                        <p key={index} className="text-sm text-yellow-600 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {warning}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Upload Progress */}
+              {uploadProgress && (
+                <div className="space-y-2">
+                  <Label>Upload Progress</Label>
+                  <div className="border border-border rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      {uploadProgress.stage === 'error' ? (
+                        <AlertCircle className="h-5 w-5 text-destructive" />
+                      ) : uploadProgress.stage === 'complete' ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      )}
+                      <span className="text-sm font-medium">{uploadProgress.message}</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          uploadProgress.stage === 'error' 
+                            ? 'bg-destructive' 
+                            : uploadProgress.stage === 'complete'
+                            ? 'bg-green-600'
+                            : 'bg-primary'
+                        }`}
+                        style={{ width: `${uploadProgress.progress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {uploadProgress.progress}% complete
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -340,7 +495,7 @@ export function SubmissionModal({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={onClose}
+                  onClick={handleModalClose}
                   disabled={isSubmitting}
                 >
                   Cancel
@@ -348,13 +503,15 @@ export function SubmissionModal({
                 
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || validationErrors.length > 0}
                   className="flex items-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
                       <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                      Submitting...
+                      {uploadProgress?.stage === 'uploading_artwork' ? 'Uploading...' : 
+                       uploadProgress?.stage === 'uploading_thumbnail' ? 'Processing...' :
+                       uploadProgress?.stage === 'preparing' ? 'Preparing...' : 'Submitting...'}
                     </>
                   ) : (
                     <>
