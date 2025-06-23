@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
-import { ipKits, brands, assets } from '@/db/schema'
+import { ipKits, brands, assets, campaigns } from '@/db/schema'
 import { eq, and, count } from 'drizzle-orm'
 import { z } from 'zod'
 
@@ -179,14 +179,50 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // TODO: Add proper authorization check for IP Kit access
-    // TODO: Check if IP Kit is being used in any campaigns
+
+    // Check if IP Kit is being used in any campaigns
+    const campaignsUsingIpKit = await db
+      .select({
+        id: campaigns.id,
+        title: campaigns.title,
+        status: campaigns.status,
+        createdAt: campaigns.createdAt
+      })
+      .from(campaigns)
+      .where(eq(campaigns.ipKitId, ipKitId))
+
+    const activeCampaigns = campaignsUsingIpKit.filter(
+      campaign => campaign.status === 'active' || campaign.status === 'draft'
+    )
+
+    // If there are active campaigns, return warning but allow deletion with force flag
+    const forceDelete = request.nextUrl.searchParams.get('force') === 'true'
+    
+    if (activeCampaigns.length > 0 && !forceDelete) {
+      return NextResponse.json({
+        error: 'IP Kit is in use',
+        code: 'IP_KIT_IN_USE',
+        details: {
+          activeCampaigns: activeCampaigns.map(c => ({
+            id: c.id,
+            title: c.title,
+            status: c.status
+          })),
+          totalCampaigns: campaignsUsingIpKit.length,
+          message: `This IP Kit is used by ${activeCampaigns.length} active campaign(s). Deleting it will affect these campaigns.`
+        }
+      }, { status: 409 }) // Conflict status
+    }
 
     // Delete the IP Kit (assets will be cascade deleted by the DB schema)
     await db
       .delete(ipKits)
       .where(eq(ipKits.id, ipKitId))
 
-    return NextResponse.json({ message: 'IP Kit deleted successfully' })
+    return NextResponse.json({ 
+      message: 'IP Kit deleted successfully',
+      affectedCampaigns: campaignsUsingIpKit.length
+    })
 
   } catch (error) {
     console.error('IP Kit DELETE error:', error)

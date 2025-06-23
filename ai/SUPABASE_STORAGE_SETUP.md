@@ -117,33 +117,113 @@ VALUES (
 -- Apply the RLS policies (same as above)
 ```
 
-### 2. Verify Existing "assets" Bucket
+### 2. Create "assets" Bucket for IP Kit Assets
 
-The codebase already references an "assets" bucket in `lib/services/storage.ts`. Ensure this bucket exists and has proper policies:
+The assets bucket stores all IP Kit assets that are used in campaigns and the creation canvas.
+
+#### Option A: Using Supabase Dashboard (Recommended)
+
+1. **Navigate to Storage in Supabase Dashboard:**
+   - Go to your Supabase project dashboard
+   - Click on "Storage" in the left sidebar
+   - Click "Create a new bucket"
+
+2. **Create the assets bucket:**
+   - **Name**: `assets`
+   - **Public**: ✅ `true` (for direct asset access in campaigns)
+   - **File size limit**: `10MB` (for IP Kit assets)
+   - **Allowed MIME types**: `image/jpeg,image/png,image/svg+xml,image/webp`
+
+3. **Set up Row Level Security (RLS) policies:**
+   
+   Go to the SQL Editor in your Supabase dashboard and run these queries:
+
+   ```sql
+   -- Policy 1: Allow authenticated users to upload assets to IP Kit folders
+   CREATE POLICY "Brand admins can upload assets" ON storage.objects
+   FOR INSERT WITH CHECK (
+     bucket_id = 'assets' 
+     AND auth.role() = 'authenticated'
+     AND (storage.foldername(name))[1] = 'ip-kits'
+   );
+
+   -- Policy 2: Allow public read access to all assets
+   CREATE POLICY "Public can view assets" ON storage.objects
+   FOR SELECT USING (bucket_id = 'assets');
+
+   -- Policy 3: Allow brand admins to update their assets
+   CREATE POLICY "Brand admins can update assets" ON storage.objects
+   FOR UPDATE USING (
+     bucket_id = 'assets' 
+     AND auth.role() = 'authenticated'
+     AND (storage.foldername(name))[1] = 'ip-kits'
+   );
+
+   -- Policy 4: Allow brand admins to delete their assets
+   CREATE POLICY "Brand admins can delete assets" ON storage.objects
+   FOR DELETE USING (
+     bucket_id = 'assets' 
+     AND auth.role() = 'authenticated'
+     AND (storage.foldername(name))[1] = 'ip-kits'
+   );
+   ```
+
+#### Option B: Using Supabase CLI
+
+1. **Create the bucket:**
+   ```bash
+   supabase storage create assets --public
+   ```
+
+2. **Apply RLS policies:**
+   
+   Create a file `supabase/migrations/add_assets_storage_policies.sql`:
+   ```sql
+   -- Storage policies for assets bucket
+   CREATE POLICY "Brand admins can upload assets" ON storage.objects
+   FOR INSERT WITH CHECK (
+     bucket_id = 'assets' 
+     AND auth.role() = 'authenticated'
+     AND (storage.foldername(name))[1] = 'ip-kits'
+   );
+
+   CREATE POLICY "Public can view assets" ON storage.objects
+   FOR SELECT USING (bucket_id = 'assets');
+
+   CREATE POLICY "Brand admins can update assets" ON storage.objects
+   FOR UPDATE USING (
+     bucket_id = 'assets' 
+     AND auth.role() = 'authenticated'
+     AND (storage.foldername(name))[1] = 'ip-kits'
+   );
+
+   CREATE POLICY "Brand admins can delete assets" ON storage.objects
+   FOR DELETE USING (
+     bucket_id = 'assets' 
+     AND auth.role() = 'authenticated'
+     AND (storage.foldername(name))[1] = 'ip-kits'
+   );
+   ```
+
+   Then run:
+   ```bash
+   supabase db push
+   ```
+
+#### Option C: Using SQL/API directly
 
 ```sql
--- Check if assets bucket exists
-SELECT * FROM storage.buckets WHERE id = 'assets';
-
--- If it doesn't exist, create it:
+-- Create bucket via SQL
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'assets', 
   'assets', 
   true, 
   10485760, -- 10MB in bytes  
-  ARRAY['image/jpeg', 'image/png', 'image/svg+xml']
+  ARRAY['image/jpeg', 'image/png', 'image/svg+xml', 'image/webp']
 );
 
--- Add policies for assets bucket
-CREATE POLICY "Brand admins can upload assets" ON storage.objects
-FOR INSERT WITH CHECK (
-  bucket_id = 'assets' 
-  AND auth.role() = 'authenticated'
-);
-
-CREATE POLICY "Public can view assets" ON storage.objects
-FOR SELECT USING (bucket_id = 'assets');
+-- Apply the RLS policies (same as above)
 ```
 
 ## Storage Structure
@@ -162,9 +242,20 @@ assets/
 ├── ip-kits/
 │   └── {ip_kit_id}/
 │       ├── characters/
+│       │   ├── character_001.png
+│       │   └── character_001_thumb.jpg
 │       ├── backgrounds/
+│       │   ├── bg_forest.jpg
+│       │   └── bg_forest_thumb.jpg
 │       ├── logos/
-│       └── props/
+│       │   ├── brand_logo.svg
+│       │   └── brand_logo_thumb.jpg
+│       ├── titles/
+│       │   └── game_title.png
+│       ├── props/
+│       │   └── sword_001.png
+│       └── other/
+│           └── misc_asset.png
 ```
 
 ## Testing the Setup
