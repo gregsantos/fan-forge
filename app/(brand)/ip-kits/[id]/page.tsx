@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AssetGrid } from "@/components/assets/asset-grid"
-import { FileUpload, UploadedFile } from "@/components/assets/file-upload"
+import { AssetGallery } from "@/components/ip-kits/asset-gallery"
+import { AssetUploadZone } from "@/components/ip-kits/asset-upload-zone"
+import { Asset } from "@/types"
 import { 
   ArrowLeft, 
   Edit, 
@@ -37,22 +38,7 @@ interface IpKitDetail {
   brandName: string
   brandDescription?: string
   assetCount: number
-  assets: Array<{
-    id: string
-    filename: string
-    originalFilename: string
-    url: string
-    thumbnailUrl?: string
-    category: string
-    tags: string[]
-    metadata: {
-      width: number
-      height: number
-      fileSize: number
-      mimeType: string
-    }
-    createdAt: string
-  }>
+  assets: Asset[]
 }
 
 export default function IpKitDetailPage() {
@@ -65,7 +51,7 @@ export default function IpKitDetailPage() {
 
   const ipKitId = params.id as string
 
-  const fetchIpKit = async () => {
+  const fetchIpKit = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -85,45 +71,55 @@ export default function IpKitDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [ipKitId])
 
   useEffect(() => {
     if (ipKitId) {
       fetchIpKit()
     }
-  }, [ipKitId])
+  }, [ipKitId, fetchIpKit])
 
-  const handleFilesUploaded = async (files: UploadedFile[]) => {
+  const handleAssetsUploaded = async (uploadResults: any[]) => {
     // Create asset records in the database
-    for (const file of files) {
-      if (file.status === 'success' && file.url && file.metadata) {
-        try {
-          const response = await fetch('/api/assets', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              filename: file.file.name,
-              originalFilename: file.file.name,
-              url: file.url,
-              thumbnailUrl: file.thumbnailUrl,
-              category: 'other',
-              tags: [],
-              metadata: file.metadata,
-              ipKitId: ipKitId
-            })
+    for (const result of uploadResults) {
+      try {
+        const response = await fetch('/api/assets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: result.assetUrl.split('/').pop() || 'asset',
+            originalFilename: result.assetUrl.split('/').pop() || 'asset',
+            url: result.assetUrl,
+            thumbnailUrl: result.thumbnailUrl,
+            category: 'other', // This should be passed from the upload component
+            tags: [],
+            metadata: result.metadata,
+            ipKitId: ipKitId
           })
+        })
 
-          if (!response.ok) {
-            console.error('Failed to create asset record')
-          }
-        } catch (error) {
-          console.error('Error creating asset record:', error)
+        if (!response.ok) {
+          console.error('Failed to create asset record')
         }
+      } catch (error) {
+        console.error('Error creating asset record:', error)
       }
     }
 
     // Refresh the IP kit data
     fetchIpKit()
+  }
+
+  const handleAssetDeleted = (assetId: string) => {
+    // Remove asset from local state and refresh
+    setIpKit(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        assets: prev.assets.filter(asset => asset.id !== assetId),
+        assetCount: prev.assetCount - 1
+      }
+    })
   }
 
   const handlePublishToggle = async () => {
@@ -388,8 +384,9 @@ export default function IpKitDetailPage() {
             </CardHeader>
             <CardContent>
               <ErrorBoundary>
-                <AssetGrid
-                  ipKitId={ipKit.id}
+                <AssetGallery
+                  assets={ipKit.assets}
+                  onAssetDeleted={handleAssetDeleted}
                   className="mt-6"
                 />
               </ErrorBoundary>
@@ -397,26 +394,30 @@ export default function IpKitDetailPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="upload">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload Assets</CardTitle>
-              <CardDescription>
-                Add new assets to this IP kit
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ErrorBoundary>
-                <FileUpload
-                  onFilesUploaded={handleFilesUploaded}
-                  onFilesRemoved={() => {}}
-                  ipKitId={ipKit.id}
-                  category="other"
-                  maxFiles={20}
-                />
-              </ErrorBoundary>
-            </CardContent>
-          </Card>
+        <TabsContent value="upload" className="space-y-6">
+          {/* Upload by Category */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {['characters', 'backgrounds', 'logos', 'titles', 'props', 'other'].map((category) => (
+              <Card key={category}>
+                <CardHeader>
+                  <CardTitle className="capitalize">{category}</CardTitle>
+                  <CardDescription>
+                    Upload {category} assets for this IP kit
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ErrorBoundary>
+                    <AssetUploadZone
+                      ipKitId={ipKit.id}
+                      category={category as any}
+                      onAssetsUploaded={handleAssetsUploaded}
+                      maxFiles={10}
+                    />
+                  </ErrorBoundary>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
 
         <TabsContent value="settings">

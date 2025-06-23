@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation"
 import { IpKitForm } from "@/components/ip-kits/ip-kit-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Package } from "lucide-react"
+import { useBrandPermissions } from "@/lib/hooks/use-brand-permissions"
+import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 
 type IpKitFormData = {
@@ -19,10 +21,16 @@ export default function NewIpKitPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  // Mock brand ID - in production this would come from context
-  const mockBrandId = "550e8400-e29b-41d4-a716-446655440001"
+  // Get brand permissions and user brands
+  const { userBrands, loading: permissionsLoading } = useBrandPermissions()
+  const currentBrand = userBrands[0] // Use first brand for now
 
   const handleSave = async (data: IpKitFormData) => {
+    if (!currentBrand) {
+      console.error('No brand available for IP kit creation')
+      return
+    }
+
     try {
       setIsLoading(true)
 
@@ -31,7 +39,7 @@ export default function NewIpKitPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...data,
-          brandId: mockBrandId
+          brandId: currentBrand.id
         })
       })
 
@@ -56,6 +64,44 @@ export default function NewIpKitPage() {
 
   const handleCancel = () => {
     router.push('/ip-kits')
+  }
+
+  if (permissionsLoading) {
+    return (
+      <div className="container mx-auto py-8 max-w-4xl">
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <Skeleton className="h-10 w-10" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+          </div>
+          <Card>
+            <CardContent className="p-6">
+              <Skeleton className="h-32 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentBrand) {
+    return (
+      <div className="container mx-auto py-8 max-w-4xl">
+        <div className="text-center py-8">
+          <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium mb-2">No Brand Access</h3>
+          <p className="text-muted-foreground mb-4">
+            You need to be associated with a brand to create IP kits.
+          </p>
+          <Button onClick={() => router.push('/dashboard')}>
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -110,7 +156,7 @@ export default function NewIpKitPage() {
 
       {/* IP Kit Form */}
       <IpKitForm
-        brandId={mockBrandId}
+        brandId={currentBrand.id}
         onSave={handleSave}
         onCancel={handleCancel}
         isLoading={isLoading}

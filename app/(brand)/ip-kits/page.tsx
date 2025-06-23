@@ -34,6 +34,7 @@ import {
 } from "lucide-react"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useBrandPermissions } from "@/lib/hooks/use-brand-permissions"
 import Link from "next/link"
 
 interface IpKit {
@@ -56,16 +57,19 @@ export default function IpKitsPage() {
   const [publishedFilter, setPublishedFilter] = useState("all")
   const [error, setError] = useState<string | null>(null)
 
-  // Mock brand ID - in production this would come from context
-  const mockBrandId = "550e8400-e29b-41d4-a716-446655440001"
+  // Get brand permissions and user brands
+  const { userBrands, loading: permissionsLoading } = useBrandPermissions()
+  const currentBrand = userBrands[0] // Use first brand for now
 
   const fetchIpKits = async () => {
+    if (!currentBrand) return
+
     try {
       setLoading(true)
       setError(null)
 
       const params = new URLSearchParams()
-      params.append('brandId', mockBrandId)
+      params.append('brandId', currentBrand.id)
       if (searchQuery) params.append('search', searchQuery)
       if (publishedFilter !== 'all') params.append('published', publishedFilter)
 
@@ -84,8 +88,10 @@ export default function IpKitsPage() {
   }
 
   useEffect(() => {
-    fetchIpKits()
-  }, [searchQuery, publishedFilter])
+    if (!permissionsLoading && currentBrand) {
+      fetchIpKits()
+    }
+  }, [searchQuery, publishedFilter, currentBrand, permissionsLoading])
 
   const handleDuplicate = async (ipKit: IpKit) => {
     // TODO: Implement duplication logic
@@ -151,6 +157,34 @@ export default function IpKitsPage() {
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  if (permissionsLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="text-center py-8">
+          <Skeleton className="h-8 w-64 mx-auto mb-4" />
+          <Skeleton className="h-4 w-96 mx-auto" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentBrand) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="text-center py-8">
+          <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium mb-2">No Brand Access</h3>
+          <p className="text-muted-foreground mb-4">
+            You need to be associated with a brand to manage IP kits.
+          </p>
+          <Button onClick={() => window.location.href = '/dashboard'}>
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   if (error) {
