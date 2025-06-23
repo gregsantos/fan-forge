@@ -29,6 +29,15 @@ export interface LoginData {
   password: string
 }
 
+// Enhanced cache for user data with validation tracking
+let userCache: {
+  user: AuthUser | null
+  timestamp: number
+  validated: boolean // Track if this was validated via getUser()
+} | null = null
+const CACHE_DURATION = 30 * 1000 // 30 seconds
+const VALIDATION_INTERVAL = 2 * 60 * 1000 // Re-validate every 2 minutes
+
 // Client-side auth functions
 export const authClient = {
   async signUp(data: RegisterData): Promise<SignUpResult> {
@@ -47,6 +56,9 @@ export const authClient = {
     })
 
     if (authError) throw authError
+
+    // Clear cache on signup
+    userCache = null
 
     // Check if user is immediately logged in or needs email confirmation
     const needsEmailConfirmation = Boolean(
@@ -83,36 +95,65 @@ export const authClient = {
     })
 
     if (error) throw error
+
+    // Clear cache on signin
+    userCache = null
+
     return authData
   },
 
   async signOut() {
     const supabase = createClient()
+
+    // Clear cache before signout
+    userCache = null
+
     const {error} = await supabase.auth.signOut()
     if (error) throw error
   },
 
-  async getCurrentUser(): Promise<AuthUser | null> {
+  async getCurrentUser(
+    forceRefresh = false,
+    requireValidation = false
+  ): Promise<AuthUser | null> {
     const supabase = createClient()
 
     try {
+      const now = Date.now()
+
+      // Check cache first (unless force refresh or validation required)
+      if (!forceRefresh && userCache && !requireValidation) {
+        if (now - userCache.timestamp < CACHE_DURATION) {
+          // If validation is stale, refresh in background but return cached data
+          if (
+            !userCache.validated ||
+            now - userCache.timestamp > VALIDATION_INTERVAL
+          ) {
+            // Background validation - don't await
+            this.validateUserInBackground()
+          }
+          return userCache.user
+        }
+      }
+
+      // For security-critical operations or when cache is stale, use getUser()
       const {
         data: {user},
         error,
       } = await supabase.auth.getUser()
-      if (error) {
-        if (error.code === "refresh_token_not_found") {
-          console.error("Refresh token not found, clearing session")
-          await supabase.auth.signOut()
-          return null
-        }
-        throw error
-      }
-      if (!user) return null
 
-      // Return basic user info from Supabase
-      // Extended profile data should be fetched via API routes
-      return {
+      if (error) {
+        console.error("User validation error:", error)
+        userCache = {user: null, timestamp: now, validated: true}
+        return null
+      }
+
+      if (!user) {
+        userCache = {user: null, timestamp: now, validated: true}
+        return null
+      }
+
+      const authUser: AuthUser = {
         id: user.id,
         email: user.email!,
         displayName: user.user_metadata?.display_name,
@@ -120,9 +161,81 @@ export const authClient = {
         role: user.user_metadata?.role,
         emailVerified: user.email_confirmed_at !== null,
       }
+
+      // Cache the validated result
+      userCache = {user: authUser, timestamp: now, validated: true}
+
+      return authUser
     } catch (error) {
       console.error("Error fetching current user:", error)
+      const now = Date.now()
+      userCache = {user: null, timestamp: now, validated: true}
       return null
+    }
+  },
+
+  // Fast UI state check - uses session for speed but marks as unvalidated
+  async getCurrentUserFast(): Promise<AuthUser | null> {
+    const supabase = createClient()
+
+    try {
+      const now = Date.now()
+
+      // Check validated cache first
+      if (
+        userCache &&
+        userCache.validated &&
+        now - userCache.timestamp < CACHE_DURATION
+      ) {
+        return userCache.user
+      }
+
+      // Use getSession for fast UI updates (but don't trust for security decisions)
+      const {
+        data: {session},
+        error,
+      } = await supabase.auth.getSession()
+
+      if (error) {
+        console.error("Session error:", error)
+        return userCache?.user || null
+      }
+
+      if (!session?.user) {
+        return null
+      }
+
+      const authUser: AuthUser = {
+        id: session.user.id,
+        email: session.user.email!,
+        displayName: session.user.user_metadata?.display_name,
+        avatarUrl: session.user.user_metadata?.avatar_url,
+        role: session.user.user_metadata?.role,
+        emailVerified: session.user.email_confirmed_at !== null,
+      }
+
+      // Cache as unvalidated for UI purposes only
+      userCache = {user: authUser, timestamp: now, validated: false}
+
+      // Validate in background for security
+      this.validateUserInBackground()
+
+      return authUser
+    } catch (error) {
+      console.error("Error fetching session:", error)
+      return userCache?.user || null
+    }
+  },
+
+  // Background validation to keep security up to date
+  async validateUserInBackground(): Promise<void> {
+    try {
+      // Don't await - let this run in background
+      setTimeout(async () => {
+        await this.getCurrentUser(true, true)
+      }, 100)
+    } catch (error) {
+      console.error("Background validation error:", error)
     }
   },
 
@@ -131,6 +244,9 @@ export const authClient = {
       Pick<User, "displayName" | "avatarUrl" | "bio" | "socialLinks">
     >
   ) {
+    // Clear cache before profile update
+    userCache = null
+
     // Profile updates should be handled via API routes
     // that run on the server-side
     const response = await fetch("/api/auth/profile", {
@@ -163,6 +279,11 @@ export const authClient = {
 
     if (error) throw error
   },
+
+  // Clear user cache manually
+  clearCache() {
+    userCache = null
+  },
 }
 
 // Auth state change listeners for client-side
@@ -173,8 +294,11 @@ export const authListeners = {
     const {
       data: {subscription},
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Clear cache on auth state change
+      userCache = null
+
       if (session?.user) {
-        // Transform session user to our AuthUser format
+        // For auth state changes, we can trust the session since it's from the auth event
         const user: AuthUser = {
           id: session.user.id,
           email: session.user.email!,
@@ -183,6 +307,11 @@ export const authListeners = {
           role: session.user.user_metadata?.role,
           emailVerified: session.user.email_confirmed_at !== null,
         }
+
+        // Cache as validated since it comes from auth event
+        const now = Date.now()
+        userCache = {user, timestamp: now, validated: true}
+
         callback(user)
       } else {
         callback(null)
