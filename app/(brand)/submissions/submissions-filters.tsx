@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -16,6 +16,7 @@ import { Search, SlidersHorizontal } from "lucide-react"
 export function SubmissionsFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
   
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'pending')
@@ -27,16 +28,16 @@ export function SubmissionsFilters() {
     const timeoutId = setTimeout(() => {
       const params = new URLSearchParams()
       if (searchTerm) params.set('search', searchTerm)
-      if (statusFilter !== 'all') params.set('status', statusFilter)
+      if (statusFilter) params.set('status', statusFilter)
       if (sortBy !== 'newest') params.set('sortBy', sortBy)
       if (campaignFilter !== 'all') params.set('campaignId', campaignFilter)
       
-      const url = params.toString() ? `?${params.toString()}` : '/brand/submissions'
+      const url = params.toString() ? `${pathname}?${params.toString()}` : pathname
       router.push(url)
     }, searchTerm ? 300 : 0) // Debounce search, immediate for others
 
     return () => clearTimeout(timeoutId)
-  }, [searchTerm, statusFilter, sortBy, campaignFilter, router])
+  }, [searchTerm, statusFilter, sortBy, campaignFilter, router, pathname])
 
   return (
     <div className="space-y-4">

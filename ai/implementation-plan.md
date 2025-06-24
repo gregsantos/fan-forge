@@ -98,6 +98,11 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Add filtering by category, date, and file type
 - [x] Create asset deletion with confirmation
 - [x] Add file validation and size limits
+- [x] Add optional IP ID field to assets table for blockchain address tracking
+- [x] Implement IP ID input functionality in asset upload forms
+- [x] Create asset-ipkit many-to-many relationships via junction table
+- [x] Add IP ID display and copy functionality in asset management UI
+- [x] Populate existing assets with sample IP ID via migration script
 
 #### 3.2 Enhanced Asset Management
 
@@ -166,6 +171,9 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Create reusable database query functions for campaigns, submissions, and dashboard data
 - [x] Add comprehensive shared data functions (getIpKits, getCreatorSubmissions)
 - [x] Fix login page Suspense boundary for static export compatibility
+- [x] Extend shared data layer with submission-specific functions (`lib/data/submissions.ts`)
+- [x] Implement efficient junction table queries for asset relationship tracking
+- [x] Add comprehensive submission validation and statistics functions
 
 #### 4.5 Community Submissions Gallery (Feature #7b)
 
@@ -314,6 +322,19 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Add comprehensive error handling and validation warnings
 - [x] Test complete artwork upload workflow with cloud storage
 
+#### 6.1.3 Submission Asset Tracking & IP ID Integration (Feature #11b)
+
+- [x] Create submission_assets junction table with proper foreign key constraints
+- [x] Implement data migration script to populate junction table from existing submissions
+- [x] Update submissions API to create junction table relationships during submission
+- [x] Add shared data layer functions for efficient IP ID retrieval (`lib/data/submissions.ts`)
+- [x] Create `getSubmissionAssetIpIds()` helper function for external service integration
+- [x] Implement console logging to verify asset IP IDs after submission approval
+- [x] Add comprehensive asset validation and statistics functions
+- [x] Maintain backwards compatibility with existing used_asset_ids JSONB column
+- [x] Fix missing asset relationships for existing submissions via database repair
+- [x] Test end-to-end asset tracking with real database persistence
+
 #### 6.2 Submission Review Workflow (Feature #12)
 
 - [x] Build brand admin submission queue interface
@@ -326,6 +347,9 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Create in-app notification system for status changes
 - [x] Fix Button component asChild prop compatibility issues
 - [x] Test complete review workflow with database integration
+- [x] Add console logging for asset IP IDs verification in approval workflows
+- [x] Implement IP ID tracking in single approval, review approval, and bulk approval endpoints
+- [x] Add comprehensive error handling and warnings for missing asset relationships
 - [ ] Implement reviewer assignment system (future enhancement)
 - [ ] Build submission report export (future enhancement)
 - [ ] Set up email notifications (infrastructure ready)
