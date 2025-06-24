@@ -149,8 +149,25 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Create campaign editing for active campaigns
 - [x] Add basic metrics display
 - [x] Convert campaign management pages to use live database data
+- [x] Fix campaign creation routing from `/campaigns/create` to `/campaigns/new`
+- [x] Implement optional IP Kit selection for campaign creation
+- [x] Refactor campaign edit page with proper server/client component architecture
 - [ ] Implement campaign duplication
 - [ ] Create campaign archive functionality
+
+#### 4.2.1 Campaign Image Upload System (Feature #6a)
+
+- [x] Add campaign image fields to database schema (imageUrl, thumbnailUrl)
+- [x] Make assets table ipKitId nullable to support campaign assets
+- [x] Enhance asset storage service to support campaign-specific paths
+- [x] Update campaign validation schema to include image fields
+- [x] Add image upload section to campaign creation form with drag-and-drop
+- [x] Integrate FileUpload component with campaign form
+- [x] Update campaigns API to handle image URLs and asset creation
+- [x] Fix Supabase storage RLS policies to allow campaign folder uploads
+- [x] Implement proper authentication in campaigns API (real user/brand IDs)
+- [x] Add campaign image preview and removal functionality
+- [x] Test end-to-end campaign image upload workflow
 
 #### 4.3 Campaign Discovery Interface (Feature #7)
 
@@ -194,7 +211,7 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Implement debounced search functionality for better UX
 - [x] Add comprehensive pagination controls with visual feedback
 
-#### 4.4 Database Migration & Real Data Integration
+#### 4.6 Database Migration & Real Data Integration
 
 - [x] Migrate campaigns API from mock data to real database queries
 - [x] Implement proper Drizzle ORM filtering, sorting, and pagination
@@ -204,6 +221,17 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Update campaign discovery client to use real API endpoints
 - [x] Ensure campaign status transitions work with database persistence
 - [x] Test all campaign workflows with real database data
+
+#### 4.7 URL State Management & Navigation Improvements (Feature #6b)
+
+- [x] Implement URL as single source of truth for filter state
+- [x] Eliminate local state synchronization issues in submissions filters
+- [x] Fix browser back/forward navigation for filter changes
+- [x] Add debounced URL updates for search functionality
+- [x] Create helper functions for clean URL parameter management
+- [x] Remove race conditions between URL read/write operations
+- [x] Ensure consistent filter state across page refreshes and navigation
+- [x] Test browser navigation scenarios thoroughly
 
 ### Phase 5: Canvas Implementation
 
@@ -356,6 +384,10 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Add console logging for asset IP IDs verification in approval workflows
 - [x] Implement IP ID tracking in single approval, review approval, and bulk approval endpoints
 - [x] Add comprehensive error handling and warnings for missing asset relationships
+- [x] Enhance submissions review UX with campaign-specific filtering
+- [x] Replace mock data with real API calls in campaign dropdown
+- [x] Add seamless navigation from campaign detail pages to filtered submissions
+- [x] Fix browser navigation issues with URL state management
 - [ ] Implement reviewer assignment system (future enhancement)
 - [ ] Build submission report export (future enhancement)
 - [ ] Set up email notifications (infrastructure ready)

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db, campaigns, brands, ipKits, assets, submissions } from "@/db"
 import { desc, asc, eq, and, ilike, or, count, isNotNull, gt, lte, isNull } from "drizzle-orm"
+import { createClient } from "@/utils/supabase/server"
+import { cookies } from "next/headers"
+import { createPermissionService } from "@/lib/auth/permissions"
 
 export async function GET(request: NextRequest) {
   try {
@@ -150,7 +153,7 @@ export async function GET(request: NextRequest) {
         deadline: result.campaign.endDate,
         asset_count: result.assetCount || 0,
         submission_count: submissionCountMap.get(result.campaign.id) || 0,
-        thumbnail_url: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=300&fit=crop", // TODO: Use first asset or campaign thumbnail
+        thumbnail_url: result.campaign.thumbnailUrl || result.campaign.imageUrl || "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=300&fit=crop",
         created_at: result.campaign.createdAt,
         updated_at: result.campaign.updatedAt,
         featured: result.campaign.featuredUntil ? new Date(result.campaign.featuredUntil) > new Date() : false,
@@ -193,6 +196,8 @@ export async function POST(request: NextRequest) {
       description, 
       guidelines, 
       ipKitId,
+      imageUrl,
+      thumbnailUrl,
       startDate,
       endDate,
       maxSubmissions,
@@ -229,14 +234,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get the authenticated user for createdBy field
-    // For now, we'll use a placeholder - this should be implemented with proper auth
-    const createdBy = "placeholder-user-id" // TODO: Get from authenticated session
+    // Get the authenticated user
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    // Verify IP Kit exists if provided
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized. Please log in to create campaigns." },
+        { status: 401 }
+      )
+    }
+
+    // Get user's accessible brands
+    const permissionService = createPermissionService()
+    const userBrands = await permissionService.getUserBrands(user.id)
+
+    if (userBrands.length === 0) {
+      return NextResponse.json(
+        { error: "No brand access. You must be associated with a brand to create campaigns." },
+        { status: 403 }
+      )
+    }
+
+    // Use first brand for now (in production, you might want to let user select)
+    const userBrand = userBrands[0]
+    const createdBy = user.id
+
+    // Verify IP Kit exists and user has access if provided
     if (ipKitId) {
       const existingIpKit = await db
-        .select()
+        .select({
+          id: ipKits.id,
+          brandId: ipKits.brandId
+        })
         .from(ipKits)
         .where(eq(ipKits.id, ipKitId))
         .limit(1)
@@ -245,6 +276,15 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { error: "IP Kit not found" },
           { status: 404 }
+        )
+      }
+
+      // Check if user has access to the IP Kit's brand
+      const userBrandIds = userBrands.map(b => b.id)
+      if (!userBrandIds.includes(existingIpKit[0].brandId)) {
+        return NextResponse.json(
+          { error: "You don't have access to this IP Kit" },
+          { status: 403 }
         )
       }
     }
@@ -257,7 +297,9 @@ export async function POST(request: NextRequest) {
         description,
         guidelines,
         ipKitId: ipKitId || null,
-        brandId: "placeholder-brand-id", // TODO: Get from authenticated user's brand
+        imageUrl: imageUrl || null,
+        thumbnailUrl: thumbnailUrl || null,
+        brandId: userBrand.id,
         status: status as "draft" | "active" | "paused" | "closed",
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
@@ -268,6 +310,31 @@ export async function POST(request: NextRequest) {
         createdBy,
       })
       .returning()
+
+    // Create asset record for campaign image if uploaded
+    if (imageUrl) {
+      try {
+        await db.insert(assets).values({
+          filename: `campaign_${newCampaign.id}_image`,
+          originalFilename: `${title}_cover_image`,
+          url: imageUrl,
+          thumbnailUrl: thumbnailUrl,
+          category: "other",
+          tags: ["campaign-image"],
+          metadata: {
+            width: 1200, // Default values - could be improved by passing real metadata
+            height: 600,
+            fileSize: 0,
+            mimeType: "image/jpeg"
+          },
+          ipKitId: null, // Campaign assets don't belong to IP kits initially
+          uploadedBy: createdBy,
+        })
+      } catch (error) {
+        console.warn("Failed to create asset record for campaign image:", error)
+        // Don't fail the campaign creation if asset creation fails
+      }
+    }
 
     return NextResponse.json({
       campaign: {

@@ -27,6 +27,8 @@ export const campaignSchema = z.object({
     .min(20, "Guidelines must be at least 20 characters")
     .max(2000, "Guidelines must not exceed 2000 characters"),
   ipKitId: z.string().optional(),
+  imageUrl: z.string().url("Must be a valid URL").optional(),
+  thumbnailUrl: z.string().url("Must be a valid URL").optional(),
   startDate: z.date().optional(),
   endDate: z.date().optional(),
   maxSubmissions: z.number().int().min(1, "Must allow at least 1 submission").optional(),

@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Calendar, Save, Eye, ArrowLeft, Loader2 } from "lucide-react"
+import { FileUpload, UploadedFile } from "@/components/assets/file-upload"
+import { Calendar, Save, Eye, ArrowLeft, Loader2, Upload, X } from "lucide-react"
 import { type z } from "zod"
 
 type CampaignFormData = z.infer<typeof campaignSchema>
@@ -31,6 +32,8 @@ export default function NewCampaignPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [uploadedImage, setUploadedImage] = useState<UploadedFile | null>(null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   const {
     register,
@@ -58,6 +61,8 @@ export default function NewCampaignPage() {
         },
         body: JSON.stringify({
           ...data,
+          imageUrl: uploadedImage?.url || undefined,
+          thumbnailUrl: uploadedImage?.thumbnailUrl || undefined,
           startDate: data.startDate?.toISOString(),
           endDate: data.endDate?.toISOString(),
         }),
@@ -79,7 +84,7 @@ export default function NewCampaignPage() {
     } finally {
       if (!isAutoSave) setIsSaving(false)
     }
-  }, [router])
+  }, [router, uploadedImage])
 
   // Load IP kits on component mount
   useEffect(() => {
@@ -123,6 +128,17 @@ export default function NewCampaignPage() {
   const handlePreview = () => {
     // TODO: Implement preview functionality
     console.log("Preview campaign")
+  }
+
+  // Image upload handlers
+  const handleImageUploaded = (files: UploadedFile[]) => {
+    if (files.length > 0 && files[0].status === 'success') {
+      setUploadedImage(files[0])
+    }
+  }
+
+  const handleImageRemoved = () => {
+    setUploadedImage(null)
   }
 
   const watchedValues = watch()
@@ -203,6 +219,50 @@ export default function NewCampaignPage() {
                   {errors.guidelines && (
                     <p className="text-sm text-destructive">{errors.guidelines.message}</p>
                   )}
+                </div>
+
+                {/* Campaign Image Upload */}
+                <div className="space-y-2">
+                  <Label>Campaign Image (Optional)</Label>
+                  <div className="space-y-3">
+                    {uploadedImage ? (
+                      <div className="relative">
+                        <div className="flex items-center gap-3 p-3 border rounded-lg">
+                          <img 
+                            src={uploadedImage.url} 
+                            alt="Campaign preview" 
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{uploadedImage.file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {Math.round(uploadedImage.file.size / 1024)}KB
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleImageRemoved}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <FileUpload
+                        onFilesUploaded={handleImageUploaded}
+                        onFilesRemoved={() => {}}
+                        ipKitId={null}
+                        category="other"
+                        maxFiles={1}
+                        disabled={isSaving}
+                      />
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Upload a campaign cover image. Recommended size: 1200x600px. Max file size: 10MB.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

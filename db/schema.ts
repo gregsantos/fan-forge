@@ -105,7 +105,7 @@ export const assets = pgTable('assets', {
     colorPalette?: string[]
   }>().notNull(),
   ipId: text('ip_id'), // Optional blockchain address for IP identification
-  ipKitId: uuid('ip_kit_id').references(() => ipKits.id, { onDelete: 'cascade' }).notNull(),
+  ipKitId: uuid('ip_kit_id').references(() => ipKits.id, { onDelete: 'cascade' }), // Now nullable for campaign assets
   uploadedBy: uuid('uploaded_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
@@ -133,6 +133,8 @@ export const campaigns = pgTable('campaigns', {
   description: text('description').notNull(),
   guidelines: text('guidelines'),
   briefDocument: text('brief_document'),
+  imageUrl: text('image_url'), // Campaign cover image
+  thumbnailUrl: text('thumbnail_url'), // Campaign thumbnail
   brandId: uuid('brand_id').references(() => brands.id, { onDelete: 'cascade' }).notNull(),
   ipKitId: uuid('ip_kit_id').references(() => ipKits.id, { onDelete: 'set null' }),
   status: campaignStatusEnum('status').default('draft').notNull(),

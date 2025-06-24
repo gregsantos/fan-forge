@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { storageService } from "@/lib/services/storage"
+import { assetStorageService } from "@/lib/services/asset-storage"
 import { Upload, X, FileImage, AlertCircle, CheckCircle, File } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -32,6 +32,7 @@ interface FileUploadProps {
   onFilesUploaded: (files: UploadedFile[]) => void
   onFilesRemoved: (fileIds: string[]) => void
   ipKitId: string | null
+  campaignId?: string
   category: string
   maxFiles?: number
   className?: string
@@ -43,6 +44,7 @@ export function FileUpload({
   onFilesUploaded,
   onFilesRemoved,
   ipKitId,
+  campaignId,
   category,
   maxFiles = 10,
   className,
@@ -97,28 +99,25 @@ export function FileUpload({
       try {
         updateFile(uploadFile.id, { status: 'uploading', progress: 0 })
 
-        // Validate file
-        const validationError = storageService.validateFile(uploadFile.file)
-        if (validationError) {
-          updateFile(uploadFile.id, { 
-            status: 'error', 
-            error: validationError 
-          })
-          continue
-        }
-
-        // Get metadata first
-        const metadata = await storageService.getFileMetadata(uploadFile.file)
-        updateFile(uploadFile.id, { metadata, progress: 25 })
-
-        // Upload the asset
-        const result = await storageService.uploadAsset(uploadFile.file, ipKitId, category)
+        // Upload the asset using assetStorageService
+        const result = await assetStorageService.uploadAsset(uploadFile.file, {
+          category: category as any, // Cast to expected enum type
+          ipKitId: ipKitId || undefined,
+          campaignId: campaignId,
+          ipId: ipId.trim() || undefined,
+          onProgress: (progress) => {
+            updateFile(uploadFile.id, { 
+              progress: progress.progress,
+              status: progress.stage === 'error' ? 'error' : 'uploading'
+            })
+          }
+        })
         
         updateFile(uploadFile.id, {
           status: 'success',
           progress: 100,
-          url: result.asset.url,
-          thumbnailUrl: result.thumbnail?.url,
+          url: result.assetUrl,
+          thumbnailUrl: result.thumbnailUrl,
           metadata: result.metadata
         })
 
@@ -138,7 +137,7 @@ export function FileUpload({
     if (successfulFiles.length > 0) {
       onFilesUploaded(successfulFiles)
     }
-  }, [files, disabled, isUploading, maxFiles, ipKitId, category, updateFile, onFilesUploaded])
+  }, [files, disabled, isUploading, maxFiles, ipKitId, campaignId, category, updateFile, onFilesUploaded, ipId])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()

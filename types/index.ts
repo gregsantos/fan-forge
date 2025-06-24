@@ -78,7 +78,7 @@ export interface Asset {
     colorPalette?: string[]
   }
   ipId?: string // Optional blockchain address
-  ipKitId: string
+  ipKitId: string | null // Now nullable for campaign assets
   uploadedBy?: string
   createdAt: Date
 }
@@ -89,6 +89,8 @@ export interface Campaign {
   description: string
   guidelines?: string
   briefDocument?: string
+  imageUrl?: string // Campaign cover image
+  thumbnailUrl?: string // Campaign thumbnail
   brandId: string
   ipKitId?: string
   status: CampaignStatus

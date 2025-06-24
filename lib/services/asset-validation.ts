@@ -14,9 +14,9 @@ export interface AssetValidationResult {
 }
 
 /**
- * Validate that all used assets belong to the specified IP Kit
+ * Validate that all used assets belong to the specified IP Kit or are global assets
  */
-export async function validateAssetAccess(assetIds: string[], ipKitId: string): Promise<AssetValidationResult> {
+export async function validateAssetAccess(assetIds: string[], ipKitId: string | null): Promise<AssetValidationResult> {
   if (assetIds.length === 0) {
     return { valid: true, invalidAssets: [], missingAssets: [] }
   }
@@ -34,8 +34,9 @@ export async function validateAssetAccess(assetIds: string[], ipKitId: string): 
     const foundAssetIds = dbAssets.map(asset => asset.id)
     const missingAssets = assetIds.filter(id => !foundAssetIds.includes(id))
     
+    // Allow assets that belong to the specified IP Kit OR are global assets (ipKitId is null)
     const invalidAssets = dbAssets
-      .filter(asset => asset.ipKitId !== ipKitId)
+      .filter(asset => asset.ipKitId !== ipKitId && asset.ipKitId !== null)
       .map(asset => asset.id)
 
     const valid = missingAssets.length === 0 && invalidAssets.length === 0

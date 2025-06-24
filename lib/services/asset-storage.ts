@@ -24,7 +24,8 @@ export interface AssetUploadOptions {
   category: 'characters' | 'backgrounds' | 'logos' | 'titles' | 'props' | 'other'
   tags?: string[]
   ipId?: string // Optional blockchain address
-  ipKitId: string
+  ipKitId?: string // Now optional to support campaign assets
+  campaignId?: string // Optional campaign ID for campaign-specific assets
   onProgress?: (progress: AssetUploadProgress) => void
 }
 
@@ -38,7 +39,7 @@ class AssetStorageService {
     file: File,
     options: AssetUploadOptions
   ): Promise<AssetUploadResult> {
-    const { category, tags = [], ipId, ipKitId, onProgress } = options
+    const { category, tags = [], ipId, ipKitId, campaignId, onProgress } = options
     
     try {
       // Validate file type
@@ -65,9 +66,23 @@ class AssetStorageService {
       const assetFilename = `${category}_${timestamp}_${assetId}.${fileExtension}`
       const thumbnailFilename = `${category}_${timestamp}_${assetId}_thumb.jpg`
 
-      // Create asset path structure: ip-kits/{ipKitId}/{category}/
-      const assetPath = `ip-kits/${ipKitId}/${category}/${assetFilename}`
-      const thumbnailPath = `ip-kits/${ipKitId}/${category}/${thumbnailFilename}`
+      // Create asset path structure based on whether it's IP kit or campaign asset
+      let assetPath: string
+      let thumbnailPath: string
+      
+      if (ipKitId) {
+        // IP kit asset: ip-kits/{ipKitId}/{category}/
+        assetPath = `ip-kits/${ipKitId}/${category}/${assetFilename}`
+        thumbnailPath = `ip-kits/${ipKitId}/${category}/${thumbnailFilename}`
+      } else if (campaignId) {
+        // Campaign asset: campaigns/{campaignId}/
+        assetPath = `campaigns/${campaignId}/${assetFilename}`
+        thumbnailPath = `campaigns/${campaignId}/${thumbnailFilename}`
+      } else {
+        // Global asset: global/{category}/
+        assetPath = `global/${category}/${assetFilename}`
+        thumbnailPath = `global/${category}/${thumbnailFilename}`
+      }
 
       // Get image metadata
       const metadata = await this.extractImageMetadata(file)
