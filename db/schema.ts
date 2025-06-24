@@ -104,6 +104,7 @@ export const assets = pgTable('assets', {
     mimeType: string
     colorPalette?: string[]
   }>().notNull(),
+  ipId: text('ip_id'), // Optional blockchain address for IP identification
   ipKitId: uuid('ip_kit_id').references(() => ipKits.id, { onDelete: 'cascade' }).notNull(),
   uploadedBy: uuid('uploaded_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -111,6 +112,19 @@ export const assets = pgTable('assets', {
   ipKitIdIdx: index('assets_ip_kit_id_idx').on(table.ipKitId),
   categoryIdx: index('assets_category_idx').on(table.category),
   filenameIdx: index('assets_filename_idx').on(table.filename),
+  ipIdIdx: index('assets_ip_id_idx').on(table.ipId),
+}))
+
+// Junction table for many-to-many relationship between assets and IP kits
+export const assetIpKits = pgTable('asset_ip_kits', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  assetId: uuid('asset_id').references(() => assets.id, { onDelete: 'cascade' }).notNull(),
+  ipKitId: uuid('ip_kit_id').references(() => ipKits.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  assetIdIdx: index('asset_ip_kits_asset_id_idx').on(table.assetId),
+  ipKitIdIdx: index('asset_ip_kits_ip_kit_id_idx').on(table.ipKitId),
+  uniqueAssetIpKit: unique().on(table.assetId, table.ipKitId),
 }))
 
 export const campaigns = pgTable('campaigns', {
@@ -149,6 +163,7 @@ export const submissions = pgTable('submissions', {
     canvasSize: { width: number; height: number }
     version: string
   }>(),
+  usedAssetIds: jsonb('used_asset_ids').$type<string[]>().default([]), // Array of asset IDs used in canvas
   tags: jsonb('tags').$type<string[]>().default([]),
   campaignId: uuid('campaign_id').references(() => campaigns.id, { onDelete: 'cascade' }).notNull(),
   creatorId: uuid('creator_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -281,11 +296,12 @@ export const ipKitsRelations = relations(ipKits, ({ one, many }) => ({
     references: [brands.id],
   }),
   assets: many(assets),
+  assetIpKits: many(assetIpKits),
   campaigns: many(campaigns),
   submissions: many(submissions),
 }))
 
-export const assetsRelations = relations(assets, ({ one }) => ({
+export const assetsRelations = relations(assets, ({ one, many }) => ({
   ipKit: one(ipKits, {
     fields: [assets.ipKitId],
     references: [ipKits.id],
@@ -294,6 +310,7 @@ export const assetsRelations = relations(assets, ({ one }) => ({
     fields: [assets.uploadedBy],
     references: [users.id],
   }),
+  assetIpKits: many(assetIpKits),
 }))
 
 export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
@@ -366,5 +383,16 @@ export const portfolioItemsRelations = relations(portfolioItems, ({ one }) => ({
   submission: one(submissions, {
     fields: [portfolioItems.submissionId],
     references: [submissions.id],
+  }),
+}))
+
+export const assetIpKitsRelations = relations(assetIpKits, ({ one }) => ({
+  asset: one(assets, {
+    fields: [assetIpKits.assetId],
+    references: [assets.id],
+  }),
+  ipKit: one(ipKits, {
+    fields: [assetIpKits.ipKitId],
+    references: [ipKits.id],
   }),
 }))

@@ -10,6 +10,7 @@ export interface AssetUploadProgress {
 export interface AssetUploadResult {
   assetUrl: string
   thumbnailUrl: string
+  ipId?: string // Include ipId in result if provided
   metadata: {
     width: number
     height: number
@@ -22,6 +23,7 @@ export interface AssetUploadResult {
 export interface AssetUploadOptions {
   category: 'characters' | 'backgrounds' | 'logos' | 'titles' | 'props' | 'other'
   tags?: string[]
+  ipId?: string // Optional blockchain address
   ipKitId: string
   onProgress?: (progress: AssetUploadProgress) => void
 }
@@ -36,7 +38,7 @@ class AssetStorageService {
     file: File,
     options: AssetUploadOptions
   ): Promise<AssetUploadResult> {
-    const { category, tags = [], ipKitId, onProgress } = options
+    const { category, tags = [], ipId, ipKitId, onProgress } = options
     
     try {
       // Validate file type
@@ -127,6 +129,7 @@ class AssetStorageService {
       return {
         assetUrl,
         thumbnailUrl,
+        ipId, // Include ipId in result if provided
         metadata: {
           ...metadata,
           fileSize: file.size,

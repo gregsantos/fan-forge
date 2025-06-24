@@ -77,6 +77,7 @@ export interface Asset {
     mimeType: string
     colorPalette?: string[]
   }
+  ipId?: string // Optional blockchain address
   ipKitId: string
   uploadedBy?: string
   createdAt: Date

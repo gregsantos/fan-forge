@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { storageService } from "@/lib/services/storage"
 import { Upload, X, FileImage, AlertCircle, CheckCircle, File } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -14,6 +16,7 @@ export interface UploadedFile {
   file: File
   url?: string
   thumbnailUrl?: string
+  ipId?: string
   status: 'pending' | 'uploading' | 'success' | 'error'
   progress: number
   error?: string
@@ -33,6 +36,7 @@ interface FileUploadProps {
   maxFiles?: number
   className?: string
   disabled?: boolean
+  showIpIdInput?: boolean
 }
 
 export function FileUpload({
@@ -42,16 +46,19 @@ export function FileUpload({
   category,
   maxFiles = 10,
   className,
-  disabled = false
+  disabled = false,
+  showIpIdInput = false
 }: FileUploadProps) {
   const [files, setFiles] = useState<UploadedFile[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [ipId, setIpId] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const createUploadedFile = (file: File): UploadedFile => ({
     id: Math.random().toString(36).substring(2),
     file,
+    ipId: ipId.trim() || undefined,
     status: 'pending',
     progress: 0
   })
@@ -183,6 +190,25 @@ export function FileUpload({
 
   return (
     <div className={cn("space-y-4", className)}>
+      {/* IP ID Input (optional) */}
+      {showIpIdInput && (
+        <div className="space-y-2">
+          <Label htmlFor="ipId-fileupload">IP Address (Optional)</Label>
+          <Input
+            id="ipId-fileupload"
+            type="text"
+            placeholder="e.g., 0xD52e1555a7Df6832300032fDc64dAf9a431b6C9f"
+            value={ipId}
+            onChange={(e) => setIpId(e.target.value)}
+            disabled={disabled}
+            className="font-mono text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional blockchain address for IP identification
+          </p>
+        </div>
+      )}
+
       {/* Drop Zone */}
       <Card
         className={cn(

@@ -36,6 +36,7 @@ export default function AssetsPage() {
               category: 'other', // Default category - you might want to let users select this
               tags: [],
               metadata: file.metadata,
+              ipId: file.ipId, // Include ipId if provided
               ipKitId: mockIpKitId
             })
           })
@@ -174,6 +175,7 @@ export default function AssetsPage() {
                   ipKitId={mockIpKitId}
                   category="other"
                   maxFiles={20}
+                  showIpIdInput={true}
                 />
               </ErrorBoundary>
             </CardContent>

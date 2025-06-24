@@ -3,6 +3,7 @@ import { db, submissions, campaigns, users, ipKits } from "@/db"
 import { eq, and, desc, count, ilike, or } from "drizzle-orm"
 import { createServerClient } from '@supabase/ssr'
 import { ensureUserExists } from '@/lib/auth-utils'
+import { canvasAssetTracker } from '@/lib/canvas-asset-tracker'
 
 async function getCurrentUser(request: NextRequest) {
   const supabase = createServerClient(
@@ -198,6 +199,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Extract used asset IDs from canvas data
+    const usedAssetIds = canvasData?.elements ? canvasAssetTracker.getUsedAssetIds(canvasData.elements) : []
+
     // Create new submission with asset metadata
     const submissionData = {
       title,
@@ -208,6 +212,7 @@ export async function POST(request: NextRequest) {
         ...canvasData,
         assetMetadata // Include asset tracking metadata in canvas data
       },
+      usedAssetIds, // Store the array of asset IDs used in the canvas
       tags,
       campaignId,
       creatorId: user.id,
