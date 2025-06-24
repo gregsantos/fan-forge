@@ -1,0 +1,165 @@
+import { db, assets, ipKits, brands } from "@/db"
+import { eq, desc, count, ilike, and, asc } from "drizzle-orm"
+
+/**
+ * Shared data functions for assets
+ * Following Next.js App Router best practices for server-side data fetching
+ */
+
+export async function getBrandAssets(searchParams: Record<string, string | undefined> = {}) {
+  try {
+    const { 
+      search, 
+      category, 
+      ipKitId,
+      tags,
+      page = '1', 
+      limit = '20',
+      sortBy = 'newest' 
+    } = searchParams
+    
+    const pageNum = parseInt(page)
+    const limitNum = parseInt(limit)
+    const offset = (pageNum - 1) * limitNum
+
+    // Build where conditions
+    const whereConditions = []
+    
+    // Filter by specific IP Kit if provided
+    if (ipKitId) {
+      whereConditions.push(eq(assets.ipKitId, ipKitId))
+    }
+    
+    // Filter by category if provided
+    if (category && category !== 'all') {
+      whereConditions.push(eq(assets.category, category as any))
+    }
+    
+    // Search functionality
+    if (search) {
+      whereConditions.push(
+        ilike(assets.filename, `%${search}%`)
+      )
+    }
+
+    // Tag filtering (basic implementation)
+    // TODO: Implement proper JSON tag filtering when needed
+
+    // Determine sort order
+    const getSortOrder = () => {
+      switch (sortBy) {
+        case 'oldest':
+          return asc(assets.createdAt)
+        case 'name':
+          return asc(assets.filename)
+        case 'size':
+          return desc(assets.metadata)
+        case 'newest':
+        default:
+          return desc(assets.createdAt)
+      }
+    }
+
+    // Get total count for pagination
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(assets)
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+
+    // Get assets with IP Kit information
+    const assetResults = await db
+      .select({
+        asset: assets,
+        ipKit: {
+          id: ipKits.id,
+          name: ipKits.name,
+        }
+      })
+      .from(assets)
+      .leftJoin(ipKits, eq(assets.ipKitId, ipKits.id))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(getSortOrder())
+      .limit(limitNum)
+      .offset(offset)
+
+    return {
+      assets: assetResults.map(result => ({
+        ...result.asset,
+        ipKit: result.ipKit,
+      })),
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totalResult.count,
+        pages: Math.ceil(totalResult.count / limitNum),
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch brand assets:', error)
+    throw new Error('Failed to fetch brand assets')
+  }
+}
+
+export async function getAssetStats() {
+  try {
+    // Get total asset count
+    const [totalAssets] = await db
+      .select({ count: count() })
+      .from(assets)
+
+    // Get asset counts by category
+    const categoryStats = await db
+      .select({
+        category: assets.category,
+        count: count(assets.id)
+      })
+      .from(assets)
+      .groupBy(assets.category)
+
+    // Get IP Kit counts
+    const [totalIpKits] = await db
+      .select({ count: count() })
+      .from(ipKits)
+
+    return {
+      totalAssets: totalAssets.count,
+      totalIpKits: totalIpKits.count,
+      categoryBreakdown: categoryStats,
+      // TODO: Add storage usage calculation when needed
+      storageUsed: 0,
+      storageLimit: 10 * 1024 * 1024 * 1024 // 10GB in bytes
+    }
+  } catch (error) {
+    console.error('Failed to fetch asset stats:', error)
+    throw new Error('Failed to fetch asset stats')
+  }
+}
+
+export async function getAssetById(id: string) {
+  try {
+    const [asset] = await db
+      .select({
+        asset: assets,
+        ipKit: {
+          id: ipKits.id,
+          name: ipKits.name,
+        }
+      })
+      .from(assets)
+      .leftJoin(ipKits, eq(assets.ipKitId, ipKits.id))
+      .where(eq(assets.id, id))
+      .limit(1)
+
+    if (!asset) {
+      return null
+    }
+
+    return {
+      ...asset.asset,
+      ipKit: asset.ipKit,
+    }
+  } catch (error) {
+    console.error(`Failed to fetch asset ${id}:`, error)
+    throw new Error('Failed to fetch asset')
+  }
+}

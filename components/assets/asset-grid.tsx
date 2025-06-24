@@ -92,7 +92,8 @@ export function AssetGrid({
       setError(null)
 
       const params = new URLSearchParams()
-      if (ipKitId) params.append('ipKitId', ipKitId)
+      // Note: ipKitId is intentionally not included to fetch ALL brand assets
+      // if (ipKitId) params.append('ipKitId', ipKitId)
       if (selectedCategory !== 'all') params.append('category', selectedCategory)
       if (searchQuery) params.append('search', searchQuery)
 

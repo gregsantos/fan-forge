@@ -5,6 +5,7 @@ import { db } from '@/db'
 import { assets, ipKits, assetIpKits } from '@/db/schema'
 import { eq, and, desc, ilike, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { getBrandAssets } from '@/lib/data/assets'
 
 // Asset creation schema
 const createAssetSchema = z.object({
@@ -25,15 +26,17 @@ const createAssetSchema = z.object({
   ipKitId: z.string().uuid()
 })
 
-// Asset query schema
+// Asset query schema - simplified to handle URL params better
 const assetQuerySchema = z.object({
-  ipKitId: z.string().uuid().optional(),
-  ipId: z.string().optional(), // Filter by blockchain address
-  category: z.enum(['characters', 'backgrounds', 'logos', 'titles', 'props', 'other']).optional(),
-  search: z.string().optional(),
-  tags: z.string().optional(), // Comma-separated tags
-  limit: z.coerce.number().min(1).max(100).default(20),
-  offset: z.coerce.number().min(0).default(0)
+  ipKitId: z.string().uuid().nullable().optional(),
+  ipId: z.string().nullable().optional(), // Filter by blockchain address
+  category: z.enum(['characters', 'backgrounds', 'logos', 'titles', 'props', 'other']).nullable().optional(),
+  search: z.string().nullable().optional(),
+  tags: z.string().nullable().optional(), // Comma-separated tags
+  limit: z.string().nullable().optional(),
+  offset: z.string().nullable().optional(),
+  page: z.string().nullable().optional(),
+  sortBy: z.string().nullable().optional()
 })
 
 export async function GET(request: NextRequest) {
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Parse query parameters
+    // Parse query parameters using simplified schema
     const { searchParams } = new URL(request.url)
     const query = assetQuerySchema.parse({
       ipKitId: searchParams.get('ipKitId'),
@@ -55,70 +58,28 @@ export async function GET(request: NextRequest) {
       search: searchParams.get('search'),
       tags: searchParams.get('tags'),
       limit: searchParams.get('limit'),
-      offset: searchParams.get('offset')
+      offset: searchParams.get('offset'),
+      page: searchParams.get('page'),
+      sortBy: searchParams.get('sortBy')
     })
 
-    // Build query conditions
-    const conditions = []
+    // Convert to clean params object for shared data layer
+    const cleanParams: Record<string, string | undefined> = {}
+    
+    if (query.ipKitId) cleanParams.ipKitId = query.ipKitId
+    if (query.ipId) cleanParams.ipId = query.ipId
+    if (query.category) cleanParams.category = query.category
+    if (query.search) cleanParams.search = query.search
+    if (query.tags) cleanParams.tags = query.tags
+    if (query.limit) cleanParams.limit = query.limit
+    if (query.offset) cleanParams.offset = query.offset
+    if (query.page) cleanParams.page = query.page
+    if (query.sortBy) cleanParams.sortBy = query.sortBy
 
-    if (query.ipKitId) {
-      conditions.push(eq(assets.ipKitId, query.ipKitId))
-    }
+    // Use shared data layer function
+    const result = await getBrandAssets(cleanParams)
 
-    if (query.ipId) {
-      conditions.push(eq(assets.ipId, query.ipId))
-    }
-
-    if (query.category) {
-      conditions.push(eq(assets.category, query.category))
-    }
-
-    if (query.search) {
-      conditions.push(ilike(assets.filename, `%${query.search}%`))
-    }
-
-    // For now, we'll implement basic tag filtering using JSON operators
-    if (query.tags) {
-      const tagList = query.tags.split(',').map(tag => tag.trim())
-      // Use JSON operators for tag filtering
-      const tagConditions = tagList.map(tag => 
-        sql`${assets.tags} @> ${JSON.stringify([tag])}`
-      )
-      if (tagConditions.length > 0) {
-        conditions.push(sql`(${sql.join(tagConditions, sql` OR `)})`)
-      }
-    }
-
-    // Execute query
-    const result = await db
-      .select({
-        id: assets.id,
-        filename: assets.filename,
-        originalFilename: assets.originalFilename,
-        url: assets.url,
-        thumbnailUrl: assets.thumbnailUrl,
-        category: assets.category,
-        tags: assets.tags,
-        metadata: assets.metadata,
-        ipId: assets.ipId,
-        ipKitId: assets.ipKitId,
-        uploadedBy: assets.uploadedBy,
-        createdAt: assets.createdAt
-      })
-      .from(assets)
-      .where(conditions.length > 0 ? and(...conditions) : sql`true`)
-      .orderBy(desc(assets.createdAt))
-      .limit(query.limit)
-      .offset(query.offset)
-
-    return NextResponse.json({
-      assets: result,
-      pagination: {
-        limit: query.limit,
-        offset: query.offset,
-        hasMore: result.length === query.limit
-      }
-    })
+    return NextResponse.json(result)
 
   } catch (error) {
     console.error('Assets GET error:', error)
