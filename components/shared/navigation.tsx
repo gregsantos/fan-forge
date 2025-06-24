@@ -33,7 +33,6 @@ export function Navigation() {
   const creatorLinks = useMemo(
     () => [
       {href: "/discover", label: "Discover", icon: Search},
-      {href: "/create", label: "Create", icon: Palette},
       {href: "/my-submissions", label: "My Submissions", icon: Eye},
     ],
     []
