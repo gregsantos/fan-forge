@@ -81,7 +81,7 @@ export default async function BrandDashboardPage() {
             Manage your campaigns and review creator submissions
           </p>
         </div>
-        <Link href="/campaigns/create">
+        <Link href="/campaigns/new">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
             New Campaign
@@ -164,7 +164,7 @@ export default async function BrandDashboardPage() {
               <div className="text-center py-8 text-muted-foreground">
                 <FileText className="mx-auto h-8 w-8 mb-2" />
                 <p className="text-sm">No active campaigns</p>
-                <Link href="/campaigns/create">
+                <Link href="/campaigns/new">
                   <Button variant="outline" size="sm" className="mt-2">
                     Create Your First Campaign
                   </Button>
@@ -243,7 +243,7 @@ export default async function BrandDashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link href="/campaigns/create">
+            <Link href="/campaigns/new">
               <Button variant="outline" className="w-full h-20 flex flex-col gap-2">
                 <Plus className="h-6 w-6" />
                 <span>Create Campaign</span>

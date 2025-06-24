@@ -11,8 +11,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Calendar, Save, Eye, ArrowLeft, Loader2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { 
+  Calendar, 
+  Save, 
+  Eye, 
+  ArrowLeft, 
+  Loader2, 
+  Play, 
+  Pause, 
+  Square,
+  AlertTriangle,
+  CheckCircle
+} from "lucide-react"
 import { type z } from "zod"
 
 type CampaignFormData = z.infer<typeof campaignSchema>
@@ -25,10 +36,31 @@ interface IPKit {
   isPublished: boolean
 }
 
-export default function NewCampaignPage() {
+interface Campaign {
+  id: string
+  title: string
+  description: string
+  guidelines: string
+  ipKitId: string | null
+  status: "draft" | "active" | "paused" | "closed"
+  startDate?: Date | null
+  endDate?: Date | null
+  maxSubmissions?: number | null
+  rewardAmount?: number | null
+  rewardCurrency: string
+  briefDocument?: string | null
+  submissionCount: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface EditCampaignClientProps {
+  campaign: Campaign
+  ipKits: IPKit[]
+}
+
+export default function EditCampaignClient({ campaign, ipKits }: EditCampaignClientProps) {
   const router = useRouter()
-  const [ipKits, setIpKits] = useState<IPKit[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
 
@@ -37,22 +69,35 @@ export default function NewCampaignPage() {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isDirty },
     reset,
+    formState: { errors, isDirty },
   } = useForm<CampaignFormData>({
     resolver: zodResolver(campaignSchema),
-    defaultValues: {
-      status: "draft",
-      rewardCurrency: "USD",
-    },
   })
+
+  // Initialize form with campaign data
+  useEffect(() => {
+    reset({
+      title: campaign.title,
+      description: campaign.description,
+      guidelines: campaign.guidelines,
+      ipKitId: campaign.ipKitId || "",
+      status: campaign.status,
+      startDate: campaign.startDate || undefined,
+      endDate: campaign.endDate || undefined,
+      maxSubmissions: campaign.maxSubmissions || undefined,
+      rewardAmount: campaign.rewardAmount || undefined,
+      rewardCurrency: campaign.rewardCurrency as "USD" | "EUR" | "GBP" | "CAD" | "AUD",
+      briefDocument: campaign.briefDocument || undefined,
+    })
+  }, [campaign, reset])
 
   const handleSave = useCallback(async (data: CampaignFormData, isAutoSave = false) => {
     if (!isAutoSave) setIsSaving(true)
 
     try {
-      const response = await fetch("/api/campaigns", {
-        method: "POST",
+      const response = await fetch(`/api/campaigns/${campaign.id}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -67,11 +112,10 @@ export default function NewCampaignPage() {
         throw new Error("Failed to save campaign")
       }
 
-      const result = await response.json()
       setLastSaved(new Date())
 
       if (!isAutoSave) {
-        router.push(`/campaigns/${result.campaign.id}`)
+        router.push(`/campaigns/${campaign.id}`)
       }
     } catch (error) {
       console.error("Failed to save campaign:", error)
@@ -79,24 +123,7 @@ export default function NewCampaignPage() {
     } finally {
       if (!isAutoSave) setIsSaving(false)
     }
-  }, [router])
-
-  // Load IP kits on component mount
-  useEffect(() => {
-    const fetchIpKits = async () => {
-      try {
-        const response = await fetch("/api/ip-kits")
-        if (response.ok) {
-          const data = await response.json()
-          setIpKits(data.ipKits || [])
-        }
-      } catch (error) {
-        console.error("Failed to load IP kits:", error)
-      }
-    }
-
-    fetchIpKits()
-  }, [])
+  }, [campaign.id, router])
 
   // Auto-save functionality
   useEffect(() => {
@@ -113,19 +140,75 @@ export default function NewCampaignPage() {
   }, [isDirty, watch, handleSave])
 
   const onSubmit = (data: CampaignFormData) => {
-    handleSave({ ...data, status: "draft" })
+    handleSave(data)
   }
 
-  const handlePublish = (data: CampaignFormData) => {
-    handleSave({ ...data, status: "active" })
+  const handleStatusChange = async (newStatus: "draft" | "active" | "paused" | "closed") => {
+    try {
+      setIsSaving(true)
+      const formData = watch()
+      
+      const response = await fetch(`/api/campaigns/${campaign.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          status: newStatus,
+          startDate: formData.startDate?.toISOString(),
+          endDate: formData.endDate?.toISOString(),
+        }),
+      })
+
+      if (response.ok) {
+        setValue("status", newStatus)
+        setLastSaved(new Date())
+        // Refresh the page to get updated campaign data
+        router.refresh()
+      }
+    } catch (error) {
+      console.error("Failed to update campaign status:", error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handlePreview = () => {
-    // TODO: Implement preview functionality
-    console.log("Preview campaign")
+    router.push(`/campaigns/${campaign.id}`)
   }
 
   const watchedValues = watch()
+  const canPublish = watchedValues.title && watchedValues.description && watchedValues.guidelines
+  const hasSubmissions = campaign.submissionCount > 0
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Play className="h-4 w-4" />
+      case "paused":
+        return <Pause className="h-4 w-4" />
+      case "closed":
+        return <Square className="h-4 w-4" />
+      default:
+        return <Eye className="h-4 w-4" />
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "default"
+      case "draft":
+        return "secondary"
+      case "paused":
+        return "outline"
+      case "closed":
+        return "destructive"
+      default:
+        return "secondary"
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -134,15 +217,15 @@ export default function NewCampaignPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.back()}
+          onClick={() => router.push(`/campaigns/${campaign.id}`)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
+          Back to Campaign
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Create New Campaign</h1>
+          <h1 className="text-3xl font-bold text-foreground">Edit Campaign</h1>
           <p className="text-muted-foreground">
-            Set up a new creator collaboration campaign
+            Modify your campaign settings and content
           </p>
         </div>
       </div>
@@ -230,7 +313,7 @@ export default function NewCampaignPage() {
                         <div className="flex flex-col">
                           <span className="text-muted-foreground">No IP Kit</span>
                           <span className="text-xs text-muted-foreground">
-                            Add IP Kit later
+                            Remove IP Kit assignment
                           </span>
                         </div>
                       </SelectItem>
@@ -247,7 +330,7 @@ export default function NewCampaignPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    You can create a campaign without an IP Kit and add assets later.
+                    You can assign or remove IP Kits from campaigns at any time.
                   </p>
                   {errors.ipKitId && (
                     <p className="text-sm text-destructive">{errors.ipKitId.message}</p>
@@ -296,87 +379,125 @@ export default function NewCampaignPage() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Advanced Options */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Advanced Options</CardTitle>
-                <CardDescription>
-                  Additional campaign settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="maxSubmissions">Maximum Submissions</Label>
-                  <Input
-                    id="maxSubmissions"
-                    type="number"
-                    min="1"
-                    placeholder="Leave empty for unlimited"
-                    {...register("maxSubmissions", {
-                      valueAsNumber: true,
-                    })}
-                  />
-                  {errors.maxSubmissions && (
-                    <p className="text-sm text-destructive">{errors.maxSubmissions.message}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="rewardAmount">Reward Amount</Label>
-                    <Input
-                      id="rewardAmount"
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      {...register("rewardAmount", {
-                        valueAsNumber: true,
-                      })}
-                    />
-                    {errors.rewardAmount && (
-                      <p className="text-sm text-destructive">{errors.rewardAmount.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="rewardCurrency">Currency</Label>
-                    <Select
-                      value={watchedValues.rewardCurrency || "USD"}
-                      onValueChange={(value) => setValue("rewardCurrency", value as any)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                        <SelectItem value="CAD">CAD</SelectItem>
-                        <SelectItem value="AUD">AUD</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="briefDocument">Brief Document URL</Label>
-                  <Input
-                    id="briefDocument"
-                    type="url"
-                    placeholder="https://example.com/campaign-brief.pdf"
-                    {...register("briefDocument")}
-                  />
-                  {errors.briefDocument && (
-                    <p className="text-sm text-destructive">{errors.briefDocument.message}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Status Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Campaign Status</CardTitle>
+                <CardDescription>
+                  Manage campaign lifecycle
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Current Status:</span>
+                  <Badge variant={getStatusColor(campaign.status)}>
+                    {getStatusIcon(campaign.status)}
+                    <span className="ml-1">
+                      {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                    </span>
+                  </Badge>
+                </div>
+
+                <div className="space-y-2">
+                  {campaign.status === "draft" && (
+                    <Button
+                      type="button"
+                      onClick={() => handleStatusChange("active")}
+                      disabled={!canPublish || isSaving}
+                      className="w-full"
+                    >
+                      {isSaving ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Play className="mr-2 h-4 w-4" />
+                      )}
+                      Publish Campaign
+                    </Button>
+                  )}
+
+                  {campaign.status === "active" && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleStatusChange("paused")}
+                        disabled={isSaving}
+                        className="w-full"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Pause className="mr-2 h-4 w-4" />
+                        )}
+                        Pause Campaign
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => handleStatusChange("closed")}
+                        disabled={isSaving}
+                        className="w-full"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Square className="mr-2 h-4 w-4" />
+                        )}
+                        Close Campaign
+                      </Button>
+                    </>
+                  )}
+
+                  {campaign.status === "paused" && (
+                    <>
+                      <Button
+                        type="button"
+                        onClick={() => handleStatusChange("active")}
+                        disabled={!canPublish || isSaving}
+                        className="w-full"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Play className="mr-2 h-4 w-4" />
+                        )}
+                        Resume Campaign
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => handleStatusChange("closed")}
+                        disabled={isSaving}
+                        className="w-full"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Square className="mr-2 h-4 w-4" />
+                        )}
+                        Close Campaign
+                      </Button>
+                    </>
+                  )}
+
+                  {hasSubmissions && (
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <p className="text-sm text-amber-800">
+                          Campaign has {campaign.submissionCount} submissions
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Actions */}
             <Card>
               <CardHeader>
@@ -397,26 +518,7 @@ export default function NewCampaignPage() {
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      Save Draft
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  type="button"
-                  onClick={handleSubmit(handlePublish)}
-                  className="w-full"
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Publishing...
-                    </>
-                  ) : (
-                    <>
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Publish Campaign
+                      Save Changes
                     </>
                   )}
                 </Button>
@@ -428,30 +530,52 @@ export default function NewCampaignPage() {
                   className="w-full"
                 >
                   <Eye className="mr-2 h-4 w-4" />
-                  Preview
+                  Preview Campaign
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Status */}
+            {/* Form Status */}
             <Card>
               <CardHeader>
-                <CardTitle>Campaign Status</CardTitle>
+                <CardTitle>Form Status</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Status:</span>
-                    <span className="text-sm font-medium">
-                      {watchedValues.status === "draft" ? "Draft" : "Active"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
                     <span className="text-sm">Form Valid:</span>
                     <span className="text-sm">
-                      {Object.keys(errors).length === 0 ? "✅" : "❌"}
+                      {Object.keys(errors).length === 0 ? (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle className="h-4 w-4" />
+                          Valid
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-red-600">
+                          <AlertTriangle className="h-4 w-4" />
+                          {Object.keys(errors).length} errors
+                        </div>
+                      )}
                     </span>
                   </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Can Publish:</span>
+                    <span className="text-sm">
+                      {canPublish ? (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle className="h-4 w-4" />
+                          Ready
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-red-600">
+                          <AlertTriangle className="h-4 w-4" />
+                          Missing fields
+                        </div>
+                      )}
+                    </span>
+                  </div>
+
                   {lastSaved && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Last Saved:</span>
@@ -460,39 +584,6 @@ export default function NewCampaignPage() {
                       </span>
                     </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Progress */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Progress</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Form Completion</span>
-                    <span>
-                      {Math.round(
-                        (Object.values(watchedValues).filter(Boolean).length /
-                          Object.keys(watchedValues).length) *
-                          100
-                      )}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full transition-all"
-                      style={{
-                        width: `${Math.round(
-                          (Object.values(watchedValues).filter(Boolean).length /
-                            Object.keys(watchedValues).length) *
-                            100
-                        )}%`,
-                      }}
-                    />
-                  </div>
                 </div>
               </CardContent>
             </Card>

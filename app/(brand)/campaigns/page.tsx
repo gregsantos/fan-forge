@@ -65,7 +65,7 @@ export default async function BrandCampaignsPage({
             Manage your brand&apos;s creative campaigns and track submissions
           </p>
         </div>
-        <Link href="/campaigns/create">
+        <Link href="/campaigns/new">
           <Button className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Create Campaign
@@ -161,7 +161,7 @@ export default async function BrandCampaignsPage({
               : 'Get started by creating your first campaign.'
             }
           </p>
-          <Link href="/campaigns/create">
+          <Link href="/campaigns/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
               Create Campaign

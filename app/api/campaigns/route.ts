@@ -202,9 +202,9 @@ export async function POST(request: NextRequest) {
       status = "draft"
     } = body
     
-    if (!title || !description || !guidelines || !ipKitId) {
+    if (!title || !description || !guidelines) {
       return NextResponse.json(
-        { error: "Missing required fields: title, description, guidelines, and ipKitId are required" },
+        { error: "Missing required fields: title, description, and guidelines are required" },
         { status: 400 }
       )
     }
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
     // For now, we'll use a placeholder - this should be implemented with proper auth
     const createdBy = "placeholder-user-id" // TODO: Get from authenticated session
 
-    // Verify IP Kit exists
+    // Verify IP Kit exists if provided
     if (ipKitId) {
       const existingIpKit = await db
         .select()
