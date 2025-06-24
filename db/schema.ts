@@ -186,6 +186,18 @@ export const submissions = pgTable('submissions', {
   isPublicIdx: index('submissions_is_public_idx').on(table.isPublic),
 }))
 
+// Junction table for submission-asset relationships
+export const submissionAssets = pgTable('submission_assets', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  submissionId: uuid('submission_id').references(() => submissions.id, { onDelete: 'cascade' }).notNull(),
+  assetId: uuid('asset_id').references(() => assets.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  submissionIdIdx: index('submission_assets_submission_id_idx').on(table.submissionId),
+  assetIdIdx: index('submission_assets_asset_id_idx').on(table.assetId),
+  uniqueSubmissionAsset: unique().on(table.submissionId, table.assetId),
+}))
+
 export const reviews = pgTable('reviews', {
   id: uuid('id').primaryKey().defaultRandom(),
   submissionId: uuid('submission_id').references(() => submissions.id, { onDelete: 'cascade' }).notNull(),
@@ -311,6 +323,7 @@ export const assetsRelations = relations(assets, ({ one, many }) => ({
     references: [users.id],
   }),
   assetIpKits: many(assetIpKits),
+  submissionAssets: many(submissionAssets),
 }))
 
 export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
@@ -348,6 +361,7 @@ export const submissionsRelations = relations(submissions, ({ one, many }) => ({
   }),
   reviews: many(reviews),
   portfolioItems: many(portfolioItems),
+  submissionAssets: many(submissionAssets),
 }))
 
 export const reviewsRelations = relations(reviews, ({ one }) => ({
@@ -394,5 +408,16 @@ export const assetIpKitsRelations = relations(assetIpKits, ({ one }) => ({
   ipKit: one(ipKits, {
     fields: [assetIpKits.ipKitId],
     references: [ipKits.id],
+  }),
+}))
+
+export const submissionAssetsRelations = relations(submissionAssets, ({ one }) => ({
+  submission: one(submissions, {
+    fields: [submissionAssets.submissionId],
+    references: [submissions.id],
+  }),
+  asset: one(assets, {
+    fields: [submissionAssets.assetId],
+    references: [assets.id],
   }),
 }))

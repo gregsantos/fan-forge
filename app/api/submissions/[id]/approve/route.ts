@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db, submissions, campaigns, users, auditLogs, notifications } from "@/db"
 import { eq } from "drizzle-orm"
 import { createServerClient } from '@supabase/ssr'
+import { getSubmissionAssetIpIds } from "@/lib/data/submissions"
 
 async function getCurrentUser(request: NextRequest) {
   const supabase = createServerClient(
@@ -132,6 +133,25 @@ export async function POST(
           campaignId: submission.campaignId,
         },
       })
+    }
+
+    // Log and verify all submission asset ipIds for external service integration
+    try {
+      const assetIpIds = await getSubmissionAssetIpIds(submissionId)
+      console.log(`🎉 SUBMISSION APPROVED - Asset IP IDs for submission ${submissionId}:`, {
+        submissionId,
+        submissionTitle: submission.title,
+        campaignId: submission.campaignId,
+        assetIpIds,
+        totalUniqueIpIds: assetIpIds.length,
+        timestamp: new Date().toISOString()
+      })
+      
+      if (assetIpIds.length === 0) {
+        console.warn(`⚠️  WARNING: Approved submission ${submissionId} has no asset IP IDs. This may indicate missing asset relationships.`)
+      }
+    } catch (error) {
+      console.error(`❌ ERROR: Failed to retrieve asset IP IDs for approved submission ${submissionId}:`, error)
     }
 
     // Get updated submission with relations for response
