@@ -94,6 +94,7 @@ export default function IpKitDetailPage() {
             category: 'other', // This should be passed from the upload component
             tags: [],
             metadata: result.metadata,
+            ipId: result.ipId, // Include ipId if provided
             ipKitId: ipKitId
           })
         })
@@ -412,6 +413,7 @@ export default function IpKitDetailPage() {
                       category={category as any}
                       onAssetsUploaded={handleAssetsUploaded}
                       maxFiles={10}
+                      showIpIdInput={true}
                     />
                   </ErrorBoundary>
                 </CardContent>

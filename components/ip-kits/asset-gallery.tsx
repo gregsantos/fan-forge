@@ -169,6 +169,15 @@ export function AssetGallery({
     }
   }
 
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      // TODO: Show success toast
+    } catch (error) {
+      console.error("Failed to copy text:", error)
+    }
+  }
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 B"
     const k = 1024
@@ -337,6 +346,17 @@ export function AssetGallery({
                             <Copy className='mr-2 h-4 w-4' />
                             Copy URL
                           </DropdownMenuItem>
+                          {asset.ipId && (
+                            <DropdownMenuItem
+                              onClick={e => {
+                                e.stopPropagation()
+                                copyText(asset.ipId!)
+                              }}
+                            >
+                              <Copy className='mr-2 h-4 w-4' />
+                              Copy IP ID
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className='text-destructive'
@@ -363,6 +383,15 @@ export function AssetGallery({
                   >
                     {asset.originalFilename}
                   </p>
+
+                  {asset.ipId && (
+                    <p 
+                      className='text-xs font-mono text-muted-foreground truncate' 
+                      title={asset.ipId}
+                    >
+                      {asset.ipId}
+                    </p>
+                  )}
 
                   <div className='flex items-center justify-between'>
                     <Badge
@@ -497,6 +526,17 @@ export function AssetGallery({
                             <Copy className='mr-2 h-4 w-4' />
                             Copy URL
                           </DropdownMenuItem>
+                          {asset.ipId && (
+                            <DropdownMenuItem
+                              onClick={e => {
+                                e.stopPropagation()
+                                copyText(asset.ipId!)
+                              }}
+                            >
+                              <Copy className='mr-2 h-4 w-4' />
+                              Copy IP ID
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className='text-destructive'

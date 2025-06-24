@@ -69,6 +69,7 @@ export async function getAssetDetails(assetIds: string[]): Promise<Asset[]> {
       ...asset,
       thumbnailUrl: asset.thumbnailUrl || undefined,
       tags: asset.tags || [],
+      ipId: asset.ipId || undefined,
       uploadedBy: asset.uploadedBy || undefined
     }))
   } catch (error) {

@@ -5,6 +5,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { 
   Upload, 
   Image, 
@@ -31,6 +33,7 @@ interface AssetUploadZoneProps {
   maxFiles?: number
   disabled?: boolean
   className?: string
+  showIpIdInput?: boolean // Whether to show the IP ID input field
 }
 
 export function AssetUploadZone({
@@ -39,11 +42,13 @@ export function AssetUploadZone({
   onAssetsUploaded,
   maxFiles = 10,
   disabled = false,
-  className
+  className,
+  showIpIdInput = false
 }: AssetUploadZoneProps) {
   const [files, setFiles] = useState<FileWithPreview[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [ipId, setIpId] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -131,6 +136,7 @@ export function AssetUploadZone({
         return assetStorageService.uploadAsset(file, {
           category,
           ipKitId,
+          ipId: ipId.trim() || undefined, // Include ipId if provided
           tags: [], // TODO: Add tag support
           onProgress: (progress) => {
             setFiles(prev => {
@@ -192,6 +198,25 @@ export function AssetUploadZone({
 
   return (
     <div className={cn("space-y-4", className)}>
+      {/* IP ID Input (optional) */}
+      {showIpIdInput && (
+        <div className="space-y-2">
+          <Label htmlFor="ipId">IP Address (Optional)</Label>
+          <Input
+            id="ipId"
+            type="text"
+            placeholder="e.g., 0xD52e1555a7Df6832300032fDc64dAf9a431b6C9f"
+            value={ipId}
+            onChange={(e) => setIpId(e.target.value)}
+            disabled={disabled}
+            className="font-mono text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional blockchain address for IP identification
+          </p>
+        </div>
+      )}
+
       {/* Upload Zone */}
       <Card 
         className={cn(

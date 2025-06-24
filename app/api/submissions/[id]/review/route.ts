@@ -3,6 +3,7 @@ import { db, submissions, reviews, users, auditLogs, notifications } from "@/db"
 import { eq, and } from "drizzle-orm"
 import { createServerClient } from '@supabase/ssr'
 import { ensureUserExists } from '@/lib/auth-utils'
+import { getSubmissionAssetIpIds } from "@/lib/data/submissions"
 
 async function getCurrentUser(request: NextRequest) {
   const supabase = createServerClient(
@@ -184,6 +185,28 @@ export async function POST(
             rating: rating || null,
           },
         })
+    }
+
+    // Log and verify asset IP IDs for approved submissions
+    if (action === 'approve') {
+      try {
+        const assetIpIds = await getSubmissionAssetIpIds(params.id)
+        console.log(`🎉 SUBMISSION APPROVED (via review) - Asset IP IDs for submission ${params.id}:`, {
+          submissionId: params.id,
+          submissionTitle: submission.title,
+          campaignId: submission.campaignId,
+          assetIpIds,
+          totalUniqueIpIds: assetIpIds.length,
+          reviewerId: user.id,
+          timestamp: new Date().toISOString()
+        })
+        
+        if (assetIpIds.length === 0) {
+          console.warn(`⚠️  WARNING: Approved submission ${params.id} has no asset IP IDs. This may indicate missing asset relationships.`)
+        }
+      } catch (error) {
+        console.error(`❌ ERROR: Failed to retrieve asset IP IDs for approved submission ${params.id}:`, error)
+      }
     }
 
     // Return the updated submission with review details

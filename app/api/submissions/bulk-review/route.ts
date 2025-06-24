@@ -3,6 +3,7 @@ import { db, submissions, reviews, users, auditLogs, notifications } from "@/db"
 import { eq, inArray, and } from "drizzle-orm"
 import { createServerClient } from '@supabase/ssr'
 import { ensureUserExists } from '@/lib/auth-utils'
+import { getSubmissionAssetIpIds } from "@/lib/data/submissions"
 
 async function getCurrentUser(request: NextRequest) {
   const supabase = createServerClient(
@@ -207,6 +208,31 @@ export async function POST(request: NextRequest) {
 
     if (notificationInserts.length > 0) {
       await db.insert(notifications).values(notificationInserts)
+    }
+
+    // Log and verify asset IP IDs for bulk approved submissions
+    if (action === 'approve' && updatedSubmissions.length > 0) {
+      console.log(`🎉 BULK SUBMISSIONS APPROVED - Processing ${updatedSubmissions.length} submissions for asset IP IDs:`)
+      
+      for (const approvedSubmission of updatedSubmissions) {
+        try {
+          const assetIpIds = await getSubmissionAssetIpIds(approvedSubmission.id)
+          console.log(`   📋 Submission ${approvedSubmission.id} ("${approvedSubmission.title}"):`, {
+            submissionId: approvedSubmission.id,
+            campaignId: approvedSubmission.campaignId,
+            assetIpIds,
+            totalUniqueIpIds: assetIpIds.length
+          })
+          
+          if (assetIpIds.length === 0) {
+            console.warn(`   ⚠️  WARNING: Approved submission ${approvedSubmission.id} has no asset IP IDs.`)
+          }
+        } catch (error) {
+          console.error(`   ❌ ERROR: Failed to retrieve asset IP IDs for submission ${approvedSubmission.id}:`, error)
+        }
+      }
+      
+      console.log(`🎉 BULK APPROVAL COMPLETE - Processed ${updatedSubmissions.length} submissions at ${new Date().toISOString()}`)
     }
 
     // Calculate results summary

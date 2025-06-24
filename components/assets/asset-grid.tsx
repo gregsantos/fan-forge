@@ -47,6 +47,7 @@ export interface Asset {
     mimeType: string
     colorPalette?: string[]
   }
+  ipId?: string // Optional blockchain address
   ipKitId: string
   uploadedBy?: string
   createdAt: string
@@ -253,6 +254,11 @@ export function AssetGrid({
                       <p className="text-sm font-medium truncate mb-1">
                         {asset.originalFilename}
                       </p>
+                      {asset.ipId && (
+                        <p className="text-xs font-mono text-gray-300 truncate mb-1" title={asset.ipId}>
+                          {asset.ipId}
+                        </p>
+                      )}
                       <div className="flex items-center justify-between text-xs">
                         <span>{asset.metadata.width}×{asset.metadata.height}</span>
                         <span>{formatFileSize(asset.metadata.fileSize)}</span>
@@ -293,6 +299,12 @@ export function AssetGrid({
                         <Copy className="mr-2 h-4 w-4" />
                         Copy URL
                       </DropdownMenuItem>
+                      {asset.ipId && (
+                        <DropdownMenuItem onClick={() => handleCopyUrl(asset.ipId!)}>
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy IP ID
+                        </DropdownMenuItem>
+                      )}
                       {onAssetDelete && (
                         <DropdownMenuItem 
                           onClick={() => onAssetDelete(asset.id)}

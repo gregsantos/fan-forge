@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
-import { assets, ipKits } from '@/db/schema'
+import { assets, ipKits, assetIpKits } from '@/db/schema'
 import { eq, and, desc, ilike, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
@@ -21,12 +21,14 @@ const createAssetSchema = z.object({
     mimeType: z.string(),
     colorPalette: z.array(z.string()).optional()
   }),
+  ipId: z.string().optional(), // Optional blockchain address
   ipKitId: z.string().uuid()
 })
 
 // Asset query schema
 const assetQuerySchema = z.object({
   ipKitId: z.string().uuid().optional(),
+  ipId: z.string().optional(), // Filter by blockchain address
   category: z.enum(['characters', 'backgrounds', 'logos', 'titles', 'props', 'other']).optional(),
   search: z.string().optional(),
   tags: z.string().optional(), // Comma-separated tags
@@ -48,6 +50,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const query = assetQuerySchema.parse({
       ipKitId: searchParams.get('ipKitId'),
+      ipId: searchParams.get('ipId'),
       category: searchParams.get('category'),
       search: searchParams.get('search'),
       tags: searchParams.get('tags'),
@@ -60,6 +63,10 @@ export async function GET(request: NextRequest) {
 
     if (query.ipKitId) {
       conditions.push(eq(assets.ipKitId, query.ipKitId))
+    }
+
+    if (query.ipId) {
+      conditions.push(eq(assets.ipId, query.ipId))
     }
 
     if (query.category) {
@@ -93,6 +100,7 @@ export async function GET(request: NextRequest) {
         category: assets.category,
         tags: assets.tags,
         metadata: assets.metadata,
+        ipId: assets.ipId,
         ipKitId: assets.ipKitId,
         uploadedBy: assets.uploadedBy,
         createdAt: assets.createdAt
@@ -167,6 +175,15 @@ export async function POST(request: NextRequest) {
         uploadedBy: user.id
       })
       .returning()
+
+    // Also create the asset-ipkit relationship in the junction table
+    await db
+      .insert(assetIpKits)
+      .values({
+        assetId: newAsset.id,
+        ipKitId: assetData.ipKitId
+      })
+      .onConflictDoNothing()
 
     return NextResponse.json(newAsset, { status: 201 })
 
