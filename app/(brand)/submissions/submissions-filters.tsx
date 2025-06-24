@@ -13,31 +13,72 @@ import {
 } from "@/components/ui/select"
 import { Search, SlidersHorizontal } from "lucide-react"
 
+interface Campaign {
+  id: string
+  title: string
+  status: string
+  brandId: string
+}
+
 export function SubmissionsFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
   
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'pending')
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'newest')
-  const [campaignFilter, setCampaignFilter] = useState(searchParams.get('campaignId') || 'all')
+  // Read values directly from URL - no local state needed
+  const searchTerm = searchParams.get('search') || ''
+  const statusFilter = searchParams.get('status') || 'pending'
+  const sortBy = searchParams.get('sortBy') || 'newest'
+  const campaignFilter = searchParams.get('campaignId') || 'all'
+  
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [campaignsLoading, setCampaignsLoading] = useState(true)
 
-  // Update URL when filters change with debouncing for search
+  // Load campaigns for dropdown
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      const params = new URLSearchParams()
-      if (searchTerm) params.set('search', searchTerm)
-      if (statusFilter) params.set('status', statusFilter)
-      if (sortBy !== 'newest') params.set('sortBy', sortBy)
-      if (campaignFilter !== 'all') params.set('campaignId', campaignFilter)
-      
-      const url = params.toString() ? `${pathname}?${params.toString()}` : pathname
-      router.push(url)
-    }, searchTerm ? 300 : 0) // Debounce search, immediate for others
+    const fetchCampaigns = async () => {
+      try {
+        const response = await fetch('/api/campaigns?limit=100')
+        if (response.ok) {
+          const data = await response.json()
+          setCampaigns(data.campaigns || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch campaigns:', error)
+      } finally {
+        setCampaignsLoading(false)
+      }
+    }
 
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm, statusFilter, sortBy, campaignFilter, router, pathname])
+    fetchCampaigns()
+  }, [])
+
+  // Helper function to update URL with new params
+  const updateURL = (updates: Record<string, string | null>, debounce = false) => {
+    const params = new URLSearchParams()
+    
+    // Build params object with current values and updates
+    const newParams = {
+      search: searchTerm,
+      status: statusFilter,
+      sortBy: sortBy !== 'newest' ? sortBy : null,
+      campaignId: campaignFilter !== 'all' ? campaignFilter : null,
+      ...updates
+    }
+    
+    // Add non-null values to URLSearchParams
+    Object.entries(newParams).forEach(([key, value]) => {
+      if (value) params.set(key, value)
+    })
+    
+    const url = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    
+    if (debounce) {
+      setTimeout(() => router.push(url), 300)
+    } else {
+      router.push(url)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -48,13 +89,13 @@ export function SubmissionsFilters() {
           <Input
             placeholder="Search by title, description, or creator..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => updateURL({ search: e.target.value || null }, true)}
             className="pl-10"
           />
         </div>
         
         <div className="flex gap-2">
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={(value) => updateURL({ sortBy: value })}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
@@ -67,15 +108,32 @@ export function SubmissionsFilters() {
             </SelectContent>
           </Select>
           
-          <Select value={campaignFilter} onValueChange={setCampaignFilter}>
-            <SelectTrigger className="w-[150px]">
+          <Select value={campaignFilter} onValueChange={(value) => updateURL({ campaignId: value })}>
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Campaigns" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Campaigns</SelectItem>
-              {/* TODO: Dynamically load campaigns */}
-              <SelectItem value="campaign1">Campaign 1</SelectItem>
-              <SelectItem value="campaign2">Campaign 2</SelectItem>
+              {campaignsLoading ? (
+                <SelectItem value="loading" disabled>
+                  Loading campaigns...
+                </SelectItem>
+              ) : campaigns.length > 0 ? (
+                campaigns.map((campaign) => (
+                  <SelectItem key={campaign.id} value={campaign.id}>
+                    <div className="flex flex-col">
+                      <span className="truncate max-w-[140px]">{campaign.title}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-campaigns" disabled>
+                  No campaigns found
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -86,14 +144,14 @@ export function SubmissionsFilters() {
         <Button
           variant={statusFilter === "all" ? "default" : "outline"}
           size="sm"
-          onClick={() => setStatusFilter("all")}
+          onClick={() => updateURL({ status: "all" })}
         >
           All
         </Button>
         <Button
           variant={statusFilter === "pending" ? "default" : "outline"}
           size="sm"
-          onClick={() => setStatusFilter("pending")}
+          onClick={() => updateURL({ status: "pending" })}
           className="relative"
         >
           Pending
@@ -102,21 +160,21 @@ export function SubmissionsFilters() {
         <Button
           variant={statusFilter === "approved" ? "default" : "outline"}
           size="sm"
-          onClick={() => setStatusFilter("approved")}
+          onClick={() => updateURL({ status: "approved" })}
         >
           Approved
         </Button>
         <Button
           variant={statusFilter === "rejected" ? "default" : "outline"}
           size="sm"
-          onClick={() => setStatusFilter("rejected")}
+          onClick={() => updateURL({ status: "rejected" })}
         >
           Rejected
         </Button>
         <Button
           variant={statusFilter === "withdrawn" ? "default" : "outline"}
           size="sm"
-          onClick={() => setStatusFilter("withdrawn")}
+          onClick={() => updateURL({ status: "withdrawn" })}
         >
           Withdrawn
         </Button>
@@ -130,12 +188,12 @@ export function SubmissionsFilters() {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setSearchTerm('')
-              setStatusFilter('pending')
-              setSortBy('newest')
-              setCampaignFilter('all')
-            }}
+            onClick={() => updateURL({ 
+              search: null, 
+              status: "pending", 
+              sortBy: null, 
+              campaignId: null 
+            })}
             className="h-6 px-2 text-xs"
           >
             Clear all

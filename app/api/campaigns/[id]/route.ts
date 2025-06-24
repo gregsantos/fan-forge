@@ -68,9 +68,9 @@ export async function PUT(
       status = "draft"
     } = body
     
-    if (!title || !description || !guidelines || !ipKitId) {
+    if (!title || !description || !guidelines) {
       return NextResponse.json(
-        { error: "Missing required fields: title, description, guidelines, and ipKitId are required" },
+        { error: "Missing required fields: title, description, and guidelines are required" },
         { status: 400 }
       )
     }
@@ -114,6 +114,22 @@ export async function PUT(
       }
     }
 
+    // Verify IP Kit exists if provided
+    if (ipKitId) {
+      const existingIpKit = await db
+        .select()
+        .from(ipKits)
+        .where(eq(ipKits.id, ipKitId))
+        .limit(1)
+      
+      if (existingIpKit.length === 0) {
+        return NextResponse.json(
+          { error: "IP Kit not found" },
+          { status: 404 }
+        )
+      }
+    }
+
     // Update campaign in database
     const [updatedCampaign] = await db
       .update(campaigns)
@@ -121,7 +137,7 @@ export async function PUT(
         title,
         description,
         guidelines,
-        ipKitId,
+        ipKitId: ipKitId || null,
         status: status as "draft" | "active" | "paused" | "closed",
         startDate: startDate ? new Date(startDate) : currentCampaign.startDate,
         endDate: endDate ? new Date(endDate) : currentCampaign.endDate,
