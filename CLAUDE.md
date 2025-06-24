@@ -75,7 +75,7 @@ app/
 │   │   │   │   ├── campaign-discover-client.tsx
 │   │   │   │   └── page.tsx
 │   │   │   └── page.tsx
-│   │   └── portfolio
+│   │   └── my-submissions
 │   │       └── page.tsx
 │   ├── api
 │   │   ├── auth
@@ -133,7 +133,7 @@ app/
 - **Campaign Discovery:** Search and filtering for creators
 - **Creation Canvas:** Drag-and-drop composition tool using brand assets
 - **Submission Workflow:** Review and approval system
-- **Portfolio Management:** Creator showcase of approved works
+- **My Submissions:** Creator showcase of all submissions
 
 ### Data Models
 

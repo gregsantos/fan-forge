@@ -39,7 +39,6 @@ export async function middleware(request: NextRequest) {
     "/campaigns",
     "/submissions",
     "/create",
-    "/portfolio",
     "/discover",
     "/assets",
     "/ip-kits",
@@ -53,7 +52,7 @@ export async function middleware(request: NextRequest) {
     "/ip-kits",
     "/submissions",
   ]
-  const creatorOnlyRoutes = ["/create", "/my-submissions", "/portfolio"]
+  const creatorOnlyRoutes = ["/create", "/my-submissions"]
 
   const pathname = request.nextUrl.pathname
 

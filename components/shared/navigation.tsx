@@ -35,7 +35,6 @@ export function Navigation() {
       {href: "/discover", label: "Discover", icon: Search},
       {href: "/create", label: "Create", icon: Palette},
       {href: "/my-submissions", label: "My Submissions", icon: Eye},
-      {href: "/portfolio", label: "Portfolio", icon: FileText},
     ],
     []
   )
@@ -103,12 +102,6 @@ export function Navigation() {
           event.preventDefault()
           if (isBrandAdmin) {
             router.push("/assets")
-          }
-          break
-        case "p":
-          event.preventDefault()
-          if (isCreator) {
-            router.push("/portfolio")
           }
           break
         case "s":
