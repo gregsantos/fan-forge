@@ -13,6 +13,13 @@ import {
 } from "@/components/ui/select"
 import { Search, SlidersHorizontal } from "lucide-react"
 
+interface Campaign {
+  id: string
+  title: string
+  status: string
+  brandId: string
+}
+
 export function SubmissionsFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -22,6 +29,27 @@ export function SubmissionsFilters() {
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'pending')
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'newest')
   const [campaignFilter, setCampaignFilter] = useState(searchParams.get('campaignId') || 'all')
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [campaignsLoading, setCampaignsLoading] = useState(true)
+
+  // Load campaigns for dropdown
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const response = await fetch('/api/campaigns?limit=100')
+        if (response.ok) {
+          const data = await response.json()
+          setCampaigns(data.campaigns || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch campaigns:', error)
+      } finally {
+        setCampaignsLoading(false)
+      }
+    }
+
+    fetchCampaigns()
+  }, [])
 
   // Update URL when filters change with debouncing for search
   useEffect(() => {
@@ -68,14 +96,31 @@ export function SubmissionsFilters() {
           </Select>
           
           <Select value={campaignFilter} onValueChange={setCampaignFilter}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Campaigns" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Campaigns</SelectItem>
-              {/* TODO: Dynamically load campaigns */}
-              <SelectItem value="campaign1">Campaign 1</SelectItem>
-              <SelectItem value="campaign2">Campaign 2</SelectItem>
+              {campaignsLoading ? (
+                <SelectItem value="loading" disabled>
+                  Loading campaigns...
+                </SelectItem>
+              ) : campaigns.length > 0 ? (
+                campaigns.map((campaign) => (
+                  <SelectItem key={campaign.id} value={campaign.id}>
+                    <div className="flex flex-col">
+                      <span className="truncate max-w-[140px]">{campaign.title}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-campaigns" disabled>
+                  No campaigns found
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
