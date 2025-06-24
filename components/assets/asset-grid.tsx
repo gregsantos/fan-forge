@@ -17,18 +17,24 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { 
   Search, 
-  Filter, 
   MoreVertical, 
   Download, 
   Trash2, 
   Eye, 
   Copy,
   FileImage,
-  File
+  File,
+  Package,
+  Plus,
+  Minus
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -60,6 +66,11 @@ interface AssetGridProps {
   selectable?: boolean
   selectedAssets?: string[]
   className?: string
+  availableIpKits?: Array<{
+    id: string
+    title: string
+    description?: string
+  }>
 }
 
 const CATEGORIES = [
@@ -78,7 +89,8 @@ export function AssetGrid({
   onAssetDelete, 
   selectable = false,
   selectedAssets = [],
-  className 
+  className,
+  availableIpKits = []
 }: AssetGridProps) {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
@@ -159,6 +171,44 @@ export function AssetGrid({
       // You might want to show a toast notification here
     } catch (err) {
       console.error('Failed to copy URL:', err)
+    }
+  }
+
+  const handleAddToIpKit = async (assetId: string, ipKitId: string) => {
+    try {
+      const response = await fetch(`/api/assets/${assetId}/ip-kits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ipKitId })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to add asset to IP kit')
+      }
+      
+      // Refresh assets to show updated assignments
+      fetchAssets()
+    } catch (err) {
+      console.error('Failed to add asset to IP kit:', err)
+    }
+  }
+
+  const handleRemoveFromIpKit = async (assetId: string, ipKitId: string) => {
+    try {
+      const response = await fetch(`/api/assets/${assetId}/ip-kits`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ipKitId })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to remove asset from IP kit')
+      }
+      
+      // Refresh assets to show updated assignments
+      fetchAssets()
+    } catch (err) {
+      console.error('Failed to remove asset from IP kit:', err)
     }
   }
 
@@ -306,6 +356,42 @@ export function AssetGrid({
                           Copy IP ID
                         </DropdownMenuItem>
                       )}
+                      
+                      {/* IP Kit Management */}
+                      {availableIpKits.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                              <Package className="mr-2 h-4 w-4" />
+                              IP Kit Management
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                              {availableIpKits.map((ipKit) => (
+                                <DropdownMenuItem
+                                  key={ipKit.id}
+                                  onClick={() => handleAddToIpKit(asset.id, ipKit.id)}
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Add to {ipKit.title}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              {availableIpKits.map((ipKit) => (
+                                <DropdownMenuItem
+                                  key={`remove-${ipKit.id}`}
+                                  onClick={() => handleRemoveFromIpKit(asset.id, ipKit.id)}
+                                  className="text-orange-600"
+                                >
+                                  <Minus className="mr-2 h-4 w-4" />
+                                  Remove from {ipKit.title}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                        </>
+                      )}
+                      
                       {onAssetDelete && (
                         <DropdownMenuItem 
                           onClick={() => onAssetDelete(asset.id)}

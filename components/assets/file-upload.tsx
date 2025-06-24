@@ -31,7 +31,7 @@ export interface UploadedFile {
 interface FileUploadProps {
   onFilesUploaded: (files: UploadedFile[]) => void
   onFilesRemoved: (fileIds: string[]) => void
-  ipKitId: string
+  ipKitId: string | null
   category: string
   maxFiles?: number
   className?: string

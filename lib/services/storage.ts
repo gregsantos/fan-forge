@@ -76,11 +76,16 @@ export const storageService = {
   /**
    * Generate a unique file path
    */
-  generateFilePath(originalFilename: string, ipKitId: string, category: string): string {
+  generateFilePath(originalFilename: string, ipKitId: string | null, category: string): string {
     const timestamp = Date.now()
     const randomId = Math.random().toString(36).substring(2)
     const extension = originalFilename.split('.').pop()
-    return `ip-kits/${ipKitId}/${category}/${timestamp}-${randomId}.${extension}`
+    
+    if (ipKitId) {
+      return `ip-kits/${ipKitId}/${category}/${timestamp}-${randomId}.${extension}`
+    } else {
+      return `global-assets/${category}/${timestamp}-${randomId}.${extension}`
+    }
   },
 
   /**
@@ -175,7 +180,7 @@ export const storageService = {
   /**
    * Upload file with thumbnail generation
    */
-  async uploadAsset(file: File, ipKitId: string, category: string): Promise<{
+  async uploadAsset(file: File, ipKitId: string | null, category: string): Promise<{
     asset: UploadResult
     thumbnail?: UploadResult
     metadata: AssetMetadata

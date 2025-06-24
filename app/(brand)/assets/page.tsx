@@ -1,14 +1,24 @@
 import { getAssetStats } from '@/lib/data/assets'
+import { getIpKits } from '@/lib/data/campaigns'
 import AssetsPageClient from './assets-page-client'
 
 export default async function AssetsPage() {
   try {
-    const stats = await getAssetStats()
-    const mockIpKitId = "867dc972-85c3-4f70-aa4e-cf0e78b675a4" // Still used for uploads
+    const [stats, ipKitsData] = await Promise.all([
+      getAssetStats(),
+      getIpKits({}) // Pass empty search params
+    ])
     
-    return <AssetsPageClient initialStats={stats} mockIpKitId={mockIpKitId} />
+    // Transform IP kits to match expected interface
+    const availableIpKits = ipKitsData.ipKits.map(ipKit => ({
+      id: ipKit.id,
+      title: ipKit.name,
+      description: ipKit.description || undefined
+    }))
+    
+    return <AssetsPageClient initialStats={stats} availableIpKits={availableIpKits} />
   } catch (error) {
-    console.error('Failed to load asset stats:', error)
+    console.error('Failed to load asset data:', error)
     
     // Fallback to mock data in case of error
     const fallbackStats = {
@@ -19,6 +29,6 @@ export default async function AssetsPage() {
       storageLimit: 10 * 1024 * 1024 * 1024 // 10GB
     }
     
-    return <AssetsPageClient initialStats={fallbackStats} mockIpKitId="867dc972-85c3-4f70-aa4e-cf0e78b675a4" />
+    return <AssetsPageClient initialStats={fallbackStats} availableIpKits={[]} />
   }
 }

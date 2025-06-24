@@ -103,6 +103,12 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Create asset-ipkit many-to-many relationships via junction table
 - [x] Add IP ID display and copy functionality in asset management UI
 - [x] Populate existing assets with sample IP ID via migration script
+- [x] Replace hardcoded mock statistics with real backend data from database
+- [x] Implement optional IP kit selection during asset upload with global asset support
+- [x] Add IP kit management menu to asset grid items for post-upload assignment
+- [x] Create API endpoints for asset-IP kit relationship management (add/remove)
+- [x] Update asset upload flow to support null IP kit IDs for global assets
+- [x] Transform asset statistics to show real category breakdowns and storage usage
 
 #### 3.2 Enhanced Asset Management
 

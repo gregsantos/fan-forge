@@ -30,15 +30,20 @@ interface AssetsPageClientProps {
     storageUsed: number
     storageLimit: number
   }
-  mockIpKitId: string
+  availableIpKits: Array<{
+    id: string
+    title: string
+    description?: string
+  }>
 }
 
 export default function AssetsPageClient({
   initialStats,
-  mockIpKitId,
+  availableIpKits,
 }: AssetsPageClientProps) {
   const [activeTab, setActiveTab] = useState("grid")
   const [uploadingFiles, setUploadingFiles] = useState<UploadedFile[]>([])
+  const [selectedIpKitId, setSelectedIpKitId] = useState<string | null>(null)
 
   const handleFilesUploaded = async (files: UploadedFile[]) => {
     console.log("Files uploaded:", files)
@@ -59,7 +64,7 @@ export default function AssetsPageClient({
               tags: [],
               metadata: file.metadata,
               ipId: file.ipId, // Include ipId if provided
-              ipKitId: mockIpKitId,
+              ipKitId: selectedIpKitId || undefined,
             }),
           })
 
@@ -228,14 +233,38 @@ export default function AssetsPageClient({
             </CardHeader>
             <CardContent>
               <ErrorBoundary>
-                <FileUpload
-                  onFilesUploaded={handleFilesUploaded}
-                  onFilesRemoved={handleFilesRemoved}
-                  ipKitId={mockIpKitId}
-                  category='other'
-                  maxFiles={20}
-                  showIpIdInput={true}
-                />
+                <div className='space-y-4'>
+                  {/* IP Kit Selection */}
+                  <div>
+                    <label className='block text-sm font-medium mb-2'>
+                      IP Kit (Optional)
+                    </label>
+                    <select
+                      value={selectedIpKitId || ""}
+                      onChange={e => setSelectedIpKitId(e.target.value || null)}
+                      className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+                    >
+                      <option value=''>No IP Kit (Global Assets)</option>
+                      {availableIpKits.map(ipKit => (
+                        <option key={ipKit.id} value={ipKit.id}>
+                          {ipKit.title}
+                        </option>
+                      ))}
+                    </select>
+                    <p className='text-xs text-muted-foreground mt-1'>
+                      Assets can be assigned to IP kits later if needed
+                    </p>
+                  </div>
+
+                  <FileUpload
+                    onFilesUploaded={handleFilesUploaded}
+                    onFilesRemoved={handleFilesRemoved}
+                    ipKitId={selectedIpKitId}
+                    category='other'
+                    maxFiles={20}
+                    showIpIdInput={true}
+                  />
+                </div>
               </ErrorBoundary>
             </CardContent>
           </Card>
@@ -279,7 +308,11 @@ export default function AssetsPageClient({
             </CardHeader>
             <CardContent>
               <ErrorBoundary>
-                <AssetGrid onAssetDelete={handleAssetDelete} className='mt-6' />
+                <AssetGrid
+                  onAssetDelete={handleAssetDelete}
+                  availableIpKits={availableIpKits}
+                  className='mt-6'
+                />
               </ErrorBoundary>
             </CardContent>
           </Card>
