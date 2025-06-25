@@ -102,6 +102,7 @@ export function CampaignDiscoverClient({
   // Smart fallback for campaign images
   const getCampaignImage = () => {
     if (campaign.thumbnail_url) return campaign.thumbnail_url
+    if (campaign.thumbnailUrl) return campaign.thumbnailUrl
     if (campaign.imageUrl) return campaign.imageUrl
     // Return null to show gradient fallback instead of placeholder
     return null
