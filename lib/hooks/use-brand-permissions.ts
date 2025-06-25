@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { UserPermissions } from '@/lib/auth/permissions'
 
@@ -22,9 +22,8 @@ export function useBrandPermissions(): BrandPermissionHook {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const supabase = createClient()
-
-  const fetchPermissions = async () => {
+  const fetchPermissions = useCallback(async () => {
+    const supabase = createClient()
     try {
       setLoading(true)
       setError(null)
@@ -61,11 +60,12 @@ export function useBrandPermissions(): BrandPermissionHook {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchPermissions()
 
+    const supabase = createClient()
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
@@ -76,7 +76,7 @@ export function useBrandPermissions(): BrandPermissionHook {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [fetchPermissions])
 
   return {
     permissions,

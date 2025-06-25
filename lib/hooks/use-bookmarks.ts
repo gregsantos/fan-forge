@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 
 export function useBookmarks() {
   const [bookmarks, setBookmarks] = useState<string[]>([])
@@ -25,11 +25,11 @@ export function useBookmarks() {
     fetchBookmarks()
   }, [])
 
-  const isBookmarked = (campaignId: string) => {
+  const isBookmarked = useCallback((campaignId: string) => {
     return bookmarks.includes(campaignId)
-  }
+  }, [bookmarks])
 
-  const toggleBookmark = async (campaignId: string) => {
+  const toggleBookmark = useCallback(async (campaignId: string) => {
     const wasBookmarked = isBookmarked(campaignId)
     
     // Optimistic update
@@ -75,7 +75,7 @@ export function useBookmarks() {
         setBookmarks(prev => prev.filter(id => id !== campaignId))
       }
     }
-  }
+  }, [isBookmarked])
 
   return {
     bookmarks,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -108,68 +108,66 @@ export default function DiscoverPage() {
     { id: "many", label: "16+ Assets" }
   ]
 
-  // Fetch campaigns from API
-  const fetchCampaigns = async () => {
-    try {
-      setLoading(true)
-      
-      // Filter out bookmarked from status if it's included
-      const statusFilters = filters.status.filter(s => s !== "bookmarked")
-      const showBookmarked = filters.status.includes("bookmarked")
-      
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: "12",
-        search: filters.search,
-        status: statusFilters.length > 0 ? statusFilters.join(",") : "active",
-        category: filters.category !== "all" ? filters.category : "",
-        deadline: filters.deadline !== "all" ? filters.deadline : "",
-        assetCount: filters.assetCount !== "all" ? filters.assetCount : "",
-        sortBy: sortBy.field,
-        sortDirection: sortBy.direction
-      })
-
-      const response = await fetch(`/api/campaigns?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        let campaigns = data.campaigns
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        setLoading(true)
         
-        // Filter to bookmarked campaigns if that filter is active
-        if (showBookmarked) {
-          campaigns = campaigns.filter((campaign: Campaign) => isBookmarked(campaign.id))
+        // Filter out bookmarked from status if it's included
+        const statusFilters = filters.status.filter(s => s !== "bookmarked")
+        const showBookmarked = filters.status.includes("bookmarked")
+        
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: "12",
+          search: filters.search,
+          status: statusFilters.length > 0 ? statusFilters.join(",") : "active",
+          category: filters.category !== "all" ? filters.category : "",
+          deadline: filters.deadline !== "all" ? filters.deadline : "",
+          assetCount: filters.assetCount !== "all" ? filters.assetCount : "",
+          sortBy: sortBy.field,
+          sortDirection: sortBy.direction
+        })
+
+        const response = await fetch(`/api/campaigns?${params}`)
+        if (response.ok) {
+          const data = await response.json()
+          let campaigns = data.campaigns
+          
+          // Filter to bookmarked campaigns if that filter is active
+          if (showBookmarked) {
+            campaigns = campaigns.filter((campaign: Campaign) => isBookmarked(campaign.id))
+          }
+          
+          setCampaigns(campaigns)
+          setTotalPages(Math.ceil(campaigns.length / 12)) // Recalculate pages for bookmarked filter
         }
-        
-        setCampaigns(campaigns)
-        setTotalPages(Math.ceil(campaigns.length / 12)) // Recalculate pages for bookmarked filter
+      } catch (error) {
+        console.error("Failed to fetch campaigns:", error)
+      } finally {
+        setLoading(false)
       }
-    } catch (error) {
-      console.error("Failed to fetch campaigns:", error)
-    } finally {
-      setLoading(false)
     }
-  }
 
-  // Fetch featured campaigns
-  const fetchFeaturedCampaigns = async () => {
-    try {
-      setFeaturedLoading(true)
-      const response = await fetch("/api/campaigns?featured=true&limit=3")
-      if (response.ok) {
-        const data = await response.json()
-        setFeaturedCampaigns(data.campaigns)
-      }
-    } catch (error) {
-      console.error("Failed to fetch featured campaigns:", error)
-    } finally {
-      setFeaturedLoading(false)
-    }
-  }
-
-  useEffect(() => {
     fetchCampaigns()
-  }, [currentPage, filters, sortBy, bookmarks])
+  }, [currentPage, filters, sortBy, isBookmarked])
 
   useEffect(() => {
+    const fetchFeaturedCampaigns = async () => {
+      try {
+        setFeaturedLoading(true)
+        const response = await fetch("/api/campaigns?featured=true&limit=3")
+        if (response.ok) {
+          const data = await response.json()
+          setFeaturedCampaigns(data.campaigns)
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured campaigns:", error)
+      } finally {
+        setFeaturedLoading(false)
+      }
+    }
+
     fetchFeaturedCampaigns()
   }, [])
 

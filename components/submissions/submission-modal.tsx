@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   Dialog,
   DialogContent,
@@ -60,14 +60,27 @@ export function SubmissionModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
-  // Validate canvas and generate artwork preview when modal opens
-  useEffect(() => {
-    if (isOpen && !showSuccess) {
-      validateCanvasAndGeneratePreview()
+  const generateArtworkPreview = useCallback(async () => {
+    try {
+      setIsGeneratingPreview(true)
+      
+      const blob = await exportCanvas(
+        canvasElements,
+        assets,
+        { width: 800, height: 600 },
+        { format: 'png', scale: 1 } // Lower scale for preview
+      )
+      
+      const previewUrl = URL.createObjectURL(blob)
+      setArtworkPreview(previewUrl)
+    } catch (error) {
+      console.error('Failed to generate artwork preview:', error)
+    } finally {
+      setIsGeneratingPreview(false)
     }
-  }, [isOpen, canvasElements, showSuccess, ipKitId])
+  }, [canvasElements, assets])
 
-  const validateCanvasAndGeneratePreview = async () => {
+  const validateCanvasAndGeneratePreview = useCallback(async () => {
     try {
       // Validate canvas composition
       if (ipKitId) {
@@ -88,27 +101,7 @@ export function SubmissionModal({
       console.error('Canvas validation failed:', error)
       setValidationErrors(['Failed to validate canvas composition'])
     }
-  }
-
-  const generateArtworkPreview = async () => {
-    try {
-      setIsGeneratingPreview(true)
-      
-      const blob = await exportCanvas(
-        canvasElements,
-        assets,
-        { width: 800, height: 600 },
-        { format: 'png', scale: 1 } // Lower scale for preview
-      )
-      
-      const previewUrl = URL.createObjectURL(blob)
-      setArtworkPreview(previewUrl)
-    } catch (error) {
-      console.error('Failed to generate artwork preview:', error)
-    } finally {
-      setIsGeneratingPreview(false)
-    }
-  }
+  }, [canvasElements, ipKitId, generateArtworkPreview])
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}

@@ -51,38 +51,6 @@ export function AssetUploadZone({
   const [ipId, setIpId] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!disabled) {
-      setIsDragOver(true)
-    }
-  }, [disabled])
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragOver(false)
-  }, [])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragOver(false)
-
-    if (disabled) return
-
-    const droppedFiles = Array.from(e.dataTransfer.files)
-    addFiles(droppedFiles)
-  }, [disabled])
-
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files)
-      addFiles(selectedFiles)
-    }
-  }, [])
-
   const addFiles = useCallback((newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
       // Check file type
@@ -113,6 +81,40 @@ export function AssetUploadZone({
       return combined.slice(0, maxFiles) // Respect maxFiles limit
     })
   }, [maxFiles])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!disabled) {
+      setIsDragOver(true)
+    }
+  }, [disabled])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+
+    if (disabled) return
+
+    const droppedFiles = Array.from(e.dataTransfer.files)
+    addFiles(droppedFiles)
+  }, [disabled])
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files)
+      addFiles(selectedFiles)
+    }
+  }, [addFiles])
+
+  
 
   const removeFile = useCallback((index: number) => {
     setFiles(prev => {
@@ -182,7 +184,7 @@ export function AssetUploadZone({
     } finally {
       setIsUploading(false)
     }
-  }, [files, isUploading, category, ipKitId, onAssetsUploaded])
+  }, [files, isUploading, category, ipKitId, onAssetsUploaded, ipId])
 
   const clearAll = useCallback(() => {
     files.forEach(file => {

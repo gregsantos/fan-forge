@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -98,7 +98,7 @@ export function AssetGrid({
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [error, setError] = useState<string | null>(null)
 
-  const fetchAssets = async () => {
+  const fetchAssets = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -121,11 +121,11 @@ export function AssetGrid({
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedCategory, searchQuery])
 
   useEffect(() => {
     fetchAssets()
-  }, [ipKitId, selectedCategory, searchQuery])
+  }, [fetchAssets])
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'

@@ -1,26 +1,15 @@
-import { NextRequest, NextResponse } from "next/server"
+
+import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { db, submissions, campaigns, users, ipKits, submissionAssets } from "@/db"
 import { eq, and, desc, count, ilike, or } from "drizzle-orm"
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@/utils/supabase/server'
 import { ensureUserExists } from '@/lib/auth-utils'
 import { canvasAssetTracker } from '@/lib/canvas-asset-tracker'
 
 async function getCurrentUser(request: NextRequest) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.headers.get('cookie')?.split(';').map(cookie => {
-            const [name, value] = cookie.trim().split('=')
-            return { name, value }
-          }) || []
-        },
-        setAll() {}, // Not needed for read operations
-      },
-    }
-  )
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
 
   const { data: { user } } = await supabase.auth.getUser()
   

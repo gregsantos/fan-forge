@@ -109,7 +109,7 @@ export function CreationCanvas({
   const [isPropertiesPanelOpen, setIsPropertiesPanelOpen] = useState(false)
   const [touchStart, setTouchStart] = useState<{ x: number; y: number; elementId: string } | null>(null)
   const [elementDrag, setElementDrag] = useState<{ elementId: string; startX: number; startY: number; offsetX: number; offsetY: number; initialPos: { x: number; y: number } } | null>(null)
-  const [isResizing, setIsResizing] = useState<{ elementId: string; corner: string; startX: number; startY: number; startWidth: number; startHeight: number; initialSize: { width: number; height: number } } | null>(null)
+  const [isResizing, setIsResizing] = useState<{ elementId: string; corner: string; startX: number; startY: number; startWidth: number; startHeight: number; initialSize: { width: number; height: number }; initialPos: { x: number; y: number } } | null>(null)
   const [isRotating, setIsRotating] = useState<{ elementId: string; startAngle: number; initialRotation: number } | null>(null)
   const [editingTextId, setEditingTextId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState<string>('')
@@ -130,6 +130,8 @@ export function CreationCanvas({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [lastSavedElements, setLastSavedElements] = useState<CanvasElement[]>([])
   const [lastAutoSaveTime, setLastAutoSaveTime] = useState<Date | null>(null)
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
   
   // Action history state
   const [actionHistory, setActionHistory] = useState<ActionHistory>(() => createActionHistory())
@@ -138,8 +140,33 @@ export function CreationCanvas({
   // Submission state
   const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false)
   
-  const canvasRef = useRef<HTMLDivElement>(null)
-  const canvasContainerRef = useRef<HTMLDivElement>(null)
+
+  // Calculate current canvas scale for toolbar positioning
+  const canvasScale = useMemo(() => {
+    if (isMobile) {
+      return 1 // Mobile uses no scaling
+    } else {
+      // Desktop scaling calculation (same as in canvas style)
+      const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800
+      
+      let panelWidth = 224
+      if (viewportWidth >= 1024) panelWidth = 256
+      if (viewportWidth >= 1280) panelWidth = 288
+      panelWidth = Math.min(panelWidth, 288)
+      
+      const totalPanelWidth = panelWidth * 2
+      const padding = 64
+      
+      const availableWidth = Math.max(400, viewportWidth - totalPanelWidth - padding)
+      const availableHeight = Math.max(300, windowHeight - 200)
+      
+      const scaleX = availableWidth / 800
+      const scaleY = availableHeight / 600
+      const autoScale = Math.min(scaleX, scaleY, 1.0)
+      
+      return zoom * autoScale
+    }
+  }, [isMobile, viewportWidth, zoom])
 
   // Detect responsive breakpoints for optimal layout
   useEffect(() => {
@@ -210,6 +237,22 @@ export function CreationCanvas({
     }
   }
 
+  // Action recording functions
+  const recordAction = useCallback((action: Omit<import('@/lib/canvas-actions').CanvasAction, 'id' | 'timestamp'>) => {
+    setActionHistory(prev => addAction(prev, action))
+  }, [])
+
+  // Debounce element updates for performance
+  const debouncedUpdateElement = useCallback(
+    (id: string, updates: Partial<CanvasElement>) => {
+      setElements(prev => 
+        prev.map(el => el.id === id ? { ...el, ...updates } : el)
+      )
+    },
+    []
+  )
+  const updateElement = debouncedUpdateElement
+
   // Element drag handlers for mouse/trackpad devices
   const handleElementMouseDown = (e: React.MouseEvent, elementId: string) => {
     if (canvasRef.current) {
@@ -230,32 +273,11 @@ export function CreationCanvas({
     }
   }
 
-  const handleElementMouseMove = (e: MouseEvent) => {
-    if (elementDrag && canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect()
-      const newX = Math.max(0, (e.clientX - rect.left - panOffset.x) / zoom - elementDrag.offsetX)
-      const newY = Math.max(0, (e.clientY - rect.top - panOffset.y) / zoom - elementDrag.offsetY)
-      
-      updateElement(elementDrag.elementId, { x: newX, y: newY })
-    }
-  }
-
-  const handleElementMouseUp = () => {
-    if (elementDrag) {
-      const element = elements.find(el => el.id === elementDrag.elementId)
-      if (element && (element.x !== elementDrag.initialPos.x || element.y !== elementDrag.initialPos.y)) {
-        recordAction(createMoveAction(
-          elementDrag.elementId,
-          elementDrag.initialPos,
-          { x: element.x, y: element.y }
-        ))
-      }
-    }
-    setElementDrag(null)
-  }
-
-  // Resize handlers for mouse/trackpad devices
-  const handleResizeMouseDown = (e: React.MouseEvent, elementId: string, corner: string) => {
+  const handleResizeMouseDown = (
+    e: React.MouseEvent,
+    elementId: string,
+    corner: string
+  ) => {
     e.stopPropagation()
     const element = elements.find(el => el.id === elementId)
     if (element) {
@@ -266,89 +288,12 @@ export function CreationCanvas({
         startY: e.clientY,
         startWidth: element.width,
         startHeight: element.height,
-        initialSize: { width: element.width, height: element.height }
+        initialSize: { width: element.width, height: element.height },
+        initialPos: { x: element.x, y: element.y },
       })
     }
   }
 
-  const handleResizeMouseMove = (e: MouseEvent) => {
-    if (isResizing) {
-      const deltaX = e.clientX - isResizing.startX
-      const deltaY = e.clientY - isResizing.startY
-      
-      let newWidth = isResizing.startWidth
-      let newHeight = isResizing.startHeight
-      let newX, newY
-      
-      const element = elements.find(el => el.id === isResizing.elementId)
-      if (!element) return
-      
-      switch (isResizing.corner) {
-        // Corner handles (proportional or free resize)
-        case 'se': // bottom-right
-          newWidth = Math.max(20, isResizing.startWidth + deltaX / zoom)
-          newHeight = Math.max(20, isResizing.startHeight + deltaY / zoom)
-          break
-        case 'sw': // bottom-left
-          newWidth = Math.max(20, isResizing.startWidth - deltaX / zoom)
-          newHeight = Math.max(20, isResizing.startHeight + deltaY / zoom)
-          newX = element.x + (isResizing.startWidth - newWidth)
-          break
-        case 'ne': // top-right
-          newWidth = Math.max(20, isResizing.startWidth + deltaX / zoom)
-          newHeight = Math.max(20, isResizing.startHeight - deltaY / zoom)
-          newY = element.y + (isResizing.startHeight - newHeight)
-          break
-        case 'nw': // top-left
-          newWidth = Math.max(20, isResizing.startWidth - deltaX / zoom)
-          newHeight = Math.max(20, isResizing.startHeight - deltaY / zoom)
-          newX = element.x + (isResizing.startWidth - newWidth)
-          newY = element.y + (isResizing.startHeight - newHeight)
-          break
-        
-        // Side handles (one-directional resize)
-        case 'n': // top
-          newHeight = Math.max(20, isResizing.startHeight - deltaY / zoom)
-          newY = element.y + (isResizing.startHeight - newHeight)
-          break
-        case 's': // bottom
-          newHeight = Math.max(20, isResizing.startHeight + deltaY / zoom)
-          break
-        case 'e': // right
-          newWidth = Math.max(20, isResizing.startWidth + deltaX / zoom)
-          break
-        case 'w': // left
-          newWidth = Math.max(20, isResizing.startWidth - deltaX / zoom)
-          newX = element.x + (isResizing.startWidth - newWidth)
-          break
-      }
-      
-      const updates: Partial<CanvasElement> = { width: newWidth, height: newHeight }
-      if (newX !== undefined) updates.x = newX
-      if (newY !== undefined) updates.y = newY
-      
-      updateElement(isResizing.elementId, updates)
-    }
-  }
-
-  const handleResizeMouseUp = () => {
-    if (isResizing) {
-      const element = elements.find(el => el.id === isResizing.elementId)
-      if (element && (element.width !== isResizing.initialSize.width || element.height !== isResizing.initialSize.height)) {
-        recordAction(createResizeAction(
-          isResizing.elementId,
-          isResizing.initialSize,
-          { width: element.width, height: element.height }
-        ))
-      }
-      // Prevent canvas click from deselecting after resize
-      setPreventNextCanvasClick(true)
-      setTimeout(() => setPreventNextCanvasClick(false), 50)
-    }
-    setIsResizing(null)
-  }
-
-  // Rotation handlers
   const handleRotationMouseDown = (e: React.MouseEvent, elementId: string) => {
     e.stopPropagation()
     const element = elements.find(el => el.id === elementId)
@@ -376,69 +321,170 @@ export function CreationCanvas({
       setIsRotating({
         elementId,
         startAngle,
-        initialRotation: element.rotation
+        initialRotation: element.rotation,
       })
     }
   }
 
-  const handleRotationMouseMove = (e: MouseEvent) => {
-    if (isRotating && canvasRef.current) {
-      const element = elements.find(el => el.id === isRotating.elementId)
-      if (element) {
+  useEffect(() => {
+    const handleElementMouseMove = (e: MouseEvent) => {
+      if (elementDrag && canvasRef.current) {
         const rect = canvasRef.current.getBoundingClientRect()
+        const newX = Math.max(0, (e.clientX - rect.left - panOffset.x) / zoom - elementDrag.offsetX)
+        const newY = Math.max(0, (e.clientY - rect.top - panOffset.y) / zoom - elementDrag.offsetY)
         
-        // Account for canvas scaling and centering
-        const canvasWidth = 800
-        const canvasHeight = 600
-        const scaledWidth = canvasWidth * canvasScale
-        const scaledHeight = canvasHeight * canvasScale
-        const centerOffsetX = (rect.width - scaledWidth) / 2
-        const centerOffsetY = (rect.height - scaledHeight) / 2
+        updateElement(elementDrag.elementId, { x: newX, y: newY })
+      }
+    }
+
+    const handleElementMouseUp = () => {
+      if (elementDrag) {
+        const element = elements.find(el => el.id === elementDrag.elementId)
+        if (element && (element.x !== elementDrag.initialPos.x || element.y !== elementDrag.initialPos.y)) {
+          recordAction(createMoveAction(
+            elementDrag.elementId,
+            elementDrag.initialPos,
+            { x: element.x, y: element.y }
+          ))
+        }
+      }
+      setElementDrag(null)
+    }
+
+    const handleResizeMouseMove = (e: MouseEvent) => {
+      if (isResizing) {
+        const deltaX = e.clientX - isResizing.startX
+        const deltaY = e.clientY - isResizing.startY
         
-        // Element center position with proper scaling
-        const elementCenterX = (element.x + element.width / 2) * zoom * canvasScale + (panOffset.x * canvasScale)
-        const elementCenterY = (element.y + element.height / 2) * zoom * canvasScale + (panOffset.y * canvasScale)
+        let newWidth = isResizing.startWidth
+        let newHeight = isResizing.startHeight
+        let newX = isResizing.initialPos.x
+        let newY = isResizing.initialPos.y
         
-        // Final screen position
-        const centerX = rect.left + centerOffsetX + elementCenterX
-        const centerY = rect.top + centerOffsetY + elementCenterY
+        const element = elements.find(el => el.id === isResizing.elementId)
+        if (!element) return
         
-        const currentAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI)
-        const angleDiff = currentAngle - isRotating.startAngle
-        let newRotation = isRotating.initialRotation + angleDiff
-        
-        // Snap to 15-degree increments when shift is held
-        if (e.shiftKey) {
-          newRotation = Math.round(newRotation / 15) * 15
+        switch (isResizing.corner) {
+          // Corner handles (proportional or free resize)
+          case 'se': // bottom-right
+            newWidth = Math.max(20, isResizing.startWidth + deltaX / zoom)
+            newHeight = Math.max(20, isResizing.startHeight + deltaY / zoom)
+            break
+          case 'sw': // bottom-left
+            newWidth = Math.max(20, isResizing.startWidth - deltaX / zoom)
+            newHeight = Math.max(20, isResizing.startHeight + deltaY / zoom)
+            newX = isResizing.initialPos.x + (isResizing.startWidth - newWidth)
+            break
+          case 'ne': // top-right
+            newWidth = Math.max(20, isResizing.startWidth + deltaX / zoom)
+            newHeight = Math.max(20, isResizing.startHeight - deltaY / zoom)
+            newY = isResizing.initialPos.y + (isResizing.startHeight - newHeight)
+            break
+          case 'nw': // top-left
+            newWidth = Math.max(20, isResizing.startWidth - deltaX / zoom)
+            newHeight = Math.max(20, isResizing.startHeight - deltaY / zoom)
+            newX = isResizing.initialPos.x + (isResizing.startWidth - newWidth)
+            newY = isResizing.initialPos.y + (isResizing.startHeight - newHeight)
+            break
+          
+          // Side handles (one-directional resize)
+          case 'n': // top
+            newHeight = Math.max(20, isResizing.startHeight - deltaY / zoom)
+            newY = isResizing.initialPos.y + (isResizing.startHeight - newHeight)
+            break
+          case 's': // bottom
+            newHeight = Math.max(20, isResizing.startHeight + deltaY / zoom)
+            break
+          case 'e': // right
+            newWidth = Math.max(20, isResizing.startWidth + deltaX / zoom)
+            break
+          case 'w': // left
+            newWidth = Math.max(20, isResizing.startWidth - deltaX / zoom)
+            newX = isResizing.initialPos.x + (isResizing.startWidth - newWidth)
+            break
         }
         
-        // Normalize angle to 0-360 range
-        newRotation = ((newRotation % 360) + 360) % 360
+        const updates: Partial<CanvasElement> = { width: newWidth, height: newHeight }
+        if (newX !== undefined) updates.x = newX
+        if (newY !== undefined) updates.y = newY
         
-        updateElement(isRotating.elementId, { rotation: newRotation })
+        updateElement(isResizing.elementId, updates)
       }
     }
-  }
 
-  const handleRotationMouseUp = () => {
-    if (isRotating) {
-      const element = elements.find(el => el.id === isRotating.elementId)
-      if (element && element.rotation !== isRotating.initialRotation) {
-        recordAction(createRotateAction(
-          isRotating.elementId,
-          isRotating.initialRotation,
-          element.rotation
-        ))
+    const handleResizeMouseUp = () => {
+      if (isResizing) {
+        const element = elements.find(el => el.id === isResizing.elementId)
+        if (element && (element.width !== isResizing.initialSize.width || element.height !== isResizing.initialSize.height)) {
+          recordAction(createResizeAction(
+            isResizing.elementId,
+            isResizing.initialSize,
+            { width: element.width, height: element.height }
+          ))
+        }
+        // Prevent canvas click from deselecting after resize
+        setPreventNextCanvasClick(true)
+        setTimeout(() => setPreventNextCanvasClick(false), 50)
       }
-      // Prevent canvas click from deselecting after rotation
-      setPreventNextCanvasClick(true)
-      setTimeout(() => setPreventNextCanvasClick(false), 50)
+      setIsResizing(null)
     }
-    setIsRotating(null)
-  }
 
-  // Global mouse event listeners
-  useEffect(() => {
+    const handleRotationMouseMove = (e: MouseEvent) => {
+      if (isRotating && canvasRef.current) {
+        const element = elements.find(el => el.id === isRotating.elementId)
+        if (element) {
+          const rect = canvasRef.current.getBoundingClientRect()
+          
+          // Account for canvas scaling and centering
+          const canvasWidth = 800
+          const canvasHeight = 600
+          const scaledWidth = canvasWidth * canvasScale
+          const scaledHeight = canvasHeight * canvasScale
+          const centerOffsetX = (rect.width - scaledWidth) / 2
+          const centerOffsetY = (rect.height - scaledHeight) / 2
+          
+          // Element center position with proper scaling
+          const elementCenterX = (element.x + element.width / 2) * zoom * canvasScale + (panOffset.x * canvasScale)
+          const elementCenterY = (element.y + element.height / 2) * zoom * canvasScale + (panOffset.y * canvasScale)
+          
+          // Final screen position
+          const centerX = rect.left + centerOffsetX + elementCenterX
+          const centerY = rect.top + centerOffsetY + elementCenterY
+          
+          const currentAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI)
+          const angleDiff = currentAngle - isRotating.startAngle
+          let newRotation = isRotating.initialRotation + angleDiff
+          
+          // Snap to 15-degree increments when shift is held
+          if (e.shiftKey) {
+            newRotation = Math.round(newRotation / 15) * 15
+          }
+          
+          // Normalize angle to 0-360 range
+          newRotation = ((newRotation % 360) + 360) % 360
+          
+          updateElement(isRotating.elementId, { rotation: newRotation })
+        }
+      }
+    }
+
+    const handleRotationMouseUp = () => {
+      if (isRotating) {
+        const element = elements.find(el => el.id === isRotating.elementId)
+        if (element && element.rotation !== isRotating.initialRotation) {
+          recordAction(createRotateAction(
+            isRotating.elementId,
+            isRotating.initialRotation,
+            element.rotation
+          ))
+        }
+        // Prevent canvas click from deselecting after rotation
+        setPreventNextCanvasClick(true)
+        setTimeout(() => setPreventNextCanvasClick(false), 50)
+      }
+      setIsRotating(null)
+    }
+
     const handleMouseMove = (e: MouseEvent) => {
       handleElementMouseMove(e)
       handleResizeMouseMove(e)
@@ -460,7 +506,7 @@ export function CreationCanvas({
         document.removeEventListener('mouseup', handleMouseUp)
       }
     }
-  }, [elementDrag, isResizing, isRotating, zoom, panOffset])
+  }, [elementDrag, isResizing, isRotating, zoom, panOffset, elements, recordAction, canvasScale, updateElement])
 
   // Text editing handlers
   const handleTextDoubleClick = (elementId: string) => {
@@ -472,18 +518,18 @@ export function CreationCanvas({
     }
   }
 
-  const handleTextSave = () => {
+  const handleTextSave = useCallback(() => {
     if (editingTextId) {
       updateElement(editingTextId, { text: editingText })
       setEditingTextId(null)
       setEditingText('')
     }
-  }
+  }, [editingTextId, editingText, updateElement])
 
-  const handleTextCancel = () => {
+  const handleTextCancel = useCallback(() => {
     setEditingTextId(null)
     setEditingText('')
-  }
+  }, [])
 
   // Handle escape key to cancel text editing
   useEffect(() => {
@@ -501,7 +547,7 @@ export function CreationCanvas({
       document.addEventListener('keydown', handleKeyDown)
       return () => document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [editingTextId, editingText])
+  }, [editingTextId, handleTextCancel, handleTextSave])
 
   const categories = [
     { id: "all", label: "All Assets", icon: Palette },
@@ -659,16 +705,6 @@ export function CreationCanvas({
     setHasUnsavedChanges(hasChanges)
   }, [elements, lastSavedElements])
 
-  // Debounce element updates for performance
-  const debouncedUpdateElement = useCallback(
-    (id: string, updates: Partial<CanvasElement>) => {
-      setElements(prev => 
-        prev.map(el => el.id === id ? { ...el, ...updates } : el)
-      )
-    },
-    []
-  )
-
   // Zoom with mouse wheel
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -686,9 +722,6 @@ export function CreationCanvas({
     }
   }, [])
 
-
-  const updateElement = debouncedUpdateElement
-
   // Memoize selected element data for performance
   const selectedElementData = useMemo(() => {
     return selectedElement 
@@ -702,10 +735,7 @@ export function CreationCanvas({
       : null
   }, [selectedElementData, assets])
 
-  // Action recording functions
-  const recordAction = useCallback((action: Omit<import('@/lib/canvas-actions').CanvasAction, 'id' | 'timestamp'>) => {
-    setActionHistory(prev => addAction(prev, action))
-  }, [])
+  
 
   const handleUndo = useCallback(() => {
     if (canUndo(actionHistory)) {
@@ -799,32 +829,7 @@ export function CreationCanvas({
     }
   }, [elements, recordAction])
 
-  // Calculate current canvas scale for toolbar positioning
-  const canvasScale = useMemo(() => {
-    if (isMobile) {
-      return 1 // Mobile uses no scaling
-    } else {
-      // Desktop scaling calculation (same as in canvas style)
-      const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800
-      
-      let panelWidth = 224
-      if (viewportWidth >= 1024) panelWidth = 256
-      if (viewportWidth >= 1280) panelWidth = 288
-      panelWidth = Math.min(panelWidth, 288)
-      
-      const totalPanelWidth = panelWidth * 2
-      const padding = 64
-      
-      const availableWidth = Math.max(400, viewportWidth - totalPanelWidth - padding)
-      const availableHeight = Math.max(300, windowHeight - 200)
-      
-      const scaleX = availableWidth / 800
-      const scaleY = availableHeight / 600
-      const autoScale = Math.min(scaleX, scaleY, 1.0)
-      
-      return zoom * autoScale
-    }
-  }, [isMobile, viewportWidth, zoom])
+  
 
   const deleteElement = deleteElementWithHistory
 
@@ -888,6 +893,14 @@ export function CreationCanvas({
   const handleMouseUp = useCallback(() => {
     setIsPanning(false)
   }, [])
+
+  const handleSave = useCallback(() => {
+    if (elements.length === 0) {
+      alert('Nothing to submit. Add some elements to your canvas first.')
+      return
+    }
+    setIsSubmissionModalOpen(true)
+  }, [elements])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -956,15 +969,7 @@ export function CreationCanvas({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedElement, editingTextId, elements, clipboard, handleUndo, handleRedo, deleteElementWithHistory, copyElement, recordAction])
-
-  const handleSave = () => {
-    if (elements.length === 0) {
-      alert('Nothing to submit. Add some elements to your canvas first.')
-      return
-    }
-    setIsSubmissionModalOpen(true)
-  }
+  }, [selectedElement, editingTextId, elements, clipboard, handleUndo, handleRedo, deleteElementWithHistory, copyElement, recordAction, handleSave])
 
   const resetCanvas = () => {
     setElements([])

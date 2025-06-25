@@ -89,28 +89,28 @@ export function IpKitForm({
     }
   }
 
-  const handleAutoSave = async () => {
-    if (!isDirty || !isValid) return
-
-    try {
-      setAutoSaving(true)
-      const formData = watch()
-      await onSave(formData)
-      setLastSaved(new Date())
-    } catch (error) {
-      console.error('Auto-save error:', error)
-    } finally {
-      setAutoSaving(false)
-    }
-  }
-
   // Auto-save every 30 seconds if there are changes
   React.useEffect(() => {
+    const handleAutoSave = async () => {
+      if (!isDirty || !isValid) return
+
+      try {
+        setAutoSaving(true)
+        const formData = watch()
+        await onSave(formData)
+        setLastSaved(new Date())
+      } catch (error) {
+        console.error('Auto-save error:', error)
+      } finally {
+        setAutoSaving(false)
+      }
+    }
+
     if (!isDirty) return
 
     const interval = setInterval(handleAutoSave, 30000)
     return () => clearInterval(interval)
-  }, [isDirty, isValid])
+  }, [isDirty, isValid, watch, onSave])
 
   const getStatusBadge = () => {
     if (ipKit?.isPublished) {

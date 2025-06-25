@@ -57,13 +57,13 @@ export function FileUpload({
   const [ipId, setIpId] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const createUploadedFile = (file: File): UploadedFile => ({
+  const createUploadedFile = useCallback((file: File): UploadedFile => ({
     id: Math.random().toString(36).substring(2),
     file,
     ipId: ipId.trim() || undefined,
     status: 'pending',
     progress: 0
-  })
+  }), [ipId])
 
   const updateFile = useCallback((id: string, updates: Partial<UploadedFile>) => {
     setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f))
@@ -141,7 +141,7 @@ export function FileUpload({
     if (successfulUploads.length > 0) {
       onFilesUploaded(successfulUploads)
     }
-  }, [files, disabled, isUploading, maxFiles, ipKitId, campaignId, category, updateFile, onFilesUploaded, ipId])
+  }, [files, disabled, isUploading, maxFiles, ipKitId, campaignId, category, updateFile, onFilesUploaded, ipId, createUploadedFile])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
