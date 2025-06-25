@@ -351,6 +351,8 @@ export async function getCampaignById(id: string) {
       description: result.campaign.description,
       guidelines: result.campaign.guidelines,
       ipKitId: result.campaign.ipKitId,
+      imageUrl: result.campaign.imageUrl,
+      thumbnailUrl: result.campaign.thumbnailUrl,
       brand_name: result.brand?.name,
       status: result.campaign.status,
       startDate: result.campaign.startDate,
