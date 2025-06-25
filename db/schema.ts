@@ -113,6 +113,7 @@ export const assets = pgTable('assets', {
   categoryIdx: index('assets_category_idx').on(table.category),
   filenameIdx: index('assets_filename_idx').on(table.filename),
   ipIdIdx: index('assets_ip_id_idx').on(table.ipId),
+  uploadedByIdx: index('assets_uploaded_by_idx').on(table.uploadedBy),
 }))
 
 // Junction table for many-to-many relationship between assets and IP kits
