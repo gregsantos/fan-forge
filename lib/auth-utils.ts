@@ -250,3 +250,25 @@ export function clearUserRoleCache(userId?: string) {
     userRoleCache.clear()
   }
 }
+
+/**
+ * Get brand IDs that a user has access to
+ */
+export async function getUserBrandIds(userId: string): Promise<string[]> {
+  try {
+    const userWithRoles = await getUserWithRoles(userId)
+    if (!userWithRoles) {
+      return []
+    }
+
+    // Extract unique brand IDs from user's roles
+    const brandIds = userWithRoles.roles
+      .map((r: any) => r.brandId)
+      .filter((brandId: any): brandId is string => brandId !== null)
+
+    return Array.from(new Set(brandIds)) // Remove duplicates
+  } catch (error) {
+    console.error('Error getting user brand IDs:', error)
+    return []
+  }
+}

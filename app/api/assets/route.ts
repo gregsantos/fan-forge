@@ -6,6 +6,7 @@ import { assets, ipKits, assetIpKits } from '@/db/schema'
 import { eq, and, desc, ilike, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { getBrandAssets } from '@/lib/data/assets'
+import { getUserBrandIds } from '@/lib/auth-utils'
 
 // Asset creation schema
 const createAssetSchema = z.object({
@@ -23,7 +24,7 @@ const createAssetSchema = z.object({
     colorPalette: z.array(z.string()).optional()
   }),
   ipId: z.string().optional(), // Optional blockchain address
-  ipKitId: z.string().uuid()
+  ipKitId: z.string().uuid().optional() // Optional for global assets
 })
 
 // Asset query schema - simplified to handle URL params better
@@ -76,8 +77,8 @@ export async function GET(request: NextRequest) {
     if (query.page) cleanParams.page = query.page
     if (query.sortBy) cleanParams.sortBy = query.sortBy
 
-    // Use shared data layer function
-    const result = await getBrandAssets(cleanParams)
+    // Use shared data layer function with current user for brand filtering
+    const result = await getBrandAssets(cleanParams, user.id)
 
     return NextResponse.json(result)
 
@@ -111,22 +112,42 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const assetData = createAssetSchema.parse(body)
 
-    // Verify that the IP Kit exists and user has access to it
-    const ipKit = await db
-      .select()
-      .from(ipKits)
-      .where(eq(ipKits.id, assetData.ipKitId))
-      .limit(1)
+    // Handle asset upload for IP Kit vs global assets
+    if (assetData.ipKitId) {
+      // Verify that the IP Kit exists and user has access to it
+      const ipKit = await db
+        .select()
+        .from(ipKits)
+        .where(eq(ipKits.id, assetData.ipKitId))
+        .limit(1)
 
-    if (ipKit.length === 0) {
-      return NextResponse.json(
-        { error: 'IP Kit not found' },
-        { status: 404 }
-      )
+      if (ipKit.length === 0) {
+        return NextResponse.json(
+          { error: 'IP Kit not found' },
+          { status: 404 }
+        )
+      }
+
+      // SECURITY: Verify user has access to this IP Kit's brand
+      const userBrandIds = await getUserBrandIds(user.id)
+      const ipKitBrandId = ipKit[0].brandId
+      
+      if (!userBrandIds.includes(ipKitBrandId)) {
+        return NextResponse.json(
+          { error: 'Unauthorized: You do not have access to this IP Kit' },
+          { status: 403 }
+        )
+      }
+    } else {
+      // Global asset upload - verify user has brand access
+      const userBrandIds = await getUserBrandIds(user.id)
+      if (userBrandIds.length === 0) {
+        return NextResponse.json(
+          { error: 'Unauthorized: You must belong to a brand to upload assets' },
+          { status: 403 }
+        )
+      }
     }
-
-    // TODO: Add proper authorization check for IP Kit access
-    // For now, we'll assume the user has access
 
     // Create the asset record
     const [newAsset] = await db
@@ -137,14 +158,16 @@ export async function POST(request: NextRequest) {
       })
       .returning()
 
-    // Also create the asset-ipkit relationship in the junction table
-    await db
-      .insert(assetIpKits)
-      .values({
-        assetId: newAsset.id,
-        ipKitId: assetData.ipKitId
-      })
-      .onConflictDoNothing()
+    // Create the asset-ipkit relationship in the junction table (if IP Kit is specified)
+    if (assetData.ipKitId) {
+      await db
+        .insert(assetIpKits)
+        .values({
+          assetId: newAsset.id,
+          ipKitId: assetData.ipKitId
+        })
+        .onConflictDoNothing()
+    }
 
     return NextResponse.json(newAsset, { status: 201 })
 
