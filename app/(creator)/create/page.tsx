@@ -77,9 +77,9 @@ function CreatePageContent() {
           setAssets(assetsData.assets || [])
         } else {
           console.log(
-            "No IP kit ID found in campaign, using mock assets as fallback"
+            "No IP kit ID found in campaign, no assets available"
           )
-          setAssets(mockAssets)
+          setAssets([]) // No assets for campaigns without IP kits
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred")

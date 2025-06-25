@@ -1,5 +1,5 @@
 import { db, assets, ipKits, brands } from "@/db"
-import { eq, desc, count, ilike, and, asc } from "drizzle-orm"
+import { eq, desc, count, ilike, and, asc, isNull } from "drizzle-orm"
 
 /**
  * Shared data functions for assets
@@ -28,6 +28,9 @@ export async function getBrandAssets(searchParams: Record<string, string | undef
     // Filter by specific IP Kit if provided
     if (ipKitId) {
       whereConditions.push(eq(assets.ipKitId, ipKitId))
+    } else if (ipKitId === null || ipKitId === 'null') {
+      // Explicitly requesting global assets (for brand assets page only)
+      whereConditions.push(isNull(assets.ipKitId))
     }
     
     // Filter by category if provided
