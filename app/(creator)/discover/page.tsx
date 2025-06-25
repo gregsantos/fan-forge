@@ -12,6 +12,7 @@ import { formatDate, cn } from "@/lib/utils"
 import { useBookmarks } from "@/lib/hooks/use-bookmarks"
 import { Search, Filter, Calendar, Users, Image, ArrowRight, Bookmark, SortAsc, SortDesc, X, BookmarkCheck } from "lucide-react"
 import Link from "next/link"
+import NextImage from "next/image"
 
 interface Campaign {
   id: string
@@ -208,6 +209,11 @@ export default function DiscoverPage() {
     sortBy.field !== "created_at" || sortBy.direction !== "desc"
   )
 
+  // Smart fallback for campaign thumbnails
+  const getCampaignThumbnail = (campaign: Campaign) => {
+    return campaign.thumbnail_url || null
+  }
+
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
@@ -305,12 +311,23 @@ export default function DiscoverPage() {
                       </div>
 
                       {/* Thumbnail Preview */}
-                      <div className="aspect-video bg-muted rounded-lg overflow-hidden flex-1">
-                        <img
-                          src={campaign.thumbnail_url}
-                          alt={campaign.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden flex-1 relative">
+                        {getCampaignThumbnail(campaign) ? (
+                          <NextImage
+                            src={getCampaignThumbnail(campaign)!}
+                            alt={campaign.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 flex items-center justify-center">
+                            <div className="text-center text-white p-4">
+                              <h3 className="font-bold text-lg mb-2">{campaign.title}</h3>
+                              <p className="text-sm opacity-90">by {campaign.brand_name}</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Action Button */}
@@ -610,12 +627,23 @@ export default function DiscoverPage() {
                     </div>
 
                     {/* Thumbnail Preview */}
-                    <div className="aspect-video bg-muted rounded-lg overflow-hidden flex-1">
-                      <img
-                        src={campaign.thumbnail_url}
-                        alt={campaign.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                    <div className="aspect-video bg-muted rounded-lg overflow-hidden flex-1 relative">
+                      {getCampaignThumbnail(campaign) ? (
+                        <NextImage
+                          src={getCampaignThumbnail(campaign)!}
+                          alt={campaign.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 flex items-center justify-center">
+                          <div className="text-center text-white p-4">
+                            <h3 className="font-bold text-lg mb-2">{campaign.title}</h3>
+                            <p className="text-sm opacity-90">by {campaign.brand_name}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Action Button */}
