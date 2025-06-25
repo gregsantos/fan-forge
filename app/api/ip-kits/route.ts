@@ -3,8 +3,9 @@ import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
 import { ipKits, brands, assets } from '@/db/schema'
-import { eq, and, desc, ilike, count } from 'drizzle-orm'
+import { eq, and, desc, ilike, count, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import { getUserBrandIds } from '@/lib/auth-utils'
 
 // IP Kit creation schema
 const createIpKitSchema = z.object({
@@ -57,6 +58,15 @@ export async function GET(request: NextRequest) {
 
     // Build where conditions for database query
     const whereConditions = []
+
+    // SECURITY: Filter IP kits by user's brand access
+    const userBrandIds = await getUserBrandIds(user.id)
+    if (userBrandIds.length > 0) {
+      whereConditions.push(inArray(ipKits.brandId, userBrandIds))
+    } else {
+      // User has no brand access, show no IP kits
+      whereConditions.push(eq(ipKits.id, 'no-access'))
+    }
 
     if (query.brandId) {
       whereConditions.push(eq(ipKits.brandId, query.brandId))
@@ -165,6 +175,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Brand not found' },
         { status: 404 }
+      )
+    }
+
+    // SECURITY: Verify user has access to this brand
+    const userBrandIds = await getUserBrandIds(user.id)
+    if (!userBrandIds.includes(ipKitData.brandId)) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You do not have access to this brand' },
+        { status: 403 }
       )
     }
 
