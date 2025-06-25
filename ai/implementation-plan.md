@@ -610,3 +610,63 @@ You will follow this exact sequence from the Implementation Plan:
 - [ ] Add data integrity checks and validation
 - [ ] Create secure backup and recovery mechanisms
 - [ ] Implement GDPR compliance features for data handling
+
+### Phase 13: Data Management and Safety Features (Future Enhancements)
+
+#### 13.1 Soft Deletion System (Feature #19)
+
+- [ ] Add soft deletion fields to campaigns table (deleted_at, deleted_by, deletion_reason)
+- [ ] Add soft deletion fields to related tables (submissions, assets, etc.)
+- [ ] Create database indexes for soft deletion queries (deleted_at WHERE NOT NULL)
+- [ ] Update all SELECT queries to filter out soft-deleted records by default
+- [ ] Create helper functions for including/excluding deleted records in queries
+- [ ] Update shared data layer functions in `lib/data/campaigns.ts` to handle soft deletion
+- [ ] Build SoftDeleteService class with campaign deletion and restoration methods
+- [ ] Modify DELETE API endpoints to perform soft deletion instead of hard deletion
+- [ ] Add restoration API endpoints for recovering deleted campaigns
+- [ ] Create admin-only permanent deletion endpoints with strict confirmation
+
+#### 13.2 Enhanced Deletion UI/UX
+
+- [ ] Build warning dialogs showing deletion impact (submission count, dependencies)
+- [ ] Add deletion reason input fields (optional/required based on business rules)
+- [ ] Implement different confirmation levels based on campaign status and data volume
+- [ ] Create "Recently Deleted" section in admin dashboard
+- [ ] Add restore functionality with appropriate permission checks
+- [ ] Build permanent deletion interface for admin users with multi-step confirmation
+- [ ] Add toast notifications for successful deletions and restorations
+- [ ] Create status indicators for soft-deleted campaigns in lists
+- [ ] Display audit trail showing who deleted when and why
+
+#### 13.3 Deletion Business Rules and Policies
+
+- [ ] Define deletion policies (draft campaigns vs active with submissions)
+- [ ] Implement admin approval requirement for deleting campaigns with submissions
+- [ ] Create automatic permanent deletion after configurable retention period (90 days)
+- [ ] Build permission matrix for different user roles (Brand Admin, Platform Admin)
+- [ ] Add validation to prevent deletion of campaigns with critical dependencies
+- [ ] Implement cascade soft deletion for related submissions and assets
+- [ ] Create export functionality before deletion for data preservation
+- [ ] Add confirmation workflows for bulk deletion operations
+
+#### 13.4 Data Recovery and Backup
+
+- [ ] Implement zero-downtime migration strategy for soft deletion rollout
+- [ ] Create data cleanup jobs for old soft-deleted records
+- [ ] Add monitoring and alerting for deletion patterns and anomalies
+- [ ] Build automated backup system before any permanent deletions
+- [ ] Create recovery procedures for accidental permanent deletions
+- [ ] Implement audit logging for all deletion and restoration actions
+- [ ] Add performance monitoring for soft deletion filter queries
+- [ ] Create database maintenance procedures for soft deletion cleanup
+
+#### 13.5 Campaign Archive System
+
+- [ ] Build campaign archiving as alternative to deletion
+- [ ] Create archived campaign status with read-only access
+- [ ] Implement bulk archive operations for seasonal cleanup
+- [ ] Add archive restoration functionality
+- [ ] Create archive browsing and search capabilities
+- [ ] Build archive export functionality for long-term storage
+- [ ] Implement automatic archiving rules based on campaign age and activity
+- [ ] Add archive analytics and reporting features

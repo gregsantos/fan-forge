@@ -254,6 +254,7 @@ export default function NewCampaignPage() {
                         onFilesUploaded={handleImageUploaded}
                         onFilesRemoved={() => {}}
                         ipKitId={null}
+                        campaignId={undefined}
                         category="other"
                         maxFiles={1}
                         disabled={isSaving}

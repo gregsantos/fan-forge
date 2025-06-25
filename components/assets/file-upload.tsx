@@ -93,6 +93,7 @@ export function FileUpload({
     setFiles(prev => [...prev, ...uploadFiles])
 
     setIsUploading(true)
+    const successfulUploads: UploadedFile[] = []
 
     // Upload files one by one
     for (const uploadFile of uploadFiles) {
@@ -113,13 +114,17 @@ export function FileUpload({
           }
         })
         
-        updateFile(uploadFile.id, {
-          status: 'success',
+        const updatedFile = {
+          ...uploadFile,
+          status: 'success' as const,
           progress: 100,
           url: result.assetUrl,
           thumbnailUrl: result.thumbnailUrl,
           metadata: result.metadata
-        })
+        }
+        
+        updateFile(uploadFile.id, updatedFile)
+        successfulUploads.push(updatedFile)
 
       } catch (error) {
         console.error('Upload error:', error)
@@ -133,9 +138,8 @@ export function FileUpload({
     setIsUploading(false)
 
     // Notify parent of successful uploads
-    const successfulFiles = files.filter(f => f.status === 'success')
-    if (successfulFiles.length > 0) {
-      onFilesUploaded(successfulFiles)
+    if (successfulUploads.length > 0) {
+      onFilesUploaded(successfulUploads)
     }
   }, [files, disabled, isUploading, maxFiles, ipKitId, campaignId, category, updateFile, onFilesUploaded, ipId])
 
