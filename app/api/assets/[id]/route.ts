@@ -68,7 +68,7 @@ async function checkAssetUsage(assetId: string) {
         activeCampaigns: activeCampaigns.length,
         affectedSubmissions: affectedSubmissions.length,
         campaignNames: activeCampaigns.map(c => c.campaign.title),
-        submissionIds: affectedSubmissions.map(s => s.submission.id)
+        submissionIds: affectedSubmissions.map(s => s.submission?.id).filter(Boolean)
       }
     }
   } catch (error) {
