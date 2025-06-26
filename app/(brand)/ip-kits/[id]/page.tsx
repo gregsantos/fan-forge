@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AssetGallery } from "@/components/ip-kits/asset-gallery"
+import { IpKitAssetGallery } from "@/components/ip-kits/ip-kit-asset-gallery"
 import { AssetUploadZone } from "@/components/ip-kits/asset-upload-zone"
 import { Asset } from "@/types"
 import { 
@@ -111,8 +111,8 @@ export default function IpKitDetailPage() {
     fetchIpKit()
   }
 
-  const handleAssetDeleted = (assetId: string) => {
-    // Remove asset from local state and refresh
+  const handleAssetRemovedFromIpKit = (assetId: string) => {
+    // Remove asset from local state (asset is removed from IP kit, not deleted)
     setIpKit(prev => {
       if (!prev) return prev
       return {
@@ -385,9 +385,10 @@ export default function IpKitDetailPage() {
             </CardHeader>
             <CardContent>
               <ErrorBoundary>
-                <AssetGallery
+                <IpKitAssetGallery
+                  ipKitId={ipKit.id}
                   assets={ipKit.assets}
-                  onAssetDeleted={handleAssetDeleted}
+                  onAssetRemovedFromIpKit={handleAssetRemovedFromIpKit}
                   className="mt-6"
                 />
               </ErrorBoundary>
