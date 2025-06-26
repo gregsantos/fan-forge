@@ -292,6 +292,22 @@ export function AssetGrid({
                       alt={asset.originalFilename}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      onError={(e) => {
+                        // Handle broken images by showing a placeholder
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                        const parent = target.parentElement
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="w-full h-full bg-muted flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed border-muted-foreground/20">
+                              <svg class="h-8 w-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span class="text-xs">Image not found</span>
+                            </div>
+                          `
+                        }
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full bg-muted flex items-center justify-center">
