@@ -73,8 +73,11 @@ export async function middleware(request: NextRequest) {
     error,
   } = await supabase.auth.getUser()
 
-  // Only log unexpected auth errors (not missing sessions for unauthenticated users)
-  if (error && error.name !== "AuthSessionMissingError") {
+  // Only log unexpected auth errors (suppress common transition errors)
+  if (error && 
+      error.name !== "AuthSessionMissingError" && 
+      !error.message?.includes("refresh_token_not_found") &&
+      !error.message?.includes("Invalid Refresh Token")) {
     console.error("Auth error in middleware:", error)
   }
 

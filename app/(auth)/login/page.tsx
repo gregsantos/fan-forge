@@ -22,6 +22,7 @@ type LoginForm = z.infer<typeof loginSchema>
 
 function LoginForm() {
   const [error, setError] = useState<string>("")
+  const [isRedirecting, setIsRedirecting] = useState(false)
   const {signIn, loading} = useAuthOptimized({redirectOnLogin: false})
 
   const {
@@ -35,24 +36,31 @@ function LoginForm() {
   const onSubmit = async (data: LoginForm) => {
     try {
       setError("")
+      // Set redirecting state immediately for smooth UX
+      setIsRedirecting(true)
       await signIn(data)
-      // Middleware will handle the redirect automatically
-      // Force a page refresh to trigger middleware redirect
-      window.location.reload()
+      // Small delay to ensure redirecting state is visible
+      setTimeout(() => {
+        // Middleware will handle the redirect automatically
+        window.location.reload()
+      }, 300)
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An error occurred during login"
       )
+      setIsRedirecting(false)
     }
   }
 
-  // Show loading state while authenticating
-  if (loading) {
+  // Show loading state while authenticating or redirecting
+  if (loading || isRedirecting) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-muted/30 px-4'>
         <div className='text-center'>
           <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
-          <p className='text-muted-foreground'>Signing in...</p>
+          <p className='text-muted-foreground'>
+            {isRedirecting ? "Signing in..." : "Loading..."}
+          </p>
         </div>
       </div>
     )
