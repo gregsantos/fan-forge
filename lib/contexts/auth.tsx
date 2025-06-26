@@ -193,9 +193,8 @@ export function AuthProvider({children}: AuthProviderProps) {
       // Also call client-side signOut to ensure Supabase state is cleared
       await authClient.signOut()
       
-      // Navigate to home and refresh to ensure clean state
-      router.push("/")
-      router.refresh()
+      // Force full page navigation to avoid middleware timing issues
+      window.location.href = "/"
       
       setLoading(false)
     } catch (error) {
