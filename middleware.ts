@@ -66,6 +66,7 @@ export async function middleware(request: NextRequest) {
   const isCreatorOnlyRoute = creatorOnlyRoutes.some(route =>
     pathname.startsWith(route)
   )
+  const isHomePage = pathname === "/"
 
   // Use getUser() for security-critical authentication decisions
   const {
@@ -89,6 +90,13 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = new URL("/login", request.url)
     redirectUrl.searchParams.set("redirectTo", pathname)
     return NextResponse.redirect(redirectUrl)
+  }
+
+  // Handle authenticated users on home page - redirect to their dashboard
+  if (isHomePage && hasUser) {
+    const defaultRedirect =
+      userRole === "brand_admin" ? "/dashboard" : "/discover"
+    return NextResponse.redirect(new URL(defaultRedirect, request.url))
   }
 
   // Handle authenticated users on auth routes (except confirmation)
