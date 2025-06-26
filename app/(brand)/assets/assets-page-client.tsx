@@ -86,21 +86,57 @@ export default function AssetsPageClient({
   }
 
   const handleAssetDelete = async (assetId: string) => {
-    if (confirm("Are you sure you want to delete this asset?")) {
-      try {
-        const response = await fetch(`/api/assets/${assetId}`, {
-          method: "DELETE",
-        })
+    try {
+      // First attempt to delete
+      const response = await fetch(`/api/assets/${assetId}`, {
+        method: "DELETE",
+      })
 
-        if (response.ok) {
-          // Refresh the asset grid
-          window.location.reload() // Simple refresh - in production you'd update state
-        } else {
-          console.error("Failed to delete asset")
-        }
-      } catch (error) {
-        console.error("Error deleting asset:", error)
+      if (response.ok) {
+        const result = await response.json()
+        alert(`Asset deleted successfully! ${result.details?.cleanedSubmissions ? `Cleaned ${result.details.cleanedSubmissions} submissions.` : ''}`)
+        window.location.reload()
+        return
       }
+
+      if (response.status === 409) {
+        // Asset is in use - show confirmation dialog
+        const conflictData = await response.json()
+        
+        const confirmMessage = `This asset is currently in use:
+        
+${conflictData.details.activeCampaigns > 0 ? `• ${conflictData.details.activeCampaigns} active campaigns: ${conflictData.details.campaignNames?.join(', ') || 'Unknown'}` : ''}
+${conflictData.details.affectedSubmissions > 0 ? `• ${conflictData.details.affectedSubmissions} submissions will be affected` : ''}
+
+Deleting this asset will:
+- Remove it from all IP kits
+- Remove references from submissions
+- Break any active campaigns using this asset
+
+Are you sure you want to continue?`
+
+        if (confirm(confirmMessage)) {
+          // Force delete with confirmation
+          const forceResponse = await fetch(`/api/assets/${assetId}?force=true`, {
+            method: "DELETE",
+          })
+          
+          if (forceResponse.ok) {
+            const result = await forceResponse.json()
+            alert(`Asset force-deleted successfully! ${result.details?.cleanedSubmissions ? `Cleaned ${result.details.cleanedSubmissions} submissions.` : ''}`)
+            window.location.reload()
+          } else {
+            const errorData = await forceResponse.json()
+            alert(`Failed to delete asset: ${errorData.error}`)
+          }
+        }
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to delete asset: ${errorData.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error("Error deleting asset:", error)
+      alert("Error deleting asset. Please try again.")
     }
   }
 
