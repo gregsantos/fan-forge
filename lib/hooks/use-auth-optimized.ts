@@ -86,13 +86,26 @@ export function useAuthOptimized(options: UseAuthOptions = {}) {
       setLoading(true)
       setError(null)
 
-      await authClient.signOut()
-      authClient.clearCache()
+      // Use API route for server-side logout
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
+      if (!response.ok) {
+        throw new Error('Logout failed')
+      }
+
+      // Clear client-side cache and state
+      authClient.clearCache()
       setUser(null)
 
       if (redirectOnLogout) {
-        router.push("/")
+        // Use router.push with refresh to ensure middleware processes logout
+        router.push('/')
+        router.refresh()
       }
 
       setLoading(false)
