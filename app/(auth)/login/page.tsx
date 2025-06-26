@@ -22,9 +22,7 @@ type LoginForm = z.infer<typeof loginSchema>
 
 function LoginForm() {
   const [error, setError] = useState<string>("")
-  const {signIn, loading, user} = useAuthOptimized({redirectOnLogin: false})
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const {signIn, loading} = useAuthOptimized({redirectOnLogin: false})
 
   const {
     register,
@@ -34,32 +32,13 @@ function LoginForm() {
     resolver: zodResolver(loginSchema),
   })
 
-  // Redirect user after successful login
-  useEffect(() => {
-    if (user && !loading) {
-      // Get redirect URL from query params or default based on role
-      const redirectTo = searchParams.get("redirectTo")
-      let redirectPath: string
-
-      if (redirectTo) {
-        // Decode the URL-encoded redirect path
-        redirectPath = decodeURIComponent(redirectTo)
-      } else {
-        // Default redirect based on user role
-        redirectPath = user.role === "creator" ? "/discover" : "/dashboard"
-      }
-
-      console.log("Redirecting user to:", redirectPath)
-      router.replace(redirectPath)
-    }
-  }, [user, loading, router, searchParams])
-
   const onSubmit = async (data: LoginForm) => {
     try {
       setError("")
       await signIn(data)
-      // The auth context will update with user info,
-      // and we'll redirect in a useEffect when user changes
+      // Middleware will handle the redirect automatically
+      // Force a page refresh to trigger middleware redirect
+      window.location.reload()
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An error occurred during login"
@@ -67,15 +46,13 @@ function LoginForm() {
     }
   }
 
-  // Show loading state while checking auth or redirecting
-  if (loading || user) {
+  // Show loading state while authenticating
+  if (loading) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-muted/30 px-4'>
         <div className='text-center'>
           <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
-          <p className='text-muted-foreground'>
-            {user ? "Redirecting..." : "Loading..."}
-          </p>
+          <p className='text-muted-foreground'>Signing in...</p>
         </div>
       </div>
     )

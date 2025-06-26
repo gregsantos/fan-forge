@@ -68,21 +68,17 @@ export function useAuthOptimized(options: UseAuthOptions = {}) {
         const newUser = await authClient.getCurrentUser(true) // Force refresh with validation
 
         setUser(newUser)
-
-        if (redirectOnLogin && newUser) {
-          const redirectPath =
-            newUser.role === "brand_admin" ? "/dashboard" : "/discover"
-          router.push(redirectPath)
-        }
-
         setLoading(false)
+
+        // Note: Redirect handling is done by middleware, not here
+        // This prevents race conditions between client and server redirects
       } catch (err) {
         setError(err instanceof Error ? err.message : "Login failed")
         setLoading(false)
         throw err
       }
     },
-    [router, redirectOnLogin]
+    []
   )
 
   const signOut = useCallback(async () => {
@@ -118,12 +114,7 @@ export function useAuthOptimized(options: UseAuthOptions = {}) {
         if (!result.needsEmailConfirmation) {
           const newUser = await authClient.getCurrentUser(true)
           setUser(newUser)
-
-          if (redirectOnLogin && newUser) {
-            const redirectPath =
-              newUser.role === "brand_admin" ? "/dashboard" : "/discover"
-            router.push(redirectPath)
-          }
+          // Note: Redirect handling is done by middleware, not here
         }
 
         setLoading(false)
@@ -134,7 +125,7 @@ export function useAuthOptimized(options: UseAuthOptions = {}) {
         throw err
       }
     },
-    [router, redirectOnLogin]
+    []
   )
 
   const refreshUser = useCallback(async () => {
