@@ -68,21 +68,17 @@ export function useAuthOptimized(options: UseAuthOptions = {}) {
         const newUser = await authClient.getCurrentUser(true) // Force refresh with validation
 
         setUser(newUser)
-
-        if (redirectOnLogin && newUser) {
-          const redirectPath =
-            newUser.role === "brand_admin" ? "/dashboard" : "/discover"
-          router.push(redirectPath)
-        }
-
         setLoading(false)
+
+        // Note: Redirect handling is done by middleware, not here
+        // This prevents race conditions between client and server redirects
       } catch (err) {
         setError(err instanceof Error ? err.message : "Login failed")
         setLoading(false)
         throw err
       }
     },
-    [router, redirectOnLogin]
+    []
   )
 
   const signOut = useCallback(async () => {
@@ -90,13 +86,26 @@ export function useAuthOptimized(options: UseAuthOptions = {}) {
       setLoading(true)
       setError(null)
 
-      await authClient.signOut()
-      authClient.clearCache()
+      // Use API route for server-side logout
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
+      if (!response.ok) {
+        throw new Error('Logout failed')
+      }
+
+      // Clear client-side cache and state
+      authClient.clearCache()
       setUser(null)
 
       if (redirectOnLogout) {
-        router.push("/")
+        // Use router.push with refresh to ensure middleware processes logout
+        router.push('/')
+        router.refresh()
       }
 
       setLoading(false)
@@ -118,12 +127,7 @@ export function useAuthOptimized(options: UseAuthOptions = {}) {
         if (!result.needsEmailConfirmation) {
           const newUser = await authClient.getCurrentUser(true)
           setUser(newUser)
-
-          if (redirectOnLogin && newUser) {
-            const redirectPath =
-              newUser.role === "brand_admin" ? "/dashboard" : "/discover"
-            router.push(redirectPath)
-          }
+          // Note: Redirect handling is done by middleware, not here
         }
 
         setLoading(false)
@@ -134,7 +138,7 @@ export function useAuthOptimized(options: UseAuthOptions = {}) {
         throw err
       }
     },
-    [router, redirectOnLogin]
+    []
   )
 
   const refreshUser = useCallback(async () => {

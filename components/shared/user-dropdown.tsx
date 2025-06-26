@@ -11,12 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {useAuthOptimized} from "@/lib/hooks/use-auth-optimized"
+import {useAuth} from "@/lib/contexts/auth"
 import Link from "next/link"
 import Image from "next/image"
 
 export function UserDropdown() {
-  const {user, signOut, loading} = useAuthOptimized()
+  const {user, signOut, loading} = useAuth()
 
   if (!user) return null
 

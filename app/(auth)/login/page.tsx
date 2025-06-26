@@ -15,16 +15,14 @@ import {
   CardFooter,
 } from "@/components/ui/card"
 import {loginSchema} from "@/lib/validations"
-import {useAuthOptimized} from "@/lib/hooks/use-auth-optimized"
+import {useAuth} from "@/lib/contexts/auth"
 import type {z} from "zod"
 
 type LoginForm = z.infer<typeof loginSchema>
 
 function LoginForm() {
-  const [error, setError] = useState<string>("")
-  const {signIn, loading, user} = useAuthOptimized({redirectOnLogin: false})
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const [isRedirecting, setIsRedirecting] = useState(false)
+  const {signIn, loading, error, clearError} = useAuth()
 
   const {
     register,
@@ -34,47 +32,26 @@ function LoginForm() {
     resolver: zodResolver(loginSchema),
   })
 
-  // Redirect user after successful login
-  useEffect(() => {
-    if (user && !loading) {
-      // Get redirect URL from query params or default based on role
-      const redirectTo = searchParams.get("redirectTo")
-      let redirectPath: string
-
-      if (redirectTo) {
-        // Decode the URL-encoded redirect path
-        redirectPath = decodeURIComponent(redirectTo)
-      } else {
-        // Default redirect based on user role
-        redirectPath = user.role === "creator" ? "/discover" : "/dashboard"
-      }
-
-      console.log("Redirecting user to:", redirectPath)
-      router.replace(redirectPath)
-    }
-  }, [user, loading, router, searchParams])
-
   const onSubmit = async (data: LoginForm) => {
     try {
-      setError("")
+      clearError()
+      setIsRedirecting(true)
       await signIn(data)
-      // The auth context will update with user info,
-      // and we'll redirect in a useEffect when user changes
+      // signIn handles redirect, so we only get here if it fails
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An error occurred during login"
-      )
+      setIsRedirecting(false)
+      // Error is handled by auth context
     }
   }
 
-  // Show loading state while checking auth or redirecting
-  if (loading || user) {
+  // Show loading state while authenticating or redirecting
+  if (loading || isRedirecting) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-muted/30 px-4'>
         <div className='text-center'>
           <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
           <p className='text-muted-foreground'>
-            {user ? "Redirecting..." : "Loading..."}
+            {isRedirecting ? "Signing in..." : "Loading..."}
           </p>
         </div>
       </div>
