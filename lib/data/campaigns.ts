@@ -1,5 +1,5 @@
 import { db, campaigns, brands, ipKits, assets, submissions, users, reviews } from "@/db"
-import { eq, desc, count, or, ilike, and, asc, inArray, gte, lte } from "drizzle-orm"
+import { eq, desc, count, or, ilike, and, asc, inArray, gte, lte, isNotNull } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 
 export async function getDashboardData() {
@@ -75,11 +75,32 @@ export async function getDashboardData() {
 
 export async function getCampaigns(searchParams: Record<string, string | undefined>) {
   try {
-    const { search, status, page = '1' } = searchParams
-    const limit = 12
+    const { search, status, page = '1', featured, limit: limitParam } = searchParams
+    const limit = limitParam ? parseInt(limitParam) : 12
     const offset = (parseInt(page) - 1) * limit
 
-    // Build where conditions (simplified for now)
+    // Build where conditions
+    const whereConditions = []
+    
+    if (featured === 'true') {
+      whereConditions.push(and(
+        isNotNull(campaigns.featuredUntil),
+        gte(campaigns.featuredUntil, new Date())
+      ))
+    }
+    
+    if (search) {
+      whereConditions.push(or(
+        ilike(campaigns.title, `%${search}%`),
+        ilike(campaigns.description, `%${search}%`),
+        ilike(brands.name, `%${search}%`)
+      )!)
+    }
+    
+    if (status && status !== 'all') {
+      whereConditions.push(eq(campaigns.status, status as any))
+    }
+
     const campaignResults = await db
       .select({
         campaign: campaigns,
@@ -90,6 +111,7 @@ export async function getCampaigns(searchParams: Record<string, string | undefin
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
       .leftJoin(ipKits, eq(campaigns.ipKitId, ipKits.id))
       .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .groupBy(campaigns.id, brands.id)
       .orderBy(desc(campaigns.createdAt))
       .limit(limit)
@@ -114,6 +136,8 @@ export async function getCampaigns(searchParams: Record<string, string | undefin
     const [totalResult] = await db
       .select({ count: count() })
       .from(campaigns)
+      .leftJoin(brands, eq(campaigns.brandId, brands.id))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
 
     return {
       campaigns: campaignResults.map(result => ({
@@ -125,6 +149,7 @@ export async function getCampaigns(searchParams: Record<string, string | undefin
         deadline: result.campaign.endDate,
         asset_count: result.assetCount || 0,
         submission_count: submissionCountMap.get(result.campaign.id) || 0,
+        thumbnail_url: result.campaign.thumbnailUrl,
         created_at: result.campaign.createdAt,
         updated_at: result.campaign.updatedAt,
         featured: result.campaign.featuredUntil ? new Date(result.campaign.featuredUntil) > new Date() : false,

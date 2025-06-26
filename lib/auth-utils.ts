@@ -2,6 +2,8 @@ import {db} from "@/db"
 import {users, userRoles, roles} from "@/db/schema"
 import {eq} from "drizzle-orm"
 import type {User} from "@supabase/supabase-js"
+import { createClient } from "@/utils/supabase/server"
+import { cookies } from "next/headers"
 
 /**
  * Ensures a user exists in our custom users table (non-blocking)
@@ -270,5 +272,29 @@ export async function getUserBrandIds(userId: string): Promise<string[]> {
   } catch (error) {
     console.error('Error getting user brand IDs:', error)
     return []
+  }
+}
+
+/**
+ * Get current authenticated user for server components
+ */
+export async function getCurrentUser(): Promise<User | null> {
+  try {
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+    
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error || !user) {
+      return null
+    }
+    
+    // Ensure user exists in our database
+    await ensureUserExists(user)
+    
+    return user
+  } catch (error) {
+    console.error('Error getting current user:', error)
+    return null
   }
 }
