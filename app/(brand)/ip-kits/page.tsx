@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -61,7 +61,7 @@ export default function IpKitsPage() {
   const { userBrands, loading: permissionsLoading } = useBrandPermissions()
   const currentBrand = userBrands[0] // Use first brand for now
 
-  const fetchIpKits = async () => {
+  const fetchIpKits = useCallback(async () => {
     if (!currentBrand) return
 
     try {
@@ -85,13 +85,13 @@ export default function IpKitsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentBrand, searchQuery, publishedFilter])
 
   useEffect(() => {
     if (!permissionsLoading && currentBrand) {
       fetchIpKits()
     }
-  }, [searchQuery, publishedFilter, currentBrand, permissionsLoading])
+  }, [fetchIpKits, permissionsLoading, currentBrand])
 
   const handleDuplicate = async (ipKit: IpKit) => {
     // TODO: Implement duplication logic

@@ -1,11 +1,22 @@
 import { getAssetStats } from '@/lib/data/assets'
 import { getIpKits } from '@/lib/data/campaigns'
+import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
 import AssetsPageClient from './assets-page-client'
 
 export default async function AssetsPage() {
   try {
+    // Get current user for brand filtering
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      throw new Error('Authentication required')
+    }
+
     const [stats, ipKitsData] = await Promise.all([
-      getAssetStats(),
+      getAssetStats(user.id), // Pass user ID for brand filtering
       getIpKits({}) // Pass empty search params
     ])
     
@@ -20,7 +31,19 @@ export default async function AssetsPage() {
   } catch (error) {
     console.error('Failed to load asset data:', error)
     
-    // Fallback to mock data in case of error
+    // Check if it's an authentication error
+    if (error instanceof Error && error.message === 'Authentication required') {
+      return (
+        <div className="container mx-auto py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+            <p className="text-muted-foreground">Please log in to access the asset management page.</p>
+          </div>
+        </div>
+      )
+    }
+    
+    // Fallback to empty data in case of other errors
     const fallbackStats = {
       totalAssets: 0,
       totalIpKits: 0,

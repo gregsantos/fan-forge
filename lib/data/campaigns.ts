@@ -339,7 +339,7 @@ export async function getCampaignById(id: string) {
 
     const result = campaignWithDetails[0]
 
-    // Get assets for the campaign's IP kit
+    // Get assets for the campaign's IP kit (only if campaign has an IP kit)
     const campaignAssets = result.ipKit ? await db
       .select()
       .from(assets)

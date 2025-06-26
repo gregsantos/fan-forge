@@ -1,12 +1,16 @@
-import { db, assets, ipKits, brands } from "@/db"
-import { eq, desc, count, ilike, and, asc } from "drizzle-orm"
+import { db, assets, ipKits, brands, users, userRoles } from "@/db"
+import { eq, desc, count, ilike, and, asc, isNull, inArray } from "drizzle-orm"
+import { getUserBrandIds } from "@/lib/auth-utils"
 
 /**
  * Shared data functions for assets
  * Following Next.js App Router best practices for server-side data fetching
  */
 
-export async function getBrandAssets(searchParams: Record<string, string | undefined> = {}) {
+export async function getBrandAssets(
+  searchParams: Record<string, string | undefined> = {}, 
+  currentUserId?: string
+) {
   try {
     const { 
       search, 
@@ -25,9 +29,37 @@ export async function getBrandAssets(searchParams: Record<string, string | undef
     // Build where conditions
     const whereConditions = []
     
+    // SECURITY: Filter assets by user's brand access
+    if (currentUserId) {
+      const userBrandIds = await getUserBrandIds(currentUserId)
+      if (userBrandIds.length > 0) {
+        // Get all users who belong to the same brands as the current user
+        const brandUsersResult = await db
+          .select({ userId: userRoles.userId })
+          .from(userRoles)
+          .where(inArray(userRoles.brandId, userBrandIds))
+        
+        const brandUserIds = brandUsersResult.map(r => r.userId)
+        
+        if (brandUserIds.length > 0) {
+          // Only show assets uploaded by users from the same brand(s)
+          whereConditions.push(inArray(assets.uploadedBy, brandUserIds))
+        } else {
+          // User has no brand access, show no assets
+          whereConditions.push(eq(assets.id, 'no-access'))
+        }
+      } else {
+        // User has no brand roles, show no assets
+        whereConditions.push(eq(assets.id, 'no-access'))
+      }
+    }
+    
     // Filter by specific IP Kit if provided
     if (ipKitId) {
       whereConditions.push(eq(assets.ipKitId, ipKitId))
+    } else if (ipKitId === null || ipKitId === 'null') {
+      // Explicitly requesting global assets (for brand assets page only)
+      whereConditions.push(isNull(assets.ipKitId))
     }
     
     // Filter by category if provided
@@ -100,12 +132,55 @@ export async function getBrandAssets(searchParams: Record<string, string | undef
   }
 }
 
-export async function getAssetStats() {
+export async function getAssetStats(currentUserId?: string) {
   try {
+    let assetWhereConditions = []
+    let ipKitWhereConditions = []
+    
+    // SECURITY: Filter by user's brand access
+    if (currentUserId) {
+      const userBrandIds = await getUserBrandIds(currentUserId)
+      if (userBrandIds.length > 0) {
+        // Get all users who belong to the same brands as the current user
+        const brandUsersResult = await db
+          .select({ userId: userRoles.userId })
+          .from(userRoles)
+          .where(inArray(userRoles.brandId, userBrandIds))
+        
+        const brandUserIds = brandUsersResult.map(r => r.userId)
+        
+        if (brandUserIds.length > 0) {
+          // Only count assets uploaded by users from the same brand(s)
+          assetWhereConditions.push(inArray(assets.uploadedBy, brandUserIds))
+          // Only count IP kits from the same brand(s)
+          ipKitWhereConditions.push(inArray(ipKits.brandId, userBrandIds))
+        } else {
+          // User has no brand access, show zero counts
+          return {
+            totalAssets: 0,
+            totalIpKits: 0,
+            categoryBreakdown: [],
+            storageUsed: 0,
+            storageLimit: 10 * 1024 * 1024 * 1024
+          }
+        }
+      } else {
+        // User has no brand roles, show zero counts
+        return {
+          totalAssets: 0,
+          totalIpKits: 0,
+          categoryBreakdown: [],
+          storageUsed: 0,
+          storageLimit: 10 * 1024 * 1024 * 1024
+        }
+      }
+    }
+
     // Get total asset count
     const [totalAssets] = await db
       .select({ count: count() })
       .from(assets)
+      .where(assetWhereConditions.length > 0 ? and(...assetWhereConditions) : undefined)
 
     // Get asset counts by category
     const categoryStats = await db
@@ -114,12 +189,14 @@ export async function getAssetStats() {
         count: count(assets.id)
       })
       .from(assets)
+      .where(assetWhereConditions.length > 0 ? and(...assetWhereConditions) : undefined)
       .groupBy(assets.category)
 
     // Get IP Kit counts
     const [totalIpKits] = await db
       .select({ count: count() })
       .from(ipKits)
+      .where(ipKitWhereConditions.length > 0 ? and(...ipKitWhereConditions) : undefined)
 
     return {
       totalAssets: totalAssets.count,

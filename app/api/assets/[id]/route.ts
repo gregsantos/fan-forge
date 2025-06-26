@@ -6,6 +6,7 @@ import { assets, ipKits, brands } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
 import { assetStorageService } from '@/lib/services/asset-storage'
+import { getUserBrandIds } from '@/lib/auth-utils'
 
 // Asset update schema
 const updateAssetSchema = z.object({
@@ -13,6 +14,34 @@ const updateAssetSchema = z.object({
   category: z.enum(['characters', 'backgrounds', 'logos', 'titles', 'props', 'other']).optional(),
   tags: z.array(z.string()).optional(),
 })
+
+// Helper function to check if user has access to an asset
+async function checkAssetAccess(userId: string, assetData: any) {
+  const userBrandIds = await getUserBrandIds(userId)
+  
+  if (userBrandIds.length === 0) {
+    return { hasAccess: false, reason: 'User has no brand access' }
+  }
+
+  // For assets with IP Kits - check if user has access to the IP Kit's brand
+  if (assetData.ipKit?.brandId) {
+    if (!userBrandIds.includes(assetData.ipKit.brandId)) {
+      return { hasAccess: false, reason: 'User does not have access to this IP Kit\'s brand' }
+    }
+  } else {
+    // For global assets - check if uploader belongs to same brand as current user
+    const assetUploaderBrands = await getUserBrandIds(assetData.asset.uploadedBy)
+    const hasSharedBrand = userBrandIds.some(brandId => 
+      assetUploaderBrands.includes(brandId)
+    )
+    
+    if (!hasSharedBrand) {
+      return { hasAccess: false, reason: 'Asset uploader does not belong to your brand' }
+    }
+  }
+  
+  return { hasAccess: true, reason: 'Access granted' }
+}
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -43,7 +72,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
     }
 
-    // TODO: Add proper permission check - user should have access to the brand/IP Kit
+    // SECURITY: Check if user has access to this asset
+    const accessCheck = await checkAssetAccess(user.id, assetResult)
+    if (!accessCheck.hasAccess) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
 
     return NextResponse.json({
       ...assetResult.asset,
@@ -91,7 +124,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
     }
 
-    // TODO: Add proper permission check - user should be brand owner or admin
+    // SECURITY: Check if user has access to this asset
+    const accessCheck = await checkAssetAccess(user.id, existingAsset)
+    if (!accessCheck.hasAccess) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
 
     // Update asset
     const [updatedAsset] = await db
@@ -148,7 +185,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
     }
 
-    // TODO: Add proper permission check - user should be brand owner or admin
+    // SECURITY: Check if user has access to this asset
+    const accessCheck = await checkAssetAccess(user.id, assetToDelete)
+    if (!accessCheck.hasAccess) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
 
     // TODO: Check if asset is used in active campaigns and warn user
 

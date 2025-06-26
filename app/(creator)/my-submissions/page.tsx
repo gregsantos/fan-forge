@@ -1,6 +1,6 @@
 "use client"
 
-import {useState, useEffect} from "react"
+import {useState, useEffect, useCallback} from "react"
 import {
   Card,
   CardContent,
@@ -82,14 +82,6 @@ export default function MySubmissionsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "status">("newest")
 
-  useEffect(() => {
-    fetchSubmissions()
-  }, [])
-
-  useEffect(() => {
-    filterAndSortSubmissions()
-  }, [submissions, searchTerm, statusFilter, sortBy])
-
   const fetchSubmissions = async () => {
     try {
       setIsLoading(true)
@@ -131,7 +123,11 @@ export default function MySubmissionsPage() {
     }
   }
 
-  const filterAndSortSubmissions = () => {
+  useEffect(() => {
+    fetchSubmissions()
+  }, [])
+
+  const filterAndSortSubmissions = useCallback(() => {
     let filtered = [...submissions]
 
     // Apply search filter
@@ -177,7 +173,11 @@ export default function MySubmissionsPage() {
     })
 
     setFilteredSubmissions(filtered)
-  }
+  }, [submissions, searchTerm, statusFilter, sortBy])
+
+  useEffect(() => {
+    filterAndSortSubmissions()
+  }, [filterAndSortSubmissions])
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
