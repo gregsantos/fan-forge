@@ -214,7 +214,7 @@ export function AddAssetsModal({
         <DialogHeader>
           <DialogTitle>Add Assets to IP Kit</DialogTitle>
           <DialogDescription>
-            Select assets from your brand's library to add to this IP kit.
+            Select assets from your brand&apos;s library to add to this IP kit.
           </DialogDescription>
         </DialogHeader>
 

@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
 import { ipKits, brands, assets, campaigns, assetIpKits } from '@/db/schema'
-import { eq, and, count } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
 
 // IP Kit update schema
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const ipKitId = params.id
 
-    // Get IP Kit with brand info and asset count using junction table
+    // Get IP Kit with brand info first (without asset count to avoid JOIN issues)
     const result = await db
       .select({
         id: ipKits.id,
@@ -46,14 +46,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         createdAt: ipKits.createdAt,
         updatedAt: ipKits.updatedAt,
         brandName: brands.name,
-        brandDescription: brands.description,
-        assetCount: count(assetIpKits.assetId)
+        brandDescription: brands.description
       })
       .from(ipKits)
       .leftJoin(brands, eq(ipKits.brandId, brands.id))
-      .leftJoin(assetIpKits, eq(ipKits.id, assetIpKits.ipKitId))
       .where(eq(ipKits.id, ipKitId))
-      .groupBy(ipKits.id, brands.id)
       .limit(1)
 
     if (result.length === 0) {
@@ -81,7 +78,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const ipKitWithAssets = {
       ...result[0],
-      assets: ipKitAssets
+      assets: ipKitAssets,
+      assetCount: ipKitAssets.length // Use actual asset count instead of SQL count
     }
 
     return NextResponse.json(ipKitWithAssets)
