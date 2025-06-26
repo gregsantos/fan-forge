@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { IpKitAssetGallery } from "@/components/ip-kits/ip-kit-asset-gallery"
 import { AssetUploadZone } from "@/components/ip-kits/asset-upload-zone"
+import { AddAssetsModal } from "@/components/ip-kits/add-assets-modal"
 import { Asset } from "@/types"
 import { 
   ArrowLeft, 
@@ -19,7 +20,8 @@ import {
   Calendar,
   Package,
   Image,
-  Settings
+  Settings,
+  Plus
 } from "lucide-react"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -48,6 +50,7 @@ export default function IpKitDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("overview")
+  const [addAssetsModalOpen, setAddAssetsModalOpen] = useState(false)
 
   const ipKitId = params.id as string
 
@@ -119,6 +122,18 @@ export default function IpKitDetailPage() {
         ...prev,
         assets: prev.assets.filter(asset => asset.id !== assetId),
         assetCount: prev.assetCount - 1
+      }
+    })
+  }
+
+  const handleAssetsAdded = (addedAssets: Asset[]) => {
+    // Add assets to local state
+    setIpKit(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        assets: [...prev.assets, ...addedAssets],
+        assetCount: prev.assetCount + addedAssets.length
       }
     })
   }
@@ -378,10 +393,18 @@ export default function IpKitDetailPage() {
         <TabsContent value="assets">
           <Card>
             <CardHeader>
-              <CardTitle>Asset Library</CardTitle>
-              <CardDescription>
-                All assets included in this IP kit
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Asset Library</CardTitle>
+                  <CardDescription>
+                    All assets included in this IP kit
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setAddAssetsModalOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Assets
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <ErrorBoundary>
@@ -467,6 +490,15 @@ export default function IpKitDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Assets Modal */}
+      <AddAssetsModal
+        open={addAssetsModalOpen}
+        onOpenChange={setAddAssetsModalOpen}
+        ipKitId={ipKit.id}
+        onAssetsAdded={handleAssetsAdded}
+        existingAssetIds={ipKit.assets.map(asset => asset.id)}
+      />
     </div>
   )
 }

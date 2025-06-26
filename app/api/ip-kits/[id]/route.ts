@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
-import { ipKits, brands, assets, campaigns } from '@/db/schema'
+import { ipKits, brands, assets, campaigns, assetIpKits } from '@/db/schema'
 import { eq, and, count } from 'drizzle-orm'
 import { z } from 'zod'
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const ipKitId = params.id
 
-    // Get IP Kit with brand info and asset count
+    // Get IP Kit with brand info and asset count using junction table
     const result = await db
       .select({
         id: ipKits.id,
@@ -47,11 +47,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         updatedAt: ipKits.updatedAt,
         brandName: brands.name,
         brandDescription: brands.description,
-        assetCount: count(assets.id)
+        assetCount: count(assetIpKits.assetId)
       })
       .from(ipKits)
       .leftJoin(brands, eq(ipKits.brandId, brands.id))
-      .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
+      .leftJoin(assetIpKits, eq(ipKits.id, assetIpKits.ipKitId))
       .where(eq(ipKits.id, ipKitId))
       .groupBy(ipKits.id, brands.id)
       .limit(1)
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'IP Kit not found' }, { status: 404 })
     }
 
-    // Get assets for this IP Kit
+    // Get assets for this IP Kit using junction table
     const ipKitAssets = await db
       .select({
         id: assets.id,
@@ -71,10 +71,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         category: assets.category,
         tags: assets.tags,
         metadata: assets.metadata,
+        ipId: assets.ipId,
         createdAt: assets.createdAt
       })
       .from(assets)
-      .where(eq(assets.ipKitId, ipKitId))
+      .innerJoin(assetIpKits, eq(assets.id, assetIpKits.assetId))
+      .where(eq(assetIpKits.ipKitId, ipKitId))
       .orderBy(assets.createdAt)
 
     const ipKitWithAssets = {

@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
 import { db } from '@/db'
 import { assets, ipKits, assetIpKits } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
+import { getUserBrandIds } from '@/lib/auth-utils'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { ipKitId } = await request.json()
     const assetId = params.id
 
@@ -21,10 +32,16 @@ export async function POST(
       return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
     }
 
-    // Verify IP kit exists
+    // Verify IP kit exists and user has access to it
     const ipKit = await db.select().from(ipKits).where(eq(ipKits.id, ipKitId)).limit(1)
     if (!ipKit.length) {
       return NextResponse.json({ error: 'IP Kit not found' }, { status: 404 })
+    }
+
+    // Check if user has access to this IP kit's brand
+    const userBrandIds = await getUserBrandIds(user.id)
+    if (!userBrandIds.includes(ipKit[0].brandId)) {
+      return NextResponse.json({ error: 'Unauthorized: You do not have access to this IP Kit' }, { status: 403 })
     }
 
     // Check if relationship already exists
@@ -59,11 +76,31 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { ipKitId } = await request.json()
     const assetId = params.id
 
     if (!ipKitId) {
       return NextResponse.json({ error: 'IP Kit ID is required' }, { status: 400 })
+    }
+
+    // Verify IP kit exists and user has access to it
+    const ipKit = await db.select().from(ipKits).where(eq(ipKits.id, ipKitId)).limit(1)
+    if (!ipKit.length) {
+      return NextResponse.json({ error: 'IP Kit not found' }, { status: 404 })
+    }
+
+    // Check if user has access to this IP kit's brand
+    const userBrandIds = await getUserBrandIds(user.id)
+    if (!userBrandIds.includes(ipKit[0].brandId)) {
+      return NextResponse.json({ error: 'Unauthorized: You do not have access to this IP Kit' }, { status: 403 })
     }
 
     // Remove the relationship
