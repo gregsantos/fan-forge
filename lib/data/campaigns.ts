@@ -35,7 +35,7 @@ export async function getDashboardData() {
       submissionCounts.map(sc => [sc.campaignId, sc.submissionCount])
     )
 
-    // Fetch recent submissions
+    // Fetch recent submissions (pending only for dashboard)
     const recentSubmissions = await db
       .select({
         submission: submissions,
@@ -43,6 +43,7 @@ export async function getDashboardData() {
       })
       .from(submissions)
       .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
+      .where(eq(submissions.status, 'pending'))
       .orderBy(desc(submissions.createdAt))
       .limit(10)
 
