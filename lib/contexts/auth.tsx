@@ -21,6 +21,7 @@ interface AuthContextType {
   user: AuthUser | null
   loading: boolean
   isClient: boolean
+  error: string | null
   signUp: (data: RegisterData) => Promise<SignUpResult>
   signIn: (data: LoginData) => Promise<void>
   signOut: () => Promise<void>
@@ -28,6 +29,10 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>
   resendConfirmation: (email: string) => Promise<void>
   refreshUser: () => Promise<AuthUser | null>
+  clearError: () => void
+  isAuthenticated: boolean
+  isBrandAdmin: boolean
+  isCreator: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -47,6 +52,7 @@ interface AuthProviderProps {
 export function AuthProvider({children}: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isClient, setIsClient] = useState(false)
   const [authInitialized, setAuthInitialized] = useState(false)
   const router = useRouter()
@@ -133,39 +139,69 @@ export function AuthProvider({children}: AuthProviderProps) {
 
   const signIn = async (data: LoginData) => {
     setLoading(true)
+    setError(null)
     try {
-      await authClient.signIn(data)
+      // Use API route for server-side login
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
 
-      // Immediately refresh user state for faster UX
-      const newUser = await refreshUser()
-
-      // Trigger immediate redirect based on user role
-      if (newUser) {
-        const userRole = newUser.role
-        if (userRole === "brand_admin") {
-          router.push("/dashboard")
-        } else if (userRole === "creator") {
-          router.push("/discover")
-        } else {
-          router.push("/discover") // Default fallback
-        }
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Login failed')
       }
 
+      // Refresh user state
+      await refreshUser()
+      
+      // Let middleware handle all redirects by forcing page reload
+      // This ensures consistent redirect behavior across the app
+      setTimeout(() => {
+        window.location.reload()
+      }, 100)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed'
+      setError(errorMessage)
       setLoading(false)
-    } catch (error) {
-      setLoading(false)
-      throw error
+      throw err
     }
   }
 
   const signOut = async () => {
     setLoading(true)
     try {
-      await authClient.signOut()
+      // Clear client-side state immediately for responsive UI
       setUser(null)
+      authClient.clearCache()
+
+      // Use API route for server-side logout (consistent with useAuthOptimized)
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Logout failed')
+      }
+
+      // Also call client-side signOut to ensure Supabase state is cleared
+      await authClient.signOut()
+      
+      // Navigate to home and refresh to ensure clean state
       router.push("/")
+      router.refresh()
+      
       setLoading(false)
     } catch (error) {
+      // If logout fails, we still want to clear local state for security
+      setUser(null)
+      authClient.clearCache()
       setLoading(false)
       throw error
     }
@@ -191,16 +227,24 @@ export function AuthProvider({children}: AuthProviderProps) {
   }
 
   const resendConfirmation = async (email: string) => {
+    setError(null)
     try {
       await authClient.resendConfirmation(email)
-    } catch (error) {
-      throw error
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to resend confirmation'
+      setError(errorMessage)
+      throw err
     }
   }
+
+  const clearError = useCallback(() => {
+    setError(null)
+  }, [])
 
   const value: AuthContextType = {
     user,
     loading,
+    error,
     isClient,
     signUp,
     signIn,
@@ -209,6 +253,10 @@ export function AuthProvider({children}: AuthProviderProps) {
     resetPassword,
     resendConfirmation,
     refreshUser,
+    clearError,
+    isAuthenticated: !!user,
+    isBrandAdmin: user?.role === "brand_admin",
+    isCreator: user?.role === "creator",
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

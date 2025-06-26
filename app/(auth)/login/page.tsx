@@ -15,15 +15,14 @@ import {
   CardFooter,
 } from "@/components/ui/card"
 import {loginSchema} from "@/lib/validations"
-import {useAuthOptimized} from "@/lib/hooks/use-auth-optimized"
+import {useAuth} from "@/lib/contexts/auth"
 import type {z} from "zod"
 
 type LoginForm = z.infer<typeof loginSchema>
 
 function LoginForm() {
-  const [error, setError] = useState<string>("")
   const [isRedirecting, setIsRedirecting] = useState(false)
-  const {signIn, loading} = useAuthOptimized({redirectOnLogin: false})
+  const {signIn, loading, error, clearError} = useAuth()
 
   const {
     register,
@@ -35,20 +34,13 @@ function LoginForm() {
 
   const onSubmit = async (data: LoginForm) => {
     try {
-      setError("")
-      // Set redirecting state immediately for smooth UX
+      clearError()
       setIsRedirecting(true)
       await signIn(data)
-      // Small delay to ensure redirecting state is visible
-      setTimeout(() => {
-        // Middleware will handle the redirect automatically
-        window.location.reload()
-      }, 300)
+      // signIn handles redirect, so we only get here if it fails
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An error occurred during login"
-      )
       setIsRedirecting(false)
+      // Error is handled by auth context
     }
   }
 

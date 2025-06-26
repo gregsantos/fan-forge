@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card"
 import {Badge} from "@/components/ui/badge"
 import {registerSchema} from "@/lib/validations"
-import {useAuthOptimized} from "@/lib/hooks/use-auth-optimized"
+import {useAuth} from "@/lib/contexts/auth"
 import {Palette, BarChart3, Mail, RefreshCw, ArrowLeft} from "lucide-react"
 import type {z} from "zod"
 
@@ -30,9 +30,7 @@ export default function RegisterPage() {
     message: string
   } | null>(null)
   const [resendLoading, setResendLoading] = useState(false)
-  const {signUp, loading, user, resendConfirmation} = useAuthOptimized({
-    redirectOnLogin: false,
-  })
+  const {signUp, loading, user, resendConfirmation} = useAuth()
   const router = useRouter()
 
   const {

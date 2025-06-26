@@ -13,7 +13,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card"
-import {useAuthOptimized} from "@/lib/hooks/use-auth-optimized"
+import {useAuth} from "@/lib/contexts/auth"
 import {ArrowLeft, CheckCircle} from "lucide-react"
 import {z} from "zod"
 
@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState<string>("")
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
-  const {resetPassword} = useAuthOptimized()
+  const {resetPassword} = useAuth()
 
   const {
     register,

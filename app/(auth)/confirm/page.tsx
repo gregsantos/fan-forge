@@ -5,7 +5,7 @@ import {useRouter} from "next/navigation"
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {CheckCircle, XCircle, Loader2} from "lucide-react"
-import {useAuthOptimized} from "@/lib/hooks/use-auth-optimized"
+import {useAuth} from "@/lib/contexts/auth"
 import {createClient} from "@/utils/supabase/client"
 
 export default function ConfirmPage() {
@@ -18,7 +18,7 @@ export default function ConfirmPage() {
     type: string | null
   }>({token_hash: null, type: null})
   const router = useRouter()
-  const {user} = useAuthOptimized({redirectOnLogin: false})
+  const {user} = useAuth()
 
   useEffect(() => {
     // Extract parameters client-side to avoid Suspense issues during build
