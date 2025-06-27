@@ -53,6 +53,7 @@ interface IpKitAssetGalleryProps {
   className?: string
   selectionMode?: boolean
   selectedAssets?: string[]
+  isEditing?: boolean
 }
 
 type ViewMode = "grid" | "list"
@@ -66,6 +67,7 @@ export function IpKitAssetGallery({
   className,
   selectionMode = false,
   selectedAssets = [],
+  isEditing = false,
 }: IpKitAssetGalleryProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
@@ -133,10 +135,8 @@ export function IpKitAssetGallery({
 
     setRemoving(true)
     try {
-      const response = await fetch(`/api/assets/${assetToRemove.id}/ip-kits`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ipKitId })
+      const response = await fetch(`/api/ip-kits/${ipKitId}/assets/${assetToRemove.id}`, {
+        method: 'DELETE'
       })
 
       if (!response.ok) {
@@ -378,18 +378,22 @@ export function IpKitAssetGallery({
                               Copy IP ID
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className='text-orange-600'
-                            onClick={e => {
-                              e.stopPropagation()
-                              setAssetToRemove(asset)
-                              setRemoveDialogOpen(true)
-                            }}
-                          >
-                            <Minus className='mr-2 h-4 w-4' />
-                            Remove from IP Kit
-                          </DropdownMenuItem>
+                          {isEditing && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className='text-orange-600'
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  setAssetToRemove(asset)
+                                  setRemoveDialogOpen(true)
+                                }}
+                              >
+                                <Minus className='mr-2 h-4 w-4' />
+                                Remove from IP Kit
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -574,18 +578,22 @@ export function IpKitAssetGallery({
                               Copy IP ID
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className='text-orange-600'
-                            onClick={e => {
-                              e.stopPropagation()
-                              setAssetToRemove(asset)
-                              setRemoveDialogOpen(true)
-                            }}
-                          >
-                            <Minus className='mr-2 h-4 w-4' />
-                            Remove from IP Kit
-                          </DropdownMenuItem>
+                          {isEditing && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className='text-orange-600'
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  setAssetToRemove(asset)
+                                  setRemoveDialogOpen(true)
+                                }}
+                              >
+                                <Minus className='mr-2 h-4 w-4' />
+                                Remove from IP Kit
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
