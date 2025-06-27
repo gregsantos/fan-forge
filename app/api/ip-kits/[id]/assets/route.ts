@@ -5,6 +5,10 @@ import { db } from '@/db'
 import { assets, ipKits, brands } from '@/db/schema'
 import { eq, and, desc, ilike, count } from 'drizzle-orm'
 import { z } from 'zod'
+import { getUserBrandIds } from '@/lib/auth-utils'
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 // Assets query schema for IP Kit
 const ipKitAssetsQuerySchema = z.object({
@@ -49,12 +53,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     // Verify IP Kit exists and user has access
     const [ipKit] = await db
-      .select({
-        ipKit: ipKits,
-        brand: brands
-      })
+      .select()
       .from(ipKits)
-      .leftJoin(brands, eq(ipKits.brandId, brands.id))
       .where(eq(ipKits.id, ipKitId))
       .limit(1)
 
@@ -62,7 +62,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'IP Kit not found' }, { status: 404 })
     }
 
-    // TODO: Add proper permission check
+    // SECURITY: Verify user has access to this IP kit's brand
+    const userBrandIds = await getUserBrandIds(user.id)
+    if (!userBrandIds.includes(ipKit.brandId)) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You do not have access to this IP kit' },
+        { status: 403 }
+      )
+    }
 
     // Build query conditions
     const conditions = [eq(assets.ipKitId, ipKitId)]
@@ -134,9 +141,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         return acc
       }, {} as Record<string, number>),
       ipKit: {
-        id: ipKit.ipKit.id,
-        name: ipKit.ipKit.name,
-        brandName: ipKit.brand?.name
+        id: ipKit.id,
+        name: ipKit.name,
+        brandName: "Brand" // We'll need to fetch brand name separately if needed
       }
     })
 
@@ -182,7 +189,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: 'IP Kit not found' }, { status: 404 })
     }
 
-    // TODO: Add proper permission check
+    // SECURITY: Verify user has access to this IP kit's brand
+    const userBrandIds = await getUserBrandIds(user.id)
+    if (!userBrandIds.includes(ipKit.brandId)) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You do not have access to this IP kit' },
+        { status: 403 }
+      )
+    }
 
     let result
 

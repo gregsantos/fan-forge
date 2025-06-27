@@ -154,32 +154,20 @@ export function AddAssetsModal({
 
     setAdding(true)
     try {
-      const addedAssets: Asset[] = []
-      
-      // Add each selected asset to the IP kit
-      for (const assetId of selectedAssets) {
-        const response = await fetch(`/api/assets/${assetId}/ip-kits`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ipKitId })
-        })
+      // Use the new bulk add endpoint
+      const response = await fetch(`/api/ip-kits/${ipKitId}/assets/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetIds: selectedAssets })
+      })
 
-        if (response.ok) {
-          const asset = availableAssets.find(a => a.id === assetId)
-          if (asset) {
-            addedAssets.push(asset)
-          }
-        } else {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-          console.error(`Failed to add asset ${assetId} to IP kit:`, response.status, errorData)
-        }
-      }
-
-      if (addedAssets.length > 0) {
-        onAssetsAdded(addedAssets)
+      if (response.ok) {
+        const result = await response.json()
+        onAssetsAdded(result.addedAssets)
         onOpenChange(false)
       } else {
-        setError(`Failed to add ${selectedAssets.length} asset(s) to IP kit. Check console for details.`)
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        setError(errorData.error || 'Failed to add assets to IP kit')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add assets')

@@ -698,6 +698,8 @@ You will follow this exact sequence from the Implementation Plan:
 
 **Priority: HIGH - Address Immediately**
 
+- [ ] **URGENT: Fix Dynamic Server Usage Errors** - Add `export const dynamic = 'force-dynamic'` to API routes using cookies/headers to resolve Next.js static export compatibility issues preventing production builds
+- [ ] **URGENT: Verify and Audit Authorization Implementation** - Check current state of authorization middleware across all API endpoints, confirm if bookmarks API still uses hardcoded 'user-1', audit ownership validation
 - [x] Fix TypeScript compilation error in submissions route (Cookie handling pattern)
 - [ ] Replace mock bookmarks API with real database integration - currently uses hardcoded 'user-1' making it non-functional for real users
 - [ ] Implement missing authorization checks in API endpoints - security vulnerability where users can access/modify resources without proper permissions
@@ -711,7 +713,7 @@ You will follow this exact sequence from the Implementation Plan:
 
 **Priority: MEDIUM - Complete Within Sprint**
 
-- [ ] Fix React hook dependency warning in asset-upload-zone.tsx:108 - useCallback missing 'addFiles' dependency
+- [ ] **NEXT: Fix React hook dependency warning in asset-upload-zone.tsx:108** - useCallback missing 'addFiles' dependency
 - [ ] Remove 'as any' type assertions and add proper enum definitions - improve type safety in API routes
 - [ ] Standardize error response format across all API endpoints - currently inconsistent between Zod validation errors and generic messages
 - [ ] Add TypeScript strict null checks for all database query results

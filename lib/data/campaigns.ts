@@ -1,4 +1,4 @@
-import { db, campaigns, brands, ipKits, assets, submissions, users, reviews } from "@/db"
+import { db, campaigns, brands, ipKits, assets, submissions, users, reviews, assetIpKits, submissionAssets, userRoles, roles } from "@/db"
 import { eq, desc, count, or, ilike, and, asc, inArray, gte, lte, isNotNull } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 
@@ -47,6 +47,48 @@ export async function getDashboardData() {
       .orderBy(desc(submissions.createdAt))
       .limit(10)
 
+    // Fetch recent IP kits
+    const recentIpKits = await db
+      .select({
+        ipKit: ipKits,
+        brand: brands,
+        assetCount: count(assets.id),
+      })
+      .from(ipKits)
+      .leftJoin(brands, eq(ipKits.brandId, brands.id))
+      .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
+      .groupBy(ipKits.id, brands.id)
+      .orderBy(desc(ipKits.createdAt))
+      .limit(10)
+
+    // Fetch recent assets
+    const recentAssets = await db
+      .select({
+        asset: assets,
+        ipKit: ipKits,
+      })
+      .from(assets)
+      .leftJoin(ipKits, eq(assets.ipKitId, ipKits.id))
+      .orderBy(desc(assets.createdAt))
+      .limit(10)
+
+    // Get IP kit statistics
+    const [totalIpKits] = await db
+      .select({ count: count() })
+      .from(ipKits)
+    
+    const [publishedIpKits] = await db
+      .select({ count: count() })
+      .from(ipKits)
+      .where(eq(ipKits.isPublished, true))
+
+    // Get asset statistics
+    const [assetStats] = await db
+      .select({
+        total: count(),
+      })
+      .from(assets)
+
     return {
       campaigns: recentCampaigns.map(result => ({
         id: result.campaign.id,
@@ -63,13 +105,49 @@ export async function getDashboardData() {
         campaign: result.campaign ? {
           title: result.campaign.title
         } : null,
-      }))
+      })),
+      ipKits: recentIpKits.map(result => ({
+        id: result.ipKit.id,
+        name: result.ipKit.name,
+        isPublished: result.ipKit.isPublished,
+        assetCount: result.assetCount || 0,
+        brandName: result.brand?.name || 'Unknown Brand',
+        createdAt: result.ipKit.createdAt,
+        updatedAt: result.ipKit.updatedAt,
+      })),
+      assets: recentAssets.map(result => ({
+        id: result.asset.id,
+        filename: result.asset.filename,
+        originalFilename: result.asset.originalFilename,
+        url: result.asset.url,
+        thumbnailUrl: result.asset.thumbnailUrl,
+        category: result.asset.category,
+        ipKitId: result.asset.ipKitId,
+        ipKitName: result.ipKit?.name || 'Global Asset',
+        createdAt: result.asset.createdAt,
+      })),
+      stats: {
+        ipKits: {
+          total: totalIpKits?.count || 0,
+          published: publishedIpKits?.count || 0,
+          draft: (totalIpKits?.count || 0) - (publishedIpKits?.count || 0),
+        },
+        assets: {
+          total: assetStats?.total || 0,
+        }
+      }
     }
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error)
     return {
       campaigns: [],
-      submissions: []
+      submissions: [],
+      ipKits: [],
+      assets: [],
+      stats: {
+        ipKits: { total: 0, published: 0, draft: 0 },
+        assets: { total: 0 }
+      }
     }
   }
 }
@@ -278,6 +356,79 @@ export async function getIpKits(searchParams: Record<string, string | undefined>
   } catch (error) {
     console.error('Failed to fetch IP kits:', error)
     throw new Error('Failed to fetch IP kits')
+  }
+}
+
+export async function getIpKitById(ipKitId: string) {
+  try {
+    // Get IP Kit with brand info
+    const result = await db
+      .select({
+        id: ipKits.id,
+        name: ipKits.name,
+        description: ipKits.description,
+        guidelines: ipKits.guidelines,
+        brandId: ipKits.brandId,
+        isPublished: ipKits.isPublished,
+        version: ipKits.version,
+        createdAt: ipKits.createdAt,
+        updatedAt: ipKits.updatedAt,
+        brandName: brands.name,
+        brandDescription: brands.description
+      })
+      .from(ipKits)
+      .leftJoin(brands, eq(ipKits.brandId, brands.id))
+      .where(eq(ipKits.id, ipKitId))
+      .limit(1)
+
+    if (result.length === 0) {
+      return null
+    }
+
+    const ipKit = result[0]
+
+    // Get assets for this IP Kit using junction table
+    const ipKitAssets = await db
+      .select({
+        id: assets.id,
+        filename: assets.filename,
+        originalFilename: assets.originalFilename,
+        url: assets.url,
+        thumbnailUrl: assets.thumbnailUrl,
+        category: assets.category,
+        tags: assets.tags,
+        metadata: assets.metadata,
+        ipId: assets.ipId,
+        ipKitId: assetIpKits.ipKitId, // Include ipKitId from junction table
+        createdAt: assets.createdAt
+      })
+      .from(assets)
+      .innerJoin(assetIpKits, eq(assets.id, assetIpKits.assetId))
+      .where(eq(assetIpKits.ipKitId, ipKitId))
+      .orderBy(assets.createdAt)
+
+    // Transform assets to handle null values
+    const transformedAssets = ipKitAssets.map(asset => ({
+      ...asset,
+      thumbnailUrl: asset.thumbnailUrl || undefined,
+      tags: asset.tags || [],
+      ipId: asset.ipId || undefined
+    }))
+
+    return {
+      ...ipKit,
+      description: ipKit.description || undefined,
+      guidelines: ipKit.guidelines || undefined,
+      brandDescription: ipKit.brandDescription || undefined,
+      brandName: ipKit.brandName || "Unknown Brand",
+      isPublished: ipKit.isPublished ?? false,
+      version: ipKit.version ?? 1,
+      assets: transformedAssets,
+      assetCount: transformedAssets.length
+    }
+  } catch (error) {
+    console.error('Failed to fetch IP kit:', error)
+    throw new Error('Failed to fetch IP kit')
   }
 }
 
@@ -788,6 +939,153 @@ export async function getCampaignsForFilter() {
   } catch (error) {
     console.error('Failed to fetch campaigns for filter:', error)
     return []
+  }
+}
+
+// Get comprehensive analytics data for brand analytics page
+export async function getAnalyticsData() {
+  try {
+    // Campaign analytics
+    const campaignStats = await db
+      .select({
+        status: campaigns.status,
+        count: count(),
+      })
+      .from(campaigns)
+      .groupBy(campaigns.status)
+
+    // Get campaigns with submission counts for performance analysis
+    const campaignPerformance = await db
+      .select({
+        campaign: campaigns,
+        submissionCount: count(submissions.id),
+      })
+      .from(campaigns)
+      .leftJoin(submissions, eq(campaigns.id, submissions.campaignId))
+      .groupBy(campaigns.id)
+      .orderBy(desc(count(submissions.id)))
+      .limit(10)
+
+    // Asset usage analytics - most used assets in submissions
+    const assetUsage = await db
+      .select({
+        asset: assets,
+        ipKit: ipKits,
+        usageCount: count(submissionAssets.submissionId),
+      })
+      .from(assets)
+      .leftJoin(ipKits, eq(assets.ipKitId, ipKits.id))
+      .leftJoin(submissionAssets, eq(assets.id, submissionAssets.assetId))
+      .groupBy(assets.id, ipKits.id)
+      .orderBy(desc(count(submissionAssets.submissionId)))
+      .limit(10)
+
+    // Submission analytics by status and time
+    const submissionStats = await db
+      .select({
+        status: submissions.status,
+        count: count(),
+      })
+      .from(submissions)
+      .groupBy(submissions.status)
+
+    // Creator engagement - most active creators
+    const creatorEngagement = await db
+      .select({
+        creator: users,
+        submissionCount: count(submissions.id),
+      })
+      .from(users)
+      .leftJoin(submissions, eq(users.id, submissions.creatorId))
+      .leftJoin(userRoles, eq(users.id, userRoles.userId))
+      .leftJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(roles.name, 'creator'))
+      .groupBy(users.id)
+      .orderBy(desc(count(submissions.id)))
+      .limit(10)
+
+    // Time-based analytics - last 30 days
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const recentActivity = await db
+      .select({
+        date: submissions.createdAt,
+        count: count(),
+      })
+      .from(submissions)
+      .where(gte(submissions.createdAt, thirtyDaysAgo))
+      .groupBy(submissions.createdAt)
+      .orderBy(submissions.createdAt)
+
+    // Asset category breakdown
+    const assetCategories = await db
+      .select({
+        category: assets.category,
+        count: count(),
+      })
+      .from(assets)
+      .groupBy(assets.category)
+
+    // Overall totals
+    const [totalCampaigns] = await db.select({ count: count() }).from(campaigns)
+    const [totalSubmissions] = await db.select({ count: count() }).from(submissions)
+    const [totalAssets] = await db.select({ count: count() }).from(assets)
+    const [totalCreators] = await db
+      .select({ count: count() })
+      .from(users)
+      .leftJoin(userRoles, eq(users.id, userRoles.userId))
+      .leftJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(roles.name, 'creator'))
+
+    return {
+      overview: {
+        totalCampaigns: totalCampaigns.count,
+        totalSubmissions: totalSubmissions.count,
+        totalAssets: totalAssets.count,
+        totalCreators: totalCreators.count,
+      },
+      campaigns: {
+        byStatus: campaignStats,
+        topPerforming: campaignPerformance,
+      },
+      assets: {
+        mostUsed: assetUsage,
+        byCategory: assetCategories,
+      },
+      submissions: {
+        byStatus: submissionStats,
+        recentActivity,
+      },
+      creators: {
+        topContributors: creatorEngagement,
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch analytics data:', error)
+    return {
+      overview: {
+        totalCampaigns: 0,
+        totalSubmissions: 0,
+        totalAssets: 0,
+        totalCreators: 0,
+      },
+      campaigns: {
+        byStatus: [],
+        topPerforming: [],
+      },
+      assets: {
+        mostUsed: [],
+        byCategory: [],
+      },
+      submissions: {
+        byStatus: [],
+        recentActivity: [],
+      },
+      creators: {
+        topContributors: [],
+      }
+    }
   }
 }
 
