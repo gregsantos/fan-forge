@@ -7,6 +7,9 @@ import { eq, and, desc, ilike, count, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { getUserBrandIds } from '@/lib/auth-utils'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 // IP Kit creation schema
 const createIpKitSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
