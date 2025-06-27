@@ -5,6 +5,10 @@ import { db } from '@/db'
 import { ipKits, brands, assets, campaigns, assetIpKits } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
+import { getUserBrandIds } from '@/lib/auth-utils'
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 // IP Kit update schema
 const updateIpKitSchema = z.object({
@@ -118,7 +122,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'IP Kit not found' }, { status: 404 })
     }
 
-    // TODO: Add proper authorization check for IP Kit access
+    // SECURITY: Verify user has access to this IP kit's brand
+    const userBrandIds = await getUserBrandIds(user.id)
+    if (!userBrandIds.includes(existingIpKit[0].brandId)) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You do not have access to this IP kit' },
+        { status: 403 }
+      )
+    }
 
     // If publishing, increment version
     const updateDataWithVersion = { ...updateData }
@@ -178,7 +189,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'IP Kit not found' }, { status: 404 })
     }
 
-    // TODO: Add proper authorization check for IP Kit access
+    // SECURITY: Verify user has access to this IP kit's brand
+    const userBrandIds = await getUserBrandIds(user.id)
+    if (!userBrandIds.includes(existingIpKit[0].brandId)) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You do not have access to this IP kit' },
+        { status: 403 }
+      )
+    }
 
     // Check if IP Kit is being used in any campaigns
     const campaignsUsingIpKit = await db
