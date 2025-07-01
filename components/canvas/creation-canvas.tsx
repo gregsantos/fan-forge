@@ -42,6 +42,7 @@ import {
   Redo2,
   FlipHorizontal,
   FlipVertical,
+  GripVertical,
 } from "lucide-react"
 import {ProjectManager} from "./project-manager"
 import {ElementToolbar} from "./element-toolbar"
@@ -141,6 +142,8 @@ export function CreationCanvas({
   const [editingText, setEditingText] = useState<string>("")
   const [hoveredElement, setHoveredElement] = useState<string | null>(null)
   const [preventNextCanvasClick, setPreventNextCanvasClick] = useState(false)
+  const [draggedLayerId, setDraggedLayerId] = useState<string | null>(null)
+  const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(
     null
@@ -1377,6 +1380,122 @@ export function CreationCanvas({
 
   // Count selected elements (for future multi-select support)
   const selectedCount = selectedElement ? 1 : 0
+
+  // Layer reordering functions
+  const handleLayerDragStart = useCallback(
+    (e: React.DragEvent, elementId: string) => {
+      const element = elements.find(el => el.id === elementId)
+      // Don't allow dragging background elements
+      if (element?.isBackground) {
+        e.preventDefault()
+        return
+      }
+      setDraggedLayerId(elementId)
+      e.dataTransfer.effectAllowed = "move"
+    },
+    [elements]
+  )
+
+  const handleLayerDragOver = useCallback(
+    (e: React.DragEvent, targetId: string) => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = "move"
+      setDragOverLayerId(targetId)
+    },
+    []
+  )
+
+  const handleLayerDragLeave = useCallback(() => {
+    setDragOverLayerId(null)
+  }, [])
+
+  const handleLayerDrop = useCallback(
+    (e: React.DragEvent, targetId: string) => {
+      e.preventDefault()
+
+      if (!draggedLayerId || draggedLayerId === targetId) {
+        setDraggedLayerId(null)
+        setDragOverLayerId(null)
+        return
+      }
+
+      const draggedElement = elements.find(el => el.id === draggedLayerId)
+      const targetElement = elements.find(el => el.id === targetId)
+
+      if (!draggedElement || !targetElement) {
+        setDraggedLayerId(null)
+        setDragOverLayerId(null)
+        return
+      }
+
+      // Don't allow dropping above background elements
+      if (targetElement.isBackground) {
+        setDraggedLayerId(null)
+        setDragOverLayerId(null)
+        return
+      }
+
+      // Reorder layers by updating z-indices
+      const sortedElements = [...elements].sort((a, b) => a.zIndex - b.zIndex)
+      const draggedIndex = sortedElements.findIndex(
+        el => el.id === draggedLayerId
+      )
+      const targetIndex = sortedElements.findIndex(el => el.id === targetId)
+
+      if (draggedIndex === -1 || targetIndex === -1) {
+        setDraggedLayerId(null)
+        setDragOverLayerId(null)
+        return
+      }
+
+      // Create new z-index assignments
+      const newElements = [...elements]
+
+      // Remove dragged element from its current position
+      const reorderedSorted = [...sortedElements]
+      reorderedSorted.splice(draggedIndex, 1)
+      reorderedSorted.splice(targetIndex, 0, draggedElement)
+
+      // Reassign z-indices to maintain proper layering
+      // Background elements keep negative z-indices
+      let currentZIndex = 0
+      reorderedSorted.forEach((element, index) => {
+        const elementIndex = newElements.findIndex(el => el.id === element.id)
+        if (elementIndex !== -1) {
+          if (element.isBackground) {
+            // Keep backgrounds at negative z-indices
+            newElements[elementIndex] = {...element, zIndex: -1000 + index}
+          } else {
+            newElements[elementIndex] = {...element, zIndex: currentZIndex}
+            currentZIndex++
+          }
+        }
+      })
+
+      setElements(newElements)
+
+      // Record action for undo/redo
+      recordAction(
+        createUpdateAction(
+          draggedLayerId,
+          {zIndex: draggedElement.zIndex},
+          {
+            zIndex:
+              newElements.find(el => el.id === draggedLayerId)?.zIndex || 0,
+          }
+        )
+      )
+
+      setDraggedLayerId(null)
+      setDragOverLayerId(null)
+    },
+    [elements, draggedLayerId, recordAction]
+  )
+
+  const handleLayerDragEnd = useCallback(() => {
+    setDraggedLayerId(null)
+    setDragOverLayerId(null)
+  }, [])
 
   return (
     <div
@@ -2907,20 +3026,6 @@ export function CreationCanvas({
                     </div>
                   </div>
                 )}
-
-                {/* Actions */}
-                <div className='space-y-2'>
-                  <h4 className='font-medium'>Actions</h4>
-                  <Button
-                    variant='destructive'
-                    size='sm'
-                    className='w-full'
-                    onClick={() => deleteElement(selectedElementData.id)}
-                  >
-                    <Trash2 className='h-4 w-4 mr-2' />
-                    Delete Element
-                  </Button>
-                </div>
               </>
             ) : (
               <div className='text-center py-8 text-muted-foreground'>
@@ -2940,26 +3045,91 @@ export function CreationCanvas({
                     return (
                       <div
                         key={element.id}
-                        className={`p-2 rounded border cursor-pointer transition-colors ${
+                        draggable={!element.isBackground}
+                        onDragStart={e => handleLayerDragStart(e, element.id)}
+                        onDragOver={e => handleLayerDragOver(e, element.id)}
+                        onDragLeave={handleLayerDragLeave}
+                        onDrop={e => handleLayerDrop(e, element.id)}
+                        onDragEnd={handleLayerDragEnd}
+                        className={`p-2 rounded border transition-all duration-200 group ${
                           selectedElement === element.id
                             ? "border-primary bg-primary/5"
                             : "border-border hover:bg-muted"
+                        } ${
+                          draggedLayerId === element.id
+                            ? "opacity-50 scale-95 shadow-lg"
+                            : ""
+                        } ${
+                          dragOverLayerId === element.id &&
+                          draggedLayerId !== element.id
+                            ? "border-primary border-2 bg-primary/10"
+                            : ""
+                        } ${
+                          element.isBackground
+                            ? "border-l-4 border-l-orange-500 cursor-default"
+                            : !element.isBackground &&
+                                draggedLayerId &&
+                                draggedLayerId !== element.id
+                              ? "cursor-pointer"
+                              : "cursor-grab active:cursor-grabbing"
                         }`}
-                        onClick={e => {
-                          e.stopPropagation()
-                          e.preventDefault()
-                          setSelectedElement(element.id)
-                        }}
                       >
-                        <div className='flex items-center justify-between'>
-                          <span className='text-sm truncate'>
-                            {element.type === "text"
-                              ? `Text: ${element.text || "Empty text"}`
-                              : asset?.filename || `Asset (${element.type})`}
-                          </span>
-                          <Badge variant='outline' className='text-xs'>
-                            {element.zIndex}
-                          </Badge>
+                        <div className='flex items-center gap-2 min-w-0'>
+                          {/* Drag Handle - only for non-background elements */}
+                          {!element.isBackground && (
+                            <div className='text-muted-foreground group-hover:text-foreground flex-shrink-0'>
+                              <GripVertical className='h-3 w-3' />
+                            </div>
+                          )}
+
+                          {/* Background indicator for background elements */}
+                          {element.isBackground && (
+                            <div className='text-orange-500 flex-shrink-0'>
+                              <Square className='h-3 w-3 fill-current' />
+                            </div>
+                          )}
+
+                          <div
+                            className='flex-1 cursor-pointer min-w-0'
+                            onClick={e => {
+                              e.stopPropagation()
+                              e.preventDefault()
+                              setSelectedElement(element.id)
+                            }}
+                          >
+                            <span
+                              className='text-sm truncate block'
+                              title={
+                                element.type === "text"
+                                  ? `Text: ${element.text || "Empty text"}`
+                                  : asset?.filename || `Asset (${element.type})`
+                              }
+                            >
+                              {element.type === "text"
+                                ? `Text: ${element.text || "Empty text"}`
+                                : asset?.filename || `Asset (${element.type})`}
+                            </span>
+                            {element.isBackground && (
+                              <span className='text-xs text-orange-600 font-medium'>
+                                Background
+                              </span>
+                            )}
+                          </div>
+
+                          <div className='flex items-center gap-1 flex-shrink-0'>
+                            <Button
+                              variant='ghost'
+                              size='sm'
+                              onClick={e => {
+                                e.stopPropagation()
+                                deleteElement(element.id)
+                              }}
+                              className='h-6 w-6 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity'
+                              title='Delete layer'
+                            >
+                              <Trash2 className='h-3 w-3' />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )
