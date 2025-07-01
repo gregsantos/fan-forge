@@ -74,8 +74,8 @@ export function EnhancedSelectionBox({
           Background
         </div>
 
-        {/* Flip controls - positioned above element center */}
-        <div className='absolute -top-16 left-1/2 transform -translate-x-1/2 flex gap-2 pointer-events-none'>
+        {/* Flip controls - positioned in top-right corner of canvas */}
+        <div className='absolute top-4 right-4 flex gap-2 pointer-events-none'>
           <button
             className='w-8 h-8 bg-white border-2 border-orange-500 rounded cursor-pointer flex items-center justify-center hover:scale-110 transition-transform shadow-sm pointer-events-auto'
             onClick={e => {

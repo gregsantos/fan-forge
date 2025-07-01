@@ -40,6 +40,8 @@ import {
   Clock,
   Undo2,
   Redo2,
+  FlipHorizontal,
+  FlipVertical,
 } from "lucide-react"
 import {ProjectManager} from "./project-manager"
 import {ElementToolbar} from "./element-toolbar"
@@ -2233,6 +2235,47 @@ export function CreationCanvas({
                     </div>
                   )}
 
+                  {/* Background flip controls */}
+                  {selectedElementData.isBackground && (
+                    <div>
+                      <label className='text-xs text-muted-foreground block mb-2'>
+                        Background Controls
+                      </label>
+                      <div className='grid grid-cols-2 gap-2'>
+                        <Button
+                          variant={
+                            selectedElementData.flipHorizontal
+                              ? "default"
+                              : "outline"
+                          }
+                          size='sm'
+                          onClick={() =>
+                            handleFlipHorizontal(selectedElementData.id)
+                          }
+                          className='flex-1'
+                        >
+                          <FlipHorizontal className='h-4 w-4 mr-1' />
+                          Flip H
+                        </Button>
+                        <Button
+                          variant={
+                            selectedElementData.flipVertical
+                              ? "default"
+                              : "outline"
+                          }
+                          size='sm'
+                          onClick={() =>
+                            handleFlipVertical(selectedElementData.id)
+                          }
+                          className='flex-1'
+                        >
+                          <FlipVertical className='h-4 w-4 mr-1' />
+                          Flip V
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Text-specific controls */}
                   {selectedElementData.type === "text" && (
                     <>
@@ -2488,33 +2531,74 @@ export function CreationCanvas({
                   </div>
                 )}
 
-                {/* Rotation */}
-                <div className='space-y-2'>
-                  <h4 className='font-medium'>Rotation</h4>
-                  <div className='flex items-center gap-2'>
-                    <Input
-                      type='number'
-                      value={selectedElementData.rotation}
-                      onChange={e =>
-                        updateElement(selectedElementData.id, {
-                          rotation: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className='h-8'
-                    />
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={() =>
-                        updateElement(selectedElementData.id, {
-                          rotation: (selectedElementData.rotation + 90) % 360,
-                        })
-                      }
-                    >
-                      <RotateCw className='h-4 w-4' />
-                    </Button>
+                {/* Rotation - only for non-background elements */}
+                {!selectedElementData.isBackground && (
+                  <div className='space-y-2'>
+                    <h4 className='font-medium'>Rotation</h4>
+                    <div className='flex items-center gap-2'>
+                      <Input
+                        type='number'
+                        value={selectedElementData.rotation}
+                        onChange={e =>
+                          updateElement(selectedElementData.id, {
+                            rotation: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        className='h-8'
+                      />
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() =>
+                          updateElement(selectedElementData.id, {
+                            rotation: (selectedElementData.rotation + 90) % 360,
+                          })
+                        }
+                      >
+                        <RotateCw className='h-4 w-4' />
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Flip Controls - only for background elements */}
+                {selectedElementData.isBackground && (
+                  <div className='space-y-2'>
+                    <h4 className='font-medium'>Background Controls</h4>
+                    <div className='grid grid-cols-2 gap-2'>
+                      <Button
+                        variant={
+                          selectedElementData.flipHorizontal
+                            ? "default"
+                            : "outline"
+                        }
+                        size='sm'
+                        onClick={() =>
+                          handleFlipHorizontal(selectedElementData.id)
+                        }
+                        className='flex items-center justify-center'
+                      >
+                        <FlipHorizontal className='h-4 w-4 mr-1' />
+                        Flip H
+                      </Button>
+                      <Button
+                        variant={
+                          selectedElementData.flipVertical
+                            ? "default"
+                            : "outline"
+                        }
+                        size='sm'
+                        onClick={() =>
+                          handleFlipVertical(selectedElementData.id)
+                        }
+                        className='flex items-center justify-center'
+                      >
+                        <FlipVertical className='h-4 w-4 mr-1' />
+                        Flip V
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Text Controls - only show for text elements */}
                 {selectedElementData.type === "text" && (
