@@ -971,7 +971,10 @@ export function CreationCanvas({
         }
 
         setElements(prev => [...prev, copiedElement])
-        setSelectedElement(copiedElement.id)
+        // Use setTimeout to ensure element is added before selection
+        setTimeout(() => {
+          setSelectedElement(copiedElement.id)
+        }, 0)
         setClipboard(element)
 
         recordAction(createCopyAction(element, copiedElement))
@@ -1121,7 +1124,7 @@ export function CreationCanvas({
       if (e.key === "Delete" && selectedElement) {
         deleteElementWithHistory(selectedElement)
       } else if (e.key === "Escape") {
-        setSelectedElement(null)
+        handleDeselectAll()
       } else if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault()
         handleSave()
@@ -1279,7 +1282,10 @@ export function CreationCanvas({
     }
 
     setElements(prev => [...prev, newElement])
-    setSelectedElement(newElement.id)
+    // Use setTimeout to ensure element is added before selection
+    setTimeout(() => {
+      setSelectedElement(newElement.id)
+    }, 0)
     recordAction(createCreateAction(newElement))
   }
 
@@ -1297,6 +1303,80 @@ export function CreationCanvas({
       setPanOffset({x: 0, y: 0})
     }
   }
+
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as Node
+
+      // Don't deselect if clicking on:
+      // 1. Canvas or any of its children
+      if (canvasRef.current?.contains(target)) {
+        return
+      }
+
+      // 2. Properties panel, asset panel, toolbar, or any UI elements
+      const uiSelectors = [
+        "[data-radix-popper-content-wrapper]", // Dropdown menus
+        ".asset-palette-item", // Asset items
+        "button", // Any buttons
+        "input", // Any inputs
+        "textarea", // Any textareas
+        '[role="dialog"]', // Modals
+        '[role="menu"]', // Context menus
+        '[role="menuitem"]', // Menu items
+        ".cursor-pointer", // Layer items and other clickable elements
+        ".border-primary", // Selected elements
+        ".border-border", // Layer items
+      ]
+
+      // Check if click is on any UI element
+      for (const selector of uiSelectors) {
+        if ((target as Element).closest?.(selector)) {
+          return
+        }
+      }
+
+      // Check if click is on the properties panel specifically
+      if (
+        (target as Element).closest?.('[class*="Properties"]') ||
+        (target as Element).closest?.('[class*="border-l"]') ||
+        (target as Element).closest?.('[class*="border-r"]')
+      ) {
+        return
+      }
+
+      // Only deselect if clicking on very specific empty areas
+      // Be much more restrictive about when to deselect
+      const isReallyEmptyArea =
+        (target as Element).tagName === "BODY" ||
+        ((target as Element).classList?.contains("bg-muted/30") &&
+          !(target as Element).closest?.('[class*="border"]') &&
+          !(target as Element).closest?.('[class*="p-"]') &&
+          !(target as Element).closest?.('[class*="cursor-"]'))
+
+      if (isReallyEmptyArea) {
+        setSelectedElement(null)
+      }
+    }
+
+    document.addEventListener("click", handleDocumentClick)
+    return () => document.removeEventListener("click", handleDocumentClick)
+  }, [])
+
+  // Selection management functions
+  const handleDeselectAll = useCallback(() => {
+    setSelectedElement(null)
+    // Could add action history for undo if needed
+  }, [])
+
+  const handleDeselectCurrent = useCallback(() => {
+    if (selectedElement) {
+      setSelectedElement(null)
+    }
+  }, [selectedElement])
+
+  // Count selected elements (for future multi-select support)
+  const selectedCount = selectedElement ? 1 : 0
 
   return (
     <div
@@ -1408,7 +1488,10 @@ export function CreationCanvas({
                             }
 
                         setElements(prev => [...prev, newElement])
-                        setSelectedElement(newElement.id)
+                        // Use setTimeout to ensure element is added before selection
+                        setTimeout(() => {
+                          setSelectedElement(newElement.id)
+                        }, 0)
                         recordAction(createCreateAction(newElement))
                       }}
                     >
@@ -1553,7 +1636,10 @@ export function CreationCanvas({
                         }
 
                     setElements(prev => [...prev, newElement])
-                    setSelectedElement(newElement.id)
+                    // Use setTimeout to ensure element is added before selection
+                    setTimeout(() => {
+                      setSelectedElement(newElement.id)
+                    }, 0)
                     recordAction(createCreateAction(newElement))
                   }}
                 >
@@ -1691,6 +1777,24 @@ export function CreationCanvas({
             >
               <Redo2 className='h-4 w-4' />
             </Button>
+
+            {/* Deselect All - Only show when there are elements */}
+            {elements.length > 0 && (
+              <>
+                <div className='border-l h-6 mx-2 hidden lg:block' />
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={handleDeselectAll}
+                  disabled={!selectedElement}
+                  title='Deselect all (Escape)'
+                  className='text-muted-foreground hover:text-foreground'
+                >
+                  <X className='h-4 w-4 mr-1' />
+                  <span className='hidden xl:inline'>Clear</span>
+                </Button>
+              </>
+            )}
 
             {!isMobile && (
               <Button
@@ -2173,6 +2277,20 @@ export function CreationCanvas({
               )}
             </div>
             <div className='flex items-center gap-2'>
+              {/* Quick deselect button when element is selected */}
+              {selectedElementData && (
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={e => {
+                    e.stopPropagation()
+                    handleDeselectCurrent()
+                  }}
+                  title='Deselect'
+                >
+                  <X className='h-4 w-4 text-muted-foreground' />
+                </Button>
+              )}
               {/* Quick delete button when element is selected */}
               {selectedElementData && (
                 <Button
@@ -2432,11 +2550,39 @@ export function CreationCanvas({
                   : "224px",
           }}
         >
-          <CardHeader>
-            <CardTitle className='text-lg flex items-center'>
-              <Layers className='mr-2 h-5 w-5' />
-              Properties
-            </CardTitle>
+          <CardHeader className='pb-3'>
+            <div className='flex items-center justify-between'>
+              <CardTitle className='text-lg flex items-center'>
+                <Layers className='mr-2 h-5 w-5' />
+                Properties
+              </CardTitle>
+              {/* Selection Summary & Quick Deselect */}
+              {selectedElement && (
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={handleDeselectCurrent}
+                  title='Deselect current element (Escape)'
+                  className='h-8 w-8 p-0 text-muted-foreground hover:text-foreground'
+                >
+                  <X className='h-4 w-4' />
+                </Button>
+              )}
+            </div>
+            {/* Selection Status Bar */}
+            {selectedElement && (
+              <div className='flex items-center justify-between text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded mt-2'>
+                <span>1 element selected</span>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={handleDeselectCurrent}
+                  className='h-5 text-xs px-1 text-muted-foreground hover:text-foreground'
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
           </CardHeader>
 
           <CardContent className='flex-1 space-y-6'>
@@ -2799,11 +2945,17 @@ export function CreationCanvas({
                             ? "border-primary bg-primary/5"
                             : "border-border hover:bg-muted"
                         }`}
-                        onClick={() => setSelectedElement(element.id)}
+                        onClick={e => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          setSelectedElement(element.id)
+                        }}
                       >
                         <div className='flex items-center justify-between'>
                           <span className='text-sm truncate'>
-                            {asset?.filename || "Unknown"}
+                            {element.type === "text"
+                              ? `Text: ${element.text || "Empty text"}`
+                              : asset?.filename || `Asset (${element.type})`}
                           </span>
                           <Badge variant='outline' className='text-xs'>
                             {element.zIndex}
