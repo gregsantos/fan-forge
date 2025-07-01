@@ -1827,7 +1827,7 @@ export function CreationCanvas({
           >
             <div
               ref={canvasRef}
-              className='relative bg-white border-2 border-dashed border-muted-foreground/25 rounded-lg'
+              className='relative bg-white overflow-hidden'
               style={(() => {
                 if (isMobile) {
                   // Use full available width minus minimal padding for mobile
@@ -1946,7 +1946,22 @@ export function CreationCanvas({
                         <img
                           src={asset.url}
                           alt={asset.filename}
-                          className='w-full h-full object-cover pointer-events-none'
+                          className={`w-full h-full pointer-events-none ${
+                            element.isBackground
+                              ? "object-cover object-center"
+                              : "object-cover"
+                          }`}
+                          style={
+                            element.isBackground
+                              ? {
+                                  // Ensure background images completely fill the canvas
+                                  minWidth: "100%",
+                                  minHeight: "100%",
+                                  objectFit: "cover",
+                                  objectPosition: "center",
+                                }
+                              : undefined
+                          }
                           draggable={false}
                         />
                       </div>
