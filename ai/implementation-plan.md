@@ -112,7 +112,7 @@ You will follow this exact sequence from the Implementation Plan:
 
 #### 3.1.1 Modular Asset Upload System Enhancement (Feature #4a)
 
-**Completed: January 2025**
+**Completed: July 2025**
 
 - [x] Create shared category constants and utilities in `lib/constants.ts` with icons, colors, and descriptions
 - [x] Enhance FileUpload component with optional category selection and background asset guidance
@@ -252,7 +252,7 @@ You will follow this exact sequence from the Implementation Plan:
 
 #### 4.8 Server-Side Data Fetching Migration (Feature #7c)
 
-**Completed: December 2024**
+**Completed: June 2025**
 
 - [x] Migrate my-submissions page from client-side fetch to server component using getCreatorSubmissions()
 - [x] Convert discover page from client-side API calls to server-side getCampaigns() with initial data loading

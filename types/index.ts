@@ -216,6 +216,10 @@ export interface CanvasElement {
   zIndex: number
   opacity?: number
   locked?: boolean
+  // Background-specific properties
+  isBackground?: boolean
+  flipHorizontal?: boolean
+  flipVertical?: boolean
 }
 
 export interface CanvasState {
