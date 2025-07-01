@@ -26,6 +26,7 @@ import {
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
+import { useAssetUpload } from "@/lib/hooks/use-asset-upload"
 
 interface IpKitDetail {
   id: string
@@ -82,36 +83,19 @@ export default function IpKitDetailPage() {
     }
   }, [ipKitId, fetchIpKit])
 
+  const { handleUpload } = useAssetUpload({
+    ipKitId: ipKitId,
+    onSuccess: (result) => {
+      console.log(`Successfully created ${result.success} asset records`)
+    },
+    onError: (errors) => {
+      alert(`Upload completed with some failures. Check console for details.`)
+    },
+    onRefresh: fetchIpKit
+  })
+
   const handleAssetsUploaded = async (uploadResults: any[]) => {
-    // Create asset records in the database
-    for (const result of uploadResults) {
-      try {
-        const response = await fetch('/api/assets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filename: result.assetUrl.split('/').pop() || 'asset',
-            originalFilename: result.assetUrl.split('/').pop() || 'asset',
-            url: result.assetUrl,
-            thumbnailUrl: result.thumbnailUrl,
-            category: 'other', // This should be passed from the upload component
-            tags: [],
-            metadata: result.metadata,
-            ipId: result.ipId, // Include ipId if provided
-            ipKitId: ipKitId
-          })
-        })
-
-        if (!response.ok) {
-          console.error('Failed to create asset record')
-        }
-      } catch (error) {
-        console.error('Error creating asset record:', error)
-      }
-    }
-
-    // Refresh the IP kit data
-    fetchIpKit()
+    await handleUpload(uploadResults)
   }
 
   const handleAssetRemovedFromIpKit = (assetId: string) => {
@@ -420,30 +404,58 @@ export default function IpKitDetailPage() {
         </TabsContent>
 
         <TabsContent value="upload" className="space-y-6">
-          {/* Upload by Category */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {['characters', 'backgrounds', 'logos', 'titles', 'props', 'other'].map((category) => (
-              <Card key={category}>
-                <CardHeader>
-                  <CardTitle className="capitalize">{category}</CardTitle>
-                  <CardDescription>
-                    Upload {category} assets for this IP kit
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ErrorBoundary>
-                    <AssetUploadZone
-                      ipKitId={ipKit.id}
-                      category={category as any}
-                      onAssetsUploaded={handleAssetsUploaded}
-                      maxFiles={10}
-                      showIpIdInput={true}
-                    />
-                  </ErrorBoundary>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {/* Modern Single Upload Zone with Category Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Upload Assets to IP Kit</CardTitle>
+              <CardDescription>
+                Upload assets for this IP kit. Select the appropriate category and upload multiple files at once.
+                You can change the category for different batches of uploads.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ErrorBoundary>
+                <AssetUploadZone
+                  ipKitId={ipKit.id}
+                  categorySelectable={true}
+                  onAssetsUploaded={handleAssetsUploaded}
+                  maxFiles={20}
+                  showIpIdInput={true}
+                />
+              </ErrorBoundary>
+            </CardContent>
+          </Card>
+
+          {/* Upload Tips */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Upload Guidelines</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h4 className="font-medium mb-2">Asset Categories</h4>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li>• <strong>Characters:</strong> People, mascots, character illustrations</li>
+                    <li>• <strong>Backgrounds:</strong> Background images, patterns, textures</li>
+                    <li>• <strong>Logos:</strong> Brand logos, symbols, emblems</li>
+                    <li>• <strong>Titles:</strong> Text graphics, typography elements</li>
+                    <li>• <strong>Props:</strong> Objects, items, decorative elements</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Quality Guidelines</h4>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li>• Use high-resolution images (min 300 DPI)</li>
+                    <li>• Ensure proper lighting and contrast</li>
+                    <li>• Remove backgrounds when appropriate</li>
+                    <li>• Use consistent style across similar assets</li>
+                    <li>• Include IP ID for blockchain tracking (optional)</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="settings">

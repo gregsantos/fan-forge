@@ -110,6 +110,23 @@ You will follow this exact sequence from the Implementation Plan:
 - [x] Update asset upload flow to support null IP kit IDs for global assets
 - [x] Transform asset statistics to show real category breakdowns and storage usage
 
+#### 3.1.1 Modular Asset Upload System Enhancement (Feature #4a)
+
+**Completed: January 2025**
+
+- [x] Create shared category constants and utilities in `lib/constants.ts` with icons, colors, and descriptions
+- [x] Enhance FileUpload component with optional category selection and background asset guidance
+- [x] Enhance AssetUploadZone component with optional category selection and visual feedback
+- [x] Create modular asset database service (`lib/services/asset-database.ts`) for consistent record creation
+- [x] Implement reusable upload hook (`lib/hooks/use-asset-upload.ts`) for clean component integration
+- [x] Update assets page to use category selection in upload flow with improved UX
+- [x] Modernize IP kit upload UI from 6 separate category zones to single flexible upload zone
+- [x] Add comprehensive upload guidelines and category explanations for brand users
+- [x] Fix hardcoded category values and ensure proper category propagation through upload workflow
+- [x] Implement background asset specifications and guidance (ready for canvas background feature)
+- [x] Maintain full backward compatibility with existing upload workflows
+- [x] Test and verify TypeScript compilation and code quality standards
+
 #### 3.2 Enhanced Asset Management
 
 - [ ] Build advanced search with multiple filters

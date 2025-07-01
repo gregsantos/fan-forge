@@ -7,9 +7,12 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { assetStorageService } from "@/lib/services/asset-storage"
 import { Upload, X, FileImage, AlertCircle, CheckCircle, File } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { AssetCategory } from "@/types"
+import { ASSET_CATEGORIES, getCategoryInfo, BACKGROUND_ASSET_SPECS } from "@/lib/constants"
 
 export interface UploadedFile {
   id: string
@@ -33,7 +36,9 @@ interface FileUploadProps {
   onFilesRemoved: (fileIds: string[]) => void
   ipKitId: string | null
   campaignId?: string
-  category: string
+  category?: AssetCategory
+  categorySelectable?: boolean
+  onCategoryChange?: (category: AssetCategory) => void
   maxFiles?: number
   className?: string
   disabled?: boolean
@@ -45,7 +50,9 @@ export function FileUpload({
   onFilesRemoved,
   ipKitId,
   campaignId,
-  category,
+  category = 'other',
+  categorySelectable = false,
+  onCategoryChange,
   maxFiles = 10,
   className,
   disabled = false,
@@ -55,7 +62,13 @@ export function FileUpload({
   const [isDragOver, setIsDragOver] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [ipId, setIpId] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<AssetCategory>(category)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleCategoryChange = (newCategory: AssetCategory) => {
+    setSelectedCategory(newCategory)
+    onCategoryChange?.(newCategory)
+  }
 
   const createUploadedFile = useCallback((file: File): UploadedFile => ({
     id: Math.random().toString(36).substring(2),
@@ -102,7 +115,7 @@ export function FileUpload({
 
         // Upload the asset using assetStorageService
         const result = await assetStorageService.uploadAsset(uploadFile.file, {
-          category: category as any, // Cast to expected enum type
+          category: categorySelectable ? selectedCategory : category,
           ipKitId: ipKitId || undefined,
           campaignId: campaignId,
           ipId: ipId.trim() || undefined,
@@ -141,7 +154,7 @@ export function FileUpload({
     if (successfulUploads.length > 0) {
       onFilesUploaded(successfulUploads)
     }
-  }, [files, disabled, isUploading, maxFiles, ipKitId, campaignId, category, updateFile, onFilesUploaded, ipId, createUploadedFile])
+  }, [files, disabled, isUploading, maxFiles, ipKitId, campaignId, category, categorySelectable, selectedCategory, updateFile, onFilesUploaded, ipId, createUploadedFile])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -191,8 +204,63 @@ export function FileUpload({
     return <File className="h-6 w-6" />
   }
 
+  // Get current category info for display
+  const currentCategoryInfo = getCategoryInfo(categorySelectable ? selectedCategory : category)
+  const showBackgroundGuidance = (categorySelectable ? selectedCategory : category) === 'backgrounds'
+
   return (
     <div className={cn("space-y-4", className)}>
+      {/* Category Selection */}
+      {categorySelectable && (
+        <div className="space-y-2">
+          <Label htmlFor="category-select">Asset Category</Label>
+          <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+            <SelectTrigger id="category-select">
+              <SelectValue>
+                <div className="flex items-center gap-2">
+                  <currentCategoryInfo.icon className="h-4 w-4" />
+                  {currentCategoryInfo.label}
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {ASSET_CATEGORIES.map((categoryInfo) => (
+                <SelectItem key={categoryInfo.value} value={categoryInfo.value}>
+                  <div className="flex items-center gap-2">
+                    <categoryInfo.icon className="h-4 w-4" />
+                    <div>
+                      <div className="font-medium">{categoryInfo.label}</div>
+                      <div className="text-xs text-muted-foreground">{categoryInfo.description}</div>
+                    </div>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {currentCategoryInfo.description}
+          </p>
+          
+          {/* Background asset guidance */}
+          {showBackgroundGuidance && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-start gap-2">
+                <currentCategoryInfo.icon className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <div className="font-medium text-blue-900 mb-1">Background Asset Guidelines</div>
+                  <ul className="text-blue-800 space-y-1 text-xs">
+                    <li>• <strong>Recommended:</strong> {BACKGROUND_ASSET_SPECS.recommended.idealWidth}×{BACKGROUND_ASSET_SPECS.recommended.idealHeight}px</li>
+                    <li>• <strong>Minimum:</strong> {BACKGROUND_ASSET_SPECS.recommended.minWidth}×{BACKGROUND_ASSET_SPECS.recommended.minHeight}px</li>
+                    <li>• <strong>Aspect Ratio:</strong> {BACKGROUND_ASSET_SPECS.recommended.aspectRatio} (matches canvas)</li>
+                    <li>• Background assets will automatically fill the entire canvas</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* IP ID Input (optional) */}
       {showIpIdInput && (
         <div className="space-y-2">
