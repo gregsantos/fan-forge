@@ -21,6 +21,8 @@ import {
   Squirrel,
 } from "lucide-react"
 import {ErrorBoundary} from "@/components/ui/error-boundary"
+import { AssetCategory } from "@/types"
+import { useAssetUpload } from "@/lib/hooks/use-asset-upload"
 
 interface AssetsPageClientProps {
   initialStats: {
@@ -44,41 +46,26 @@ export default function AssetsPageClient({
   const [activeTab, setActiveTab] = useState("grid")
   const [uploadingFiles, setUploadingFiles] = useState<UploadedFile[]>([])
   const [selectedIpKitId, setSelectedIpKitId] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<AssetCategory>('other')
+
+  const { handleUpload, isProcessing } = useAssetUpload({
+    ipKitId: selectedIpKitId,
+    defaultCategory: selectedCategory,
+    onSuccess: (result) => {
+      console.log(`Successfully created ${result.success} asset records`)
+    },
+    onError: (errors) => {
+      alert(`Upload completed with some failures. Check console for details.`)
+    },
+    onRefresh: () => {
+      // Refresh the asset grid
+      window.location.reload() // Simple refresh - in production you'd update state
+    }
+  })
 
   const handleFilesUploaded = async (files: UploadedFile[]) => {
     console.log("Files uploaded:", files)
-
-    // Create asset records in the database
-    for (const file of files) {
-      if (file.status === "success" && file.url && file.metadata) {
-        try {
-          const response = await fetch("/api/assets", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-              filename: file.file.name,
-              originalFilename: file.file.name,
-              url: file.url,
-              thumbnailUrl: file.thumbnailUrl,
-              category: "other", // Default category - you might want to let users select this
-              tags: [],
-              metadata: file.metadata,
-              ipId: file.ipId, // Include ipId if provided
-              ipKitId: selectedIpKitId || undefined,
-            }),
-          })
-
-          if (!response.ok) {
-            console.error("Failed to create asset record")
-          }
-        } catch (error) {
-          console.error("Error creating asset record:", error)
-        }
-      }
-    }
-
-    // Refresh the asset grid
-    window.location.reload() // Simple refresh - in production you'd update state
+    await handleUpload(files)
   }
 
   const handleFilesRemoved = (fileIds: string[]) => {
@@ -296,7 +283,8 @@ Are you sure you want to continue?`
                     onFilesUploaded={handleFilesUploaded}
                     onFilesRemoved={handleFilesRemoved}
                     ipKitId={selectedIpKitId}
-                    category='other'
+                    categorySelectable={true}
+                    onCategoryChange={(category) => setSelectedCategory(category)}
                     maxFiles={20}
                     showIpIdInput={true}
                   />
