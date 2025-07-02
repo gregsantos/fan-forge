@@ -43,6 +43,13 @@ import {
   FlipHorizontal,
   FlipVertical,
   GripVertical,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Minus,
+  MoreHorizontal,
+  MoreVertical,
 } from "lucide-react"
 import {ProjectManager} from "./project-manager"
 import {ElementToolbar} from "./element-toolbar"
@@ -1585,6 +1592,230 @@ export function CreationCanvas({
       )
     },
     [getAllSelectedIds]
+  )
+
+  // Multi-select alignment functions
+  const alignSelectedElements = useCallback(
+    (alignment: "left" | "center" | "right" | "top" | "middle" | "bottom") => {
+      const allSelectedIds = getAllSelectedIds()
+      const selectedElementsData = elements.filter(
+        el => allSelectedIds.includes(el.id) && !el.isBackground
+      )
+
+      if (selectedElementsData.length < 2) return
+
+      // Store initial positions for undo
+      const initialPositions = selectedElementsData.map(el => ({
+        id: el.id,
+        x: el.x,
+        y: el.y,
+      }))
+
+      // Calculate alignment target
+      let alignmentTarget: number
+
+      if (alignment === "left") {
+        alignmentTarget = Math.min(...selectedElementsData.map(el => el.x))
+      } else if (alignment === "right") {
+        alignmentTarget = Math.max(
+          ...selectedElementsData.map(el => el.x + el.width)
+        )
+      } else if (alignment === "center") {
+        const minX = Math.min(...selectedElementsData.map(el => el.x))
+        const maxX = Math.max(
+          ...selectedElementsData.map(el => el.x + el.width)
+        )
+        alignmentTarget = (minX + maxX) / 2
+      } else if (alignment === "top") {
+        alignmentTarget = Math.min(...selectedElementsData.map(el => el.y))
+      } else if (alignment === "bottom") {
+        alignmentTarget = Math.max(
+          ...selectedElementsData.map(el => el.y + el.height)
+        )
+      } else if (alignment === "middle") {
+        const minY = Math.min(...selectedElementsData.map(el => el.y))
+        const maxY = Math.max(
+          ...selectedElementsData.map(el => el.y + el.height)
+        )
+        alignmentTarget = (minY + maxY) / 2
+      } else {
+        return
+      }
+
+      // Apply alignment
+      setElements(prev =>
+        prev.map(el => {
+          if (allSelectedIds.includes(el.id) && !el.isBackground) {
+            let newX = el.x
+            let newY = el.y
+
+            if (alignment === "left") {
+              newX = alignmentTarget
+            } else if (alignment === "right") {
+              newX = alignmentTarget - el.width
+            } else if (alignment === "center") {
+              newX = alignmentTarget - el.width / 2
+            } else if (alignment === "top") {
+              newY = alignmentTarget
+            } else if (alignment === "bottom") {
+              newY = alignmentTarget - el.height
+            } else if (alignment === "middle") {
+              newY = alignmentTarget - el.height / 2
+            }
+
+            return {...el, x: Math.max(0, newX), y: Math.max(0, newY)}
+          }
+          return el
+        })
+      )
+
+      // Record action for undo (bulk action)
+      initialPositions.forEach(initialPos => {
+        const element = elements.find(el => el.id === initialPos.id)
+        if (element) {
+          recordAction(
+            createMoveAction(initialPos.id, initialPos, {
+              x: element.x,
+              y: element.y,
+            })
+          )
+        }
+      })
+    },
+    [getAllSelectedIds, elements, recordAction]
+  )
+
+  // Distribute elements evenly (for 3+ elements)
+  const distributeSelectedElements = useCallback(
+    (direction: "horizontal" | "vertical") => {
+      const allSelectedIds = getAllSelectedIds()
+      const selectedElementsData = elements.filter(
+        el => allSelectedIds.includes(el.id) && !el.isBackground
+      )
+
+      if (selectedElementsData.length < 3) return
+
+      // Store initial positions for undo
+      const initialPositions = selectedElementsData.map(el => ({
+        id: el.id,
+        x: el.x,
+        y: el.y,
+      }))
+
+      // Sort elements by position
+      const sortedElements = [...selectedElementsData].sort((a, b) =>
+        direction === "horizontal" ? a.x - b.x : a.y - b.y
+      )
+
+      const first = sortedElements[0]
+      const last = sortedElements[sortedElements.length - 1]
+
+      let totalSpace: number
+      let startPos: number
+
+      if (direction === "horizontal") {
+        startPos = first.x + first.width
+        totalSpace = last.x - startPos
+      } else {
+        startPos = first.y + first.height
+        totalSpace = last.y - startPos
+      }
+
+      const spacing = totalSpace / (sortedElements.length - 1)
+
+      // Apply distribution (skip first and last)
+      let currentPos = startPos
+      for (let i = 1; i < sortedElements.length - 1; i++) {
+        const element = sortedElements[i]
+
+        setElements(prev =>
+          prev.map(el => {
+            if (el.id === element.id) {
+              return direction === "horizontal"
+                ? {...el, x: Math.max(0, currentPos)}
+                : {...el, y: Math.max(0, currentPos)}
+            }
+            return el
+          })
+        )
+
+        currentPos += spacing
+      }
+
+      // Record actions for undo
+      initialPositions.forEach(initialPos => {
+        const element = elements.find(el => el.id === initialPos.id)
+        if (
+          element &&
+          (element.x !== initialPos.x || element.y !== initialPos.y)
+        ) {
+          recordAction(
+            createMoveAction(initialPos.id, initialPos, {
+              x: element.x,
+              y: element.y,
+            })
+          )
+        }
+      })
+    },
+    [getAllSelectedIds, elements, recordAction]
+  )
+
+  // Rotate all selected elements by a relative amount
+  const rotateSelectedElements = useCallback(
+    (deltaRotation: number) => {
+      const allSelectedIds = getAllSelectedIds()
+      const selectedElementsData = elements.filter(
+        el => allSelectedIds.includes(el.id) && !el.isBackground
+      )
+
+      if (selectedElementsData.length === 0) return
+
+      // Apply rotation to all selected elements
+      setElements(prev =>
+        prev.map(el => {
+          if (allSelectedIds.includes(el.id) && !el.isBackground) {
+            const newRotation =
+              (((el.rotation + deltaRotation) % 360) + 360) % 360
+            return {...el, rotation: newRotation}
+          }
+          return el
+        })
+      )
+
+      // Record rotation actions
+      selectedElementsData.forEach(element => {
+        const newRotation =
+          (((element.rotation + deltaRotation) % 360) + 360) % 360
+        recordAction(
+          createRotateAction(element.id, element.rotation, newRotation)
+        )
+      })
+    },
+    [getAllSelectedIds, elements, recordAction]
+  )
+
+  // Check if selected elements have mixed values for a property
+  const getSelectedElementsProperty = useCallback(
+    (property: keyof CanvasElement) => {
+      const allSelectedIds = getAllSelectedIds()
+      const selectedElementsData = elements.filter(
+        el => allSelectedIds.includes(el.id) && !el.isBackground
+      )
+
+      if (selectedElementsData.length === 0) return null
+
+      const values = selectedElementsData.map(el => el[property])
+      const firstValue = values[0]
+      const allSame = values.every(value => value === firstValue)
+
+      return {
+        value: firstValue,
+        mixed: !allSame,
+        values: values,
+      }
+    },
+    [getAllSelectedIds, elements]
   )
 
   // Enhanced keyboard shortcuts with multi-select support
@@ -3156,9 +3387,267 @@ export function CreationCanvas({
           </CardHeader>
 
           <CardContent className='flex-1 space-y-6'>
-            {selectedElementData ? (
+            {selectedCount > 1 ? (
               <>
-                {/* Element Info */}
+                {/* Multi-Select Header */}
+                <div>
+                  <h3 className='font-medium mb-2'>
+                    Multiple Elements Selected
+                  </h3>
+                  <p className='text-sm text-muted-foreground mb-2'>
+                    {selectedCount} elements • Use tools below to align and
+                    modify together
+                  </p>
+                  <div className='flex gap-1 flex-wrap'>
+                    {getAllSelectedIds()
+                      .slice(0, 3)
+                      .map(id => {
+                        const element = elements.find(el => el.id === id)
+                        const asset =
+                          element?.type === "asset"
+                            ? assets.find(a => a.id === element.assetId)
+                            : null
+                        return (
+                          <Badge key={id} variant='outline' className='text-xs'>
+                            {element?.type === "text"
+                              ? `Text: ${element.text?.slice(0, 10)}...`
+                              : asset?.category || element?.type}
+                          </Badge>
+                        )
+                      })}
+                    {selectedCount > 3 && (
+                      <Badge variant='outline' className='text-xs'>
+                        +{selectedCount - 3} more
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Alignment Grid */}
+                <div className='space-y-3'>
+                  <h4 className='font-medium'>Alignment</h4>
+                  <div className='grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-lg'>
+                    {/* Top Row */}
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => alignSelectedElements("left")}
+                      className='h-8 w-8 p-0'
+                      title='Align Left'
+                    >
+                      <ArrowLeft className='h-3 w-3' />
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => alignSelectedElements("top")}
+                      className='h-8 w-8 p-0'
+                      title='Align Top'
+                    >
+                      <ArrowUp className='h-3 w-3' />
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => alignSelectedElements("right")}
+                      className='h-8 w-8 p-0'
+                      title='Align Right'
+                    >
+                      <ArrowRight className='h-3 w-3' />
+                    </Button>
+
+                    {/* Middle Row */}
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => distributeSelectedElements("horizontal")}
+                      className='h-8 w-8 p-0'
+                      title='Distribute Horizontally'
+                      disabled={selectedCount < 3}
+                    >
+                      <MoreHorizontal className='h-3 w-3' />
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => {
+                        alignSelectedElements("center")
+                        alignSelectedElements("middle")
+                      }}
+                      className='h-8 w-8 p-0'
+                      title='Center All'
+                    >
+                      <Palette className='h-3 w-3' />
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => distributeSelectedElements("vertical")}
+                      className='h-8 w-8 p-0'
+                      title='Distribute Vertically'
+                      disabled={selectedCount < 3}
+                    >
+                      <MoreVertical className='h-3 w-3' />
+                    </Button>
+
+                    {/* Bottom Row */}
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => alignSelectedElements("center")}
+                      className='h-8 w-8 p-0'
+                      title='Center Horizontally'
+                    >
+                      <Minus className='h-3 w-3 rotate-90' />
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => alignSelectedElements("bottom")}
+                      className='h-8 w-8 p-0'
+                      title='Align Bottom'
+                    >
+                      <ArrowDown className='h-3 w-3' />
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => alignSelectedElements("middle")}
+                      className='h-8 w-8 p-0'
+                      title='Center Vertically'
+                    >
+                      <Minus className='h-3 w-3' />
+                    </Button>
+                  </div>
+                  <p className='text-xs text-muted-foreground'>
+                    Align relative to selection bounds • Distribute requires 3+
+                    elements
+                  </p>
+                </div>
+
+                {/* Bulk Rotation */}
+                <div className='space-y-3'>
+                  <h4 className='font-medium'>Rotate All By</h4>
+                  <div className='flex items-center gap-2'>
+                    <Input
+                      type='number'
+                      placeholder='0'
+                      className='h-8 text-sm'
+                      onKeyDown={e => {
+                        if (e.key === "Enter") {
+                          const input = e.target as HTMLInputElement
+                          const value = parseInt(input.value) || 0
+                          if (value !== 0) {
+                            rotateSelectedElements(value)
+                            input.value = ""
+                          }
+                        }
+                      }}
+                    />
+                    <span className='text-xs text-muted-foreground'>°</span>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => rotateSelectedElements(-90)}
+                      title='Rotate All -90°'
+                    >
+                      <RotateCw className='h-4 w-4 scale-x-[-1]' />
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => rotateSelectedElements(90)}
+                      title='Rotate All +90°'
+                    >
+                      <RotateCw className='h-4 w-4' />
+                    </Button>
+                  </div>
+                  <p className='text-xs text-muted-foreground'>
+                    Enter degrees and press Enter, or use quick +90° / -90°
+                    buttons
+                  </p>
+                </div>
+
+                {/* Mixed Properties Display */}
+                {(() => {
+                  const widthProp = getSelectedElementsProperty("width")
+                  const heightProp = getSelectedElementsProperty("height")
+                  const rotationProp = getSelectedElementsProperty("rotation")
+
+                  return (
+                    <div className='space-y-3'>
+                      <h4 className='font-medium'>Properties</h4>
+                      <div className='grid grid-cols-2 gap-2'>
+                        <div>
+                          <label className='text-xs text-muted-foreground block mb-1'>
+                            Width
+                          </label>
+                          <Input
+                            type='text'
+                            value={
+                              widthProp?.mixed
+                                ? "Mixed"
+                                : widthProp?.value?.toString() || ""
+                            }
+                            readOnly
+                            className='h-8 text-sm bg-muted/50'
+                            placeholder={
+                              widthProp?.mixed ? "Mixed values" : "No selection"
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className='text-xs text-muted-foreground block mb-1'>
+                            Height
+                          </label>
+                          <Input
+                            type='text'
+                            value={
+                              heightProp?.mixed
+                                ? "Mixed"
+                                : heightProp?.value?.toString() || ""
+                            }
+                            readOnly
+                            className='h-8 text-sm bg-muted/50'
+                            placeholder={
+                              heightProp?.mixed
+                                ? "Mixed values"
+                                : "No selection"
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className='text-xs text-muted-foreground block mb-1'>
+                          Rotation
+                        </label>
+                        <Input
+                          type='text'
+                          value={
+                            rotationProp?.mixed
+                              ? "Mixed"
+                              : `${rotationProp?.value || 0}°`
+                          }
+                          readOnly
+                          className='h-8 text-sm bg-muted/50'
+                          placeholder={
+                            rotationProp?.mixed
+                              ? "Mixed rotations"
+                              : "No rotation"
+                          }
+                        />
+                      </div>
+                      <p className='text-xs text-muted-foreground'>
+                        Properties shown for information only • Use tools above
+                        to modify
+                      </p>
+                    </div>
+                  )
+                })()}
+              </>
+            ) : selectedElementData ? (
+              <>
+                {/* Single Element Info */}
                 <div>
                   <h3 className='font-medium mb-2'>Selected Element</h3>
                   {selectedElementData.type === "text" ? (
@@ -3176,6 +3665,43 @@ export function CreationCanvas({
                       <Badge variant='outline'>{selectedAsset?.category}</Badge>
                     </>
                   )}
+                </div>
+
+                {/* Element Actions */}
+                <div className='space-y-2'>
+                  <h4 className='font-medium'>Actions</h4>
+                  <div className='flex gap-2'>
+                    {!selectedElementData.isBackground && (
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() => copyElement(selectedElementData.id)}
+                        className='flex-1'
+                        title='Duplicate element'
+                      >
+                        <Square className='h-4 w-4 mr-1' />
+                        Copy
+                      </Button>
+                    )}
+                    <Button
+                      variant='destructive'
+                      size='sm'
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `Delete this ${selectedElementData.type === "text" ? "text" : "element"}?`
+                          )
+                        ) {
+                          deleteElement(selectedElementData.id)
+                        }
+                      }}
+                      className='flex-1'
+                      title='Delete element'
+                    >
+                      <Trash2 className='h-4 w-4 mr-1' />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Position - Don't show for background elements */}
@@ -3369,7 +3895,7 @@ export function CreationCanvas({
                               color: e.target.value,
                             })
                           }
-                          className='h-8'
+                          className='h-8 text-sm'
                         />
                       </div>
                     </div>
