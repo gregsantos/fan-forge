@@ -324,14 +324,14 @@ export default async function BrandDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent Submissions */}
+        {/* Ready for Review */}
         <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20'>
           <CardHeader>
             <div className='flex items-center justify-between'>
               <div>
-                <CardTitle>Recent Submissions</CardTitle>
+                <CardTitle>Ready for Review</CardTitle>
                 <CardDescription>
-                  Latest creator submissions awaiting review
+                  Creator submissions awaiting your review
                 </CardDescription>
               </div>
               <Link href='/submissions'>
@@ -343,44 +343,49 @@ export default async function BrandDashboardPage() {
             </div>
           </CardHeader>
           <CardContent className='space-y-4'>
-            {submissions.slice(0, 3).map((submission: any) => (
-              <div
-                key={submission.id}
-                className='flex items-center justify-between p-4 border rounded-lg'
-              >
-                <div className='space-y-1'>
-                  <h3 className='font-medium text-sm'>{submission.title}</h3>
-                  <p className='text-xs text-muted-foreground'>
-                    {submission.campaign?.title || "Unknown Campaign"}
-                  </p>
-                  <p className='text-xs text-muted-foreground'>
-                    {submission.createdAt
-                      ? formatDate(submission.createdAt)
-                      : "Unknown"}
-                  </p>
+            {submissions
+              .filter((submission: any) => submission.status === "pending")
+              .slice(0, 3)
+              .map((submission: any) => (
+                <div
+                  key={submission.id}
+                  className='flex items-center justify-between p-4 border rounded-lg'
+                >
+                  <div className='space-y-1'>
+                    <h3 className='font-medium text-sm'>{submission.title}</h3>
+                    <p className='text-xs text-muted-foreground'>
+                      {submission.campaign?.title || "Unknown Campaign"}
+                    </p>
+                    <p className='text-xs text-muted-foreground'>
+                      {submission.createdAt
+                        ? formatDate(submission.createdAt)
+                        : "Unknown"}
+                    </p>
+                  </div>
+                  <div className='flex flex-col items-end gap-2'>
+                    <Badge
+                      className={cn(
+                        "font-medium shadow-sm capitalize",
+                        getSubmissionStatusColor(submission.status)
+                      )}
+                    >
+                      {submission.status}
+                    </Badge>
+                    <Link href={`/submissions/${submission.id}`}>
+                      <Button variant='ghost' size='sm'>
+                        <Eye className='h-4 w-4' />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-                <div className='flex flex-col items-end gap-2'>
-                  <Badge
-                    className={cn(
-                      "font-medium shadow-sm capitalize",
-                      getSubmissionStatusColor(submission.status)
-                    )}
-                  >
-                    {submission.status}
-                  </Badge>
-                  <Link href={`/submissions/${submission.id}`}>
-                    <Button variant='ghost' size='sm'>
-                      <Eye className='h-4 w-4' />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            ))}
+              ))}
 
-            {submissions.length === 0 && (
+            {submissions.filter(
+              (submission: any) => submission.status === "pending"
+            ).length === 0 && (
               <div className='text-center py-8 text-muted-foreground'>
                 <Users className='mx-auto h-8 w-8 mb-2' />
-                <p className='text-sm'>No submissions yet</p>
+                <p className='text-sm'>No submissions awaiting review</p>
               </div>
             )}
           </CardContent>
@@ -450,17 +455,17 @@ export default async function BrandDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent Assets */}
+        {/* Recently Approved */}
         <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20'>
           <CardHeader>
             <div className='flex items-center justify-between'>
               <div>
-                <CardTitle>Recent Assets</CardTitle>
+                <CardTitle>Recently Approved</CardTitle>
                 <CardDescription>
-                  Latest uploaded assets across all IP kits
+                  Latest approved creator submissions
                 </CardDescription>
               </div>
-              <Link href='/assets'>
+              <Link href='/submissions'>
                 <Button variant='outline' size='sm'>
                   View All
                   <ArrowRight className='ml-2 h-4 w-4' />
@@ -469,60 +474,50 @@ export default async function BrandDashboardPage() {
             </div>
           </CardHeader>
           <CardContent className='space-y-4'>
-            {assets.slice(0, 3).map((asset: any) => (
-              <div
-                key={asset.id}
-                className='flex items-center justify-between p-4 border rounded-lg'
-              >
-                <div className='flex items-center space-x-3 flex-1 min-w-0'>
-                  <div className='w-10 h-10 bg-muted rounded flex-shrink-0 flex items-center justify-center'>
-                    {asset.thumbnailUrl ? (
-                      <img
-                        src={asset.thumbnailUrl}
-                        alt={asset.originalFilename}
-                        className='w-full h-full object-cover rounded'
-                      />
-                    ) : (
-                      <Image className='h-5 w-5 text-muted-foreground' />
-                    )}
-                  </div>
-                  <div className='space-y-1 min-w-0 flex-1'>
-                    <h3 className='font-medium text-sm truncate'>
-                      {asset.originalFilename}
-                    </h3>
-                    <p className='text-xs text-muted-foreground truncate'>
-                      {asset.ipKitName}
+            {submissions
+              .filter((submission: any) => submission.status === "approved")
+              .slice(0, 3)
+              .map((submission: any) => (
+                <div
+                  key={submission.id}
+                  className='flex items-center justify-between p-4 border rounded-lg'
+                >
+                  <div className='space-y-1'>
+                    <h3 className='font-medium text-sm'>{submission.title}</h3>
+                    <p className='text-xs text-muted-foreground'>
+                      {submission.campaign?.title || "Unknown Campaign"}
                     </p>
                     <p className='text-xs text-muted-foreground'>
-                      {formatDate(asset.createdAt)}
+                      Approved{" "}
+                      {submission.createdAt
+                        ? formatDate(submission.createdAt)
+                        : "Unknown"}
                     </p>
                   </div>
+                  <div className='flex flex-col items-end gap-2'>
+                    <Badge
+                      className={cn(
+                        "font-medium shadow-sm capitalize",
+                        getSubmissionStatusColor(submission.status)
+                      )}
+                    >
+                      {submission.status}
+                    </Badge>
+                    <Link href={`/submissions/${submission.id}`}>
+                      <Button variant='ghost' size='sm'>
+                        <Eye className='h-4 w-4' />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-                <div className='flex flex-col items-end gap-2'>
-                  <Badge
-                    className={cn(
-                      "font-medium shadow-sm capitalize",
-                      getAssetCategoryColor(asset.category)
-                    )}
-                  >
-                    {asset.category}
-                  </Badge>
-                  <Button variant='ghost' size='sm'>
-                    <Eye className='h-4 w-4' />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              ))}
 
-            {assets.length === 0 && (
+            {submissions.filter(
+              (submission: any) => submission.status === "approved"
+            ).length === 0 && (
               <div className='text-center py-8 text-muted-foreground'>
-                <Image className='mx-auto h-8 w-8 mb-2' />
-                <p className='text-sm'>No assets yet</p>
-                <Link href='/assets'>
-                  <Button variant='outline' size='sm' className='mt-2'>
-                    Upload Your First Asset
-                  </Button>
-                </Link>
+                <Users className='mx-auto h-8 w-8 mb-2' />
+                <p className='text-sm'>No approved submissions yet</p>
               </div>
             )}
           </CardContent>
