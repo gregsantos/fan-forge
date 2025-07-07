@@ -1,23 +1,24 @@
-
-import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { db, submissions, campaigns, users, ipKits, submissionAssets } from "@/db"
-import { eq, and, desc, count, ilike, or } from "drizzle-orm"
-import { createClient } from '@/utils/supabase/server'
-import { ensureUserExists } from '@/lib/auth-utils'
-import { canvasAssetTracker } from '@/lib/canvas-asset-tracker'
+import {NextRequest, NextResponse} from "next/server"
+import {cookies} from "next/headers"
+import {db, submissions, campaigns, users, ipKits, submissionAssets} from "@/db"
+import {eq, and, desc, count, ilike, or} from "drizzle-orm"
+import {createClient} from "@/utils/supabase/server"
+import {ensureUserExists} from "@/lib/auth-utils"
+import {canvasAssetTracker} from "@/lib/canvas-asset-tracker"
 
 async function getCurrentUser(request: NextRequest) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
-  const { data: { user } } = await supabase.auth.getUser()
-  
+  const {
+    data: {user},
+  } = await supabase.auth.getUser()
+
   // Ensure user exists in our database if authenticated
   if (user) {
     await ensureUserExists(user)
   }
-  
+
   return user
 }
 
@@ -38,8 +39,8 @@ export async function GET(request: NextRequest) {
       const user = await getCurrentUser(request)
       if (!user) {
         return NextResponse.json(
-          { error: "Authentication required" },
-          { status: 401 }
+          {error: "Authentication required"},
+          {status: 401}
         )
       }
       actualCreatorId = user.id
@@ -47,23 +48,23 @@ export async function GET(request: NextRequest) {
 
     // Build where conditions
     const whereConditions = []
-    
+
     if (campaignId) {
       whereConditions.push(eq(submissions.campaignId, campaignId))
     }
-    
+
     if (actualCreatorId) {
       whereConditions.push(eq(submissions.creatorId, actualCreatorId))
     }
-    
+
     if (status && status !== "all") {
       whereConditions.push(eq(submissions.status, status as any))
     }
-    
+
     if (ipId) {
-      whereConditions.push(eq(submissions.ipId, ipId))
+      whereConditions.push(eq(submissions.ipKitId, ipId))
     }
-    
+
     if (search) {
       whereConditions.push(
         or(
@@ -73,11 +74,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined
+    const whereClause =
+      whereConditions.length > 0 ? and(...whereConditions) : undefined
 
     // Get total count
     const [totalResult] = await db
-      .select({ count: count() })
+      .select({count: count()})
       .from(submissions)
       .where(whereClause)
 
@@ -102,7 +104,7 @@ export async function GET(request: NextRequest) {
       .from(submissions)
       .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
       .leftJoin(users, eq(submissions.creatorId, users.id))
-      .leftJoin(ipKits, eq(submissions.ipId, ipKits.id))
+      .leftJoin(ipKits, eq(submissions.ipKitId, ipKits.id))
       .where(whereClause)
       .orderBy(desc(submissions.createdAt))
       .limit(limit)
@@ -120,14 +122,13 @@ export async function GET(request: NextRequest) {
         limit,
         total,
         pages: Math.ceil(total / limit),
-      }
+      },
     })
-
   } catch (error) {
-    console.error('Failed to fetch submissions:', error)
+    console.error("Failed to fetch submissions:", error)
     return NextResponse.json(
-      { error: "Failed to fetch submissions" },
-      { status: 500 }
+      {error: "Failed to fetch submissions"},
+      {status: 500}
     )
   }
 }
@@ -138,30 +139,30 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser(request)
     if (!user) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        {error: "Authentication required"},
+        {status: 401}
       )
     }
 
     const body = await request.json()
-    
+
     // Validate required fields
-    const { 
-      campaignId, 
-      title, 
-      description, 
-      artworkUrl, 
-      thumbnailUrl, 
-      canvasData, 
+    const {
+      campaignId,
+      title,
+      description,
+      artworkUrl,
+      thumbnailUrl,
+      canvasData,
       assetMetadata,
-      tags = [], 
-      usedIpKitId 
+      tags = [],
+      usedIpKitId,
     } = body
-    
+
     if (!campaignId || !title || !artworkUrl) {
       return NextResponse.json(
-        { error: "Missing required fields: campaignId, title, artworkUrl" },
-        { status: 400 }
+        {error: "Missing required fields: campaignId, title, artworkUrl"},
+        {status: 400}
       )
     }
 
@@ -173,23 +174,22 @@ export async function POST(request: NextRequest) {
       .limit(1)
 
     if (dbCampaigns.length === 0) {
-      return NextResponse.json(
-        { error: "Campaign not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({error: "Campaign not found"}, {status: 404})
     }
 
     const campaign = dbCampaigns[0]
 
-    if (campaign.status !== 'active') {
+    if (campaign.status !== "active") {
       return NextResponse.json(
-        { error: "Campaign is not accepting submissions" },
-        { status: 400 }
+        {error: "Campaign is not accepting submissions"},
+        {status: 400}
       )
     }
 
     // Extract used asset IDs from canvas data
-    const usedAssetIds = canvasData?.elements ? canvasAssetTracker.getUsedAssetIds(canvasData.elements) : []
+    const usedAssetIds = canvasData?.elements
+      ? canvasAssetTracker.getUsedAssetIds(canvasData.elements)
+      : []
 
     // Create new submission with asset metadata
     const submissionData = {
@@ -199,14 +199,14 @@ export async function POST(request: NextRequest) {
       thumbnailUrl,
       canvasData: {
         ...canvasData,
-        assetMetadata // Include asset tracking metadata in canvas data
+        assetMetadata, // Include asset tracking metadata in canvas data
       },
       usedAssetIds, // Keep for backwards compatibility during transition
       tags,
       campaignId,
       creatorId: user.id,
-      ipId: usedIpKitId || campaign.ipKitId, // Use campaign's IP Kit if not specified
-      status: 'pending' as const,
+      ipKitId: usedIpKitId || campaign.ipKitId, // Use campaign's IP Kit if not specified
+      status: "pending" as const,
       isPublic: false,
       viewCount: 0,
       likeCount: 0,
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
     if (usedAssetIds.length > 0) {
       const assetRelationships = usedAssetIds.map(assetId => ({
         submissionId: newSubmission.id,
-        assetId: assetId
+        assetId: assetId,
       }))
 
       await db
@@ -248,19 +248,21 @@ export async function POST(request: NextRequest) {
       .where(eq(submissions.id, newSubmission.id))
       .limit(1)
 
-    return NextResponse.json({
-      submission: {
-        ...submissionWithDetails[0].submission,
-        campaign: submissionWithDetails[0].campaign,
-        creator: submissionWithDetails[0].creator,
-      }
-    }, { status: 201 })
-
-  } catch (error) {
-    console.error('Failed to create submission:', error)
     return NextResponse.json(
-      { error: "Failed to create submission" },
-      { status: 500 }
+      {
+        submission: {
+          ...submissionWithDetails[0].submission,
+          campaign: submissionWithDetails[0].campaign,
+          creator: submissionWithDetails[0].creator,
+        },
+      },
+      {status: 201}
+    )
+  } catch (error) {
+    console.error("Failed to create submission:", error)
+    return NextResponse.json(
+      {error: "Failed to create submission"},
+      {status: 500}
     )
   }
 }

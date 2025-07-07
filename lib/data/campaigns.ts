@@ -1,6 +1,31 @@
-import { db, campaigns, brands, ipKits, assets, submissions, users, reviews, assetIpKits, submissionAssets, userRoles, roles } from "@/db"
-import { eq, desc, count, or, ilike, and, asc, inArray, gte, lte, isNotNull } from "drizzle-orm"
-import { alias } from "drizzle-orm/pg-core"
+import {
+  db,
+  campaigns,
+  brands,
+  ipKits,
+  assets,
+  submissions,
+  users,
+  reviews,
+  assetIpKits,
+  submissionAssets,
+  userRoles,
+  roles,
+} from "@/db"
+import {
+  eq,
+  desc,
+  count,
+  or,
+  ilike,
+  and,
+  asc,
+  inArray,
+  gte,
+  lte,
+  isNotNull,
+} from "drizzle-orm"
+import {alias} from "drizzle-orm/pg-core"
 
 export async function getDashboardData() {
   try {
@@ -21,14 +46,17 @@ export async function getDashboardData() {
 
     // Get submission counts for campaigns
     const campaignIds = recentCampaigns.map(result => result.campaign.id)
-    const submissionCounts = campaignIds.length > 0 ? await db
-      .select({
-        campaignId: submissions.campaignId,
-        submissionCount: count(submissions.id),
-      })
-      .from(submissions)
-      .where(or(...campaignIds.map(id => eq(submissions.campaignId, id))))
-      .groupBy(submissions.campaignId) : []
+    const submissionCounts =
+      campaignIds.length > 0
+        ? await db
+            .select({
+              campaignId: submissions.campaignId,
+              submissionCount: count(submissions.id),
+            })
+            .from(submissions)
+            .where(or(...campaignIds.map(id => eq(submissions.campaignId, id))))
+            .groupBy(submissions.campaignId)
+        : []
 
     // Create submission count map
     const submissionCountMap = new Map(
@@ -43,7 +71,7 @@ export async function getDashboardData() {
       })
       .from(submissions)
       .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
-      .where(eq(submissions.status, 'pending'))
+      .where(eq(submissions.status, "pending"))
       .orderBy(desc(submissions.createdAt))
       .limit(10)
 
@@ -73,12 +101,10 @@ export async function getDashboardData() {
       .limit(10)
 
     // Get IP kit statistics
-    const [totalIpKits] = await db
-      .select({ count: count() })
-      .from(ipKits)
-    
+    const [totalIpKits] = await db.select({count: count()}).from(ipKits)
+
     const [publishedIpKits] = await db
-      .select({ count: count() })
+      .select({count: count()})
       .from(ipKits)
       .where(eq(ipKits.isPublished, true))
 
@@ -102,16 +128,18 @@ export async function getDashboardData() {
         title: result.submission.title,
         status: result.submission.status,
         createdAt: result.submission.createdAt,
-        campaign: result.campaign ? {
-          title: result.campaign.title
-        } : null,
+        campaign: result.campaign
+          ? {
+              title: result.campaign.title,
+            }
+          : null,
       })),
       ipKits: recentIpKits.map(result => ({
         id: result.ipKit.id,
         name: result.ipKit.name,
         isPublished: result.ipKit.isPublished,
         assetCount: result.assetCount || 0,
-        brandName: result.brand?.name || 'Unknown Brand',
+        brandName: result.brand?.name || "Unknown Brand",
         createdAt: result.ipKit.createdAt,
         updatedAt: result.ipKit.updatedAt,
       })),
@@ -123,7 +151,7 @@ export async function getDashboardData() {
         thumbnailUrl: result.asset.thumbnailUrl,
         category: result.asset.category,
         ipKitId: result.asset.ipKitId,
-        ipKitName: result.ipKit?.name || 'Global Asset',
+        ipKitName: result.ipKit?.name || "Global Asset",
         createdAt: result.asset.createdAt,
       })),
       stats: {
@@ -134,49 +162,61 @@ export async function getDashboardData() {
         },
         assets: {
           total: assetStats?.total || 0,
-        }
-      }
+        },
+      },
     }
   } catch (error) {
-    console.error('Failed to fetch dashboard data:', error)
+    console.error("Failed to fetch dashboard data:", error)
     return {
       campaigns: [],
       submissions: [],
       ipKits: [],
       assets: [],
       stats: {
-        ipKits: { total: 0, published: 0, draft: 0 },
-        assets: { total: 0 }
-      }
+        ipKits: {total: 0, published: 0, draft: 0},
+        assets: {total: 0},
+      },
     }
   }
 }
 
-export async function getCampaigns(searchParams: Record<string, string | undefined>) {
+export async function getCampaigns(
+  searchParams: Record<string, string | undefined>
+) {
   try {
-    const { search, status, page = '1', featured, limit: limitParam } = searchParams
+    const {
+      search,
+      status,
+      page = "1",
+      featured,
+      limit: limitParam,
+    } = searchParams
     const limit = limitParam ? parseInt(limitParam) : 12
     const offset = (parseInt(page) - 1) * limit
 
     // Build where conditions
     const whereConditions = []
-    
-    if (featured === 'true') {
-      whereConditions.push(and(
-        isNotNull(campaigns.featuredUntil),
-        gte(campaigns.featuredUntil, new Date())
-      ))
+
+    if (featured === "true") {
+      whereConditions.push(
+        and(
+          isNotNull(campaigns.featuredUntil),
+          gte(campaigns.featuredUntil, new Date())
+        )
+      )
     }
-    
+
     if (search) {
-      whereConditions.push(or(
-        ilike(campaigns.title, `%${search}%`),
-        ilike(campaigns.description, `%${search}%`),
-        ilike(brands.name, `%${search}%`)
-      )!)
+      whereConditions.push(
+        or(
+          ilike(campaigns.title, `%${search}%`),
+          ilike(campaigns.description, `%${search}%`),
+          ilike(brands.name, `%${search}%`)
+        )!
+      )
     }
-    
-    if (status && status !== 'all') {
+
+    if (status && status !== "all") {
       whereConditions.push(eq(campaigns.status, status as any))
     }
 
@@ -198,14 +238,17 @@ export async function getCampaigns(searchParams: Record<string, string | undefin
 
     // Get submission counts
     const campaignIds = campaignResults.map(result => result.campaign.id)
-    const submissionCounts = campaignIds.length > 0 ? await db
-      .select({
-        campaignId: submissions.campaignId,
-        submissionCount: count(submissions.id),
-      })
-      .from(submissions)
-      .where(or(...campaignIds.map(id => eq(submissions.campaignId, id))))
-      .groupBy(submissions.campaignId) : []
+    const submissionCounts =
+      campaignIds.length > 0
+        ? await db
+            .select({
+              campaignId: submissions.campaignId,
+              submissionCount: count(submissions.id),
+            })
+            .from(submissions)
+            .where(or(...campaignIds.map(id => eq(submissions.campaignId, id))))
+            .groupBy(submissions.campaignId)
+        : []
 
     const submissionCountMap = new Map(
       submissionCounts.map(sc => [sc.campaignId, sc.submissionCount])
@@ -213,7 +256,7 @@ export async function getCampaigns(searchParams: Record<string, string | undefin
 
     // Get total count for pagination
     const [totalResult] = await db
-      .select({ count: count() })
+      .select({count: count()})
       .from(campaigns)
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
@@ -231,24 +274,28 @@ export async function getCampaigns(searchParams: Record<string, string | undefin
         thumbnail_url: result.campaign.thumbnailUrl,
         created_at: result.campaign.createdAt,
         updated_at: result.campaign.updatedAt,
-        featured: result.campaign.featuredUntil ? new Date(result.campaign.featuredUntil) > new Date() : false,
+        featured: result.campaign.featuredUntil
+          ? new Date(result.campaign.featuredUntil) > new Date()
+          : false,
       })),
       pagination: {
         page: parseInt(page),
         limit,
         total: totalResult.count,
         pages: Math.ceil(totalResult.count / limit),
-      }
+      },
     }
   } catch (error) {
-    console.error('Failed to fetch campaigns:', error)
-    throw new Error('Failed to fetch campaigns')
+    console.error("Failed to fetch campaigns:", error)
+    throw new Error("Failed to fetch campaigns")
   }
 }
 
-export async function getSubmissions(searchParams: Record<string, string | undefined>) {
+export async function getSubmissions(
+  searchParams: Record<string, string | undefined>
+) {
   try {
-    const { search, status, page = '1' } = searchParams
+    const {search, status, page = "1"} = searchParams
     const limit = 12
     const offset = (parseInt(page) - 1) * limit
 
@@ -264,9 +311,7 @@ export async function getSubmissions(searchParams: Record<string, string | undef
       .offset(offset)
 
     // Get total count for pagination
-    const [totalResult] = await db
-      .select({ count: count() })
-      .from(submissions)
+    const [totalResult] = await db.select({count: count()}).from(submissions)
 
     return {
       submissions: submissionResults.map(result => ({
@@ -278,40 +323,44 @@ export async function getSubmissions(searchParams: Record<string, string | undef
         createdAt: result.submission.createdAt,
         feedback: result.submission.feedback,
         creator: {
-          displayName: 'Unknown Creator' // TODO: Join with users table
+          displayName: "Unknown Creator", // TODO: Join with users table
         },
-        campaign: result.campaign ? {
-          title: result.campaign.title
-        } : null,
+        campaign: result.campaign
+          ? {
+              title: result.campaign.title,
+            }
+          : null,
       })),
       pagination: {
         page: parseInt(page),
         limit,
         total: totalResult.count,
         pages: Math.ceil(totalResult.count / limit),
-      }
+      },
     }
   } catch (error) {
-    console.error('Failed to fetch submissions:', error)
-    throw new Error('Failed to fetch submissions')
+    console.error("Failed to fetch submissions:", error)
+    throw new Error("Failed to fetch submissions")
   }
 }
 
-export async function getIpKits(searchParams: Record<string, string | undefined>) {
+export async function getIpKits(
+  searchParams: Record<string, string | undefined>
+) {
   try {
-    const { search, published, page = '1' } = searchParams
+    const {search, published, page = "1"} = searchParams
     const limit = 12
     const offset = (parseInt(page) - 1) * limit
 
     // Build where conditions
     const whereConditions = []
-    
+
     if (search) {
       whereConditions.push(ilike(ipKits.name, `%${search}%`))
     }
-    
-    if (published && published !== 'all') {
-      whereConditions.push(eq(ipKits.isPublished, published === 'true'))
+
+    if (published && published !== "all") {
+      whereConditions.push(eq(ipKits.isPublished, published === "true"))
     }
 
     const ipKitResults = await db
@@ -331,7 +380,7 @@ export async function getIpKits(searchParams: Record<string, string | undefined>
 
     // Get total count for pagination
     const [totalResult] = await db
-      .select({ count: count() })
+      .select({count: count()})
       .from(ipKits)
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
 
@@ -351,11 +400,11 @@ export async function getIpKits(searchParams: Record<string, string | undefined>
         limit,
         total: totalResult.count,
         pages: Math.ceil(totalResult.count / limit),
-      }
+      },
     }
   } catch (error) {
-    console.error('Failed to fetch IP kits:', error)
-    throw new Error('Failed to fetch IP kits')
+    console.error("Failed to fetch IP kits:", error)
+    throw new Error("Failed to fetch IP kits")
   }
 }
 
@@ -374,7 +423,7 @@ export async function getIpKitById(ipKitId: string) {
         createdAt: ipKits.createdAt,
         updatedAt: ipKits.updatedAt,
         brandName: brands.name,
-        brandDescription: brands.description
+        brandDescription: brands.description,
       })
       .from(ipKits)
       .leftJoin(brands, eq(ipKits.brandId, brands.id))
@@ -400,7 +449,7 @@ export async function getIpKitById(ipKitId: string) {
         metadata: assets.metadata,
         ipId: assets.ipId,
         ipKitId: assetIpKits.ipKitId, // Include ipKitId from junction table
-        createdAt: assets.createdAt
+        createdAt: assets.createdAt,
       })
       .from(assets)
       .innerJoin(assetIpKits, eq(assets.id, assetIpKits.assetId))
@@ -412,7 +461,7 @@ export async function getIpKitById(ipKitId: string) {
       ...asset,
       thumbnailUrl: asset.thumbnailUrl || undefined,
       tags: asset.tags || [],
-      ipId: asset.ipId || undefined
+      ipId: asset.ipId || undefined,
     }))
 
     return {
@@ -424,28 +473,31 @@ export async function getIpKitById(ipKitId: string) {
       isPublished: ipKit.isPublished ?? false,
       version: ipKit.version ?? 1,
       assets: transformedAssets,
-      assetCount: transformedAssets.length
+      assetCount: transformedAssets.length,
     }
   } catch (error) {
-    console.error('Failed to fetch IP kit:', error)
-    throw new Error('Failed to fetch IP kit')
+    console.error("Failed to fetch IP kit:", error)
+    throw new Error("Failed to fetch IP kit")
   }
 }
 
-export async function getCreatorSubmissions(creatorId: string, searchParams: Record<string, string | undefined> = {}) {
+export async function getCreatorSubmissions(
+  creatorId: string,
+  searchParams: Record<string, string | undefined> = {}
+) {
   try {
-    const { search, status, page = '1' } = searchParams
+    const {search, status, page = "1"} = searchParams
     const limit = 12
     const offset = (parseInt(page) - 1) * limit
 
     // Build where conditions
     const whereConditions = [eq(submissions.creatorId, creatorId)]
-    
+
     if (search) {
       whereConditions.push(ilike(submissions.title, `%${search}%`))
     }
-    
-    if (status && status !== 'all') {
+
+    if (status && status !== "all") {
       whereConditions.push(eq(submissions.status, status as any))
     }
 
@@ -463,7 +515,7 @@ export async function getCreatorSubmissions(creatorId: string, searchParams: Rec
 
     // Get total count
     const [totalResult] = await db
-      .select({ count: count() })
+      .select({count: count()})
       .from(submissions)
       .where(and(...whereConditions))
 
@@ -478,20 +530,22 @@ export async function getCreatorSubmissions(creatorId: string, searchParams: Rec
         updatedAt: result.submission.updatedAt,
         feedback: result.submission.feedback,
         campaignId: result.submission.campaignId,
-        campaign: result.campaign ? {
-          title: result.campaign.title
-        } : null,
+        campaign: result.campaign
+          ? {
+              title: result.campaign.title,
+            }
+          : null,
       })),
       pagination: {
         page: parseInt(page),
         limit,
         total: totalResult.count,
         pages: Math.ceil(totalResult.count / limit),
-      }
+      },
     }
   } catch (error) {
-    console.error('Failed to fetch creator submissions:', error)
-    throw new Error('Failed to fetch creator submissions')
+    console.error("Failed to fetch creator submissions:", error)
+    throw new Error("Failed to fetch creator submissions")
   }
 }
 
@@ -517,10 +571,12 @@ export async function getCampaignById(id: string) {
     const result = campaignWithDetails[0]
 
     // Get assets for the campaign's IP kit (only if campaign has an IP kit)
-    const campaignAssets = result.ipKit ? await db
-      .select()
-      .from(assets)
-      .where(eq(assets.ipKitId, result.ipKit.id)) : []
+    const campaignAssets = result.ipKit
+      ? await db
+          .select()
+          .from(assets)
+          .where(eq(assets.ipKitId, result.ipKit.id))
+      : []
 
     return {
       id: result.campaign.id,
@@ -540,15 +596,21 @@ export async function getCampaignById(id: string) {
       rewardCurrency: result.campaign.rewardCurrency,
       briefDocument: result.campaign.briefDocument,
       created_at: result.campaign.createdAt,
-      featured: result.campaign.featuredUntil ? new Date(result.campaign.featuredUntil) > new Date() : false,
-      brand: result.brand ? {
-        name: result.brand.name
-      } : null,
-      ipKit: result.ipKit ? {
-        id: result.ipKit.id,
-        name: result.ipKit.name,
-        description: result.ipKit.description,
-      } : null,
+      featured: result.campaign.featuredUntil
+        ? new Date(result.campaign.featuredUntil) > new Date()
+        : false,
+      brand: result.brand
+        ? {
+            name: result.brand.name,
+          }
+        : null,
+      ipKit: result.ipKit
+        ? {
+            id: result.ipKit.id,
+            name: result.ipKit.name,
+            description: result.ipKit.description,
+          }
+        : null,
       createdAt: result.campaign.createdAt,
       updatedAt: result.campaign.updatedAt,
       assets: campaignAssets.map(asset => ({
@@ -557,27 +619,35 @@ export async function getCampaignById(id: string) {
         url: asset.url,
         category: asset.category,
         metadata: asset.metadata,
-      }))
+      })),
     }
   } catch (error) {
-    console.error('Failed to fetch campaign:', error)
-    throw new Error('Failed to fetch campaign')
+    console.error("Failed to fetch campaign:", error)
+    throw new Error("Failed to fetch campaign")
   }
 }
 
-export async function getCampaignSubmissions(campaignId: string, searchParams: Record<string, string | undefined> = {}) {
+export async function getCampaignSubmissions(
+  campaignId: string,
+  searchParams: Record<string, string | undefined> = {}
+) {
   try {
-    const { search, status = 'approved', page = '1', sortBy = 'newest' } = searchParams
+    const {
+      search,
+      status = "approved",
+      page = "1",
+      sortBy = "newest",
+    } = searchParams
     const limit = 12
     const offset = (parseInt(page) - 1) * limit
 
     // Build where conditions
     const whereConditions = [eq(submissions.campaignId, campaignId)]
-    
-    if (status === 'approved') {
-      whereConditions.push(eq(submissions.status, 'approved'))
+
+    if (status === "approved") {
+      whereConditions.push(eq(submissions.status, "approved"))
       whereConditions.push(eq(submissions.isPublic, true))
-    } else if (status && status !== 'all') {
+    } else if (status && status !== "all") {
       whereConditions.push(eq(submissions.status, status as any))
     }
 
@@ -594,13 +664,13 @@ export async function getCampaignSubmissions(campaignId: string, searchParams: R
     // Determine sort order
     const getSortOrder = () => {
       switch (sortBy) {
-        case 'oldest':
+        case "oldest":
           return asc(submissions.createdAt)
-        case 'popular':
+        case "popular":
           return [desc(submissions.likeCount), desc(submissions.viewCount)]
-        case 'title':
+        case "title":
           return asc(submissions.title)
-        case 'newest':
+        case "newest":
         default:
           return desc(submissions.createdAt)
       }
@@ -618,13 +688,17 @@ export async function getCampaignSubmissions(campaignId: string, searchParams: R
       .from(submissions)
       .leftJoin(users, eq(submissions.creatorId, users.id))
       .where(and(...whereConditions))
-      .orderBy(...(Array.isArray(getSortOrder()) ? getSortOrder() as any : [getSortOrder()]))
+      .orderBy(
+        ...(Array.isArray(getSortOrder())
+          ? (getSortOrder() as any)
+          : [getSortOrder()])
+      )
       .limit(limit)
       .offset(offset)
 
     // Get total count for pagination
     const [totalResult] = await db
-      .select({ count: count() })
+      .select({count: count()})
       .from(submissions)
       .leftJoin(users, eq(submissions.creatorId, users.id))
       .where(and(...whereConditions))
@@ -639,56 +713,60 @@ export async function getCampaignSubmissions(campaignId: string, searchParams: R
         createdAt: result.submission.createdAt,
         likeCount: result.submission.likeCount || 0,
         viewCount: result.submission.viewCount || 0,
-        creator: result.creator ? {
-          id: result.creator.id,
-          displayName: result.creator.displayName,
-          avatarUrl: result.creator.avatarUrl,
-        } : null,
+        creator: result.creator
+          ? {
+              id: result.creator.id,
+              displayName: result.creator.displayName,
+              avatarUrl: result.creator.avatarUrl,
+            }
+          : null,
       })),
       pagination: {
         page: parseInt(page),
         limit,
         total: totalResult.count,
         pages: Math.ceil(totalResult.count / limit),
-      }
+      },
     }
   } catch (error) {
-    console.error('Failed to fetch campaign submissions:', error)
-    throw new Error('Failed to fetch campaign submissions')
+    console.error("Failed to fetch campaign submissions:", error)
+    throw new Error("Failed to fetch campaign submissions")
   }
 }
 
 // Review-specific data functions for brand admin submission queue
-export async function getSubmissionQueue(searchParams: Record<string, string | undefined> = {}) {
+export async function getSubmissionQueue(
+  searchParams: Record<string, string | undefined> = {}
+) {
   try {
-    const { 
-      search, 
-      status = 'pending', 
-      campaignId, 
+    const {
+      search,
+      status = "pending",
+      campaignId,
       creatorId,
       dateFrom,
       dateTo,
-      page = '1', 
-      sortBy = 'newest' 
+      page = "1",
+      sortBy = "newest",
     } = searchParams
     const limit = 20 // Higher limit for review queue
     const offset = (parseInt(page) - 1) * limit
 
     // Create aliases for users table to avoid conflicts
-    const creators = alias(users, 'creators')
-    const reviewers = alias(users, 'reviewers')
+    const creators = alias(users, "creators")
+    const reviewers = alias(users, "reviewers")
 
     // Build where conditions
     const whereConditions = []
-    
-    if (status && status !== 'all') {
+
+    if (status && status !== "all") {
       whereConditions.push(eq(submissions.status, status as any))
     }
-    
+
     if (campaignId) {
       whereConditions.push(eq(submissions.campaignId, campaignId))
     }
-    
+
     if (creatorId) {
       whereConditions.push(eq(submissions.creatorId, creatorId))
     }
@@ -716,15 +794,15 @@ export async function getSubmissionQueue(searchParams: Record<string, string | u
     // Determine sort order
     const getSortOrder = () => {
       switch (sortBy) {
-        case 'oldest':
+        case "oldest":
           return asc(submissions.createdAt)
-        case 'title':
+        case "title":
           return asc(submissions.title)
-        case 'creator':
+        case "creator":
           return asc(creators.displayName)
-        case 'campaign':
+        case "campaign":
           return asc(campaigns.title)
-        case 'newest':
+        case "newest":
         default:
           return desc(submissions.createdAt)
       }
@@ -765,7 +843,7 @@ export async function getSubmissionQueue(searchParams: Record<string, string | u
 
     // Get total count for pagination
     const [totalResult] = await db
-      .select({ count: count() })
+      .select({count: count()})
       .from(submissions)
       .leftJoin(creators, eq(submissions.creatorId, creators.id))
       .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
@@ -795,19 +873,19 @@ export async function getSubmissionQueue(searchParams: Record<string, string | u
         limit,
         total: totalResult.count,
         pages: Math.ceil(totalResult.count / limit),
-      }
+      },
     }
   } catch (error) {
-    console.error('Failed to fetch submission queue:', error)
-    throw new Error('Failed to fetch submission queue')
+    console.error("Failed to fetch submission queue:", error)
+    throw new Error("Failed to fetch submission queue")
   }
 }
 
 export async function getSubmissionById(submissionId: string) {
   try {
     // Create aliases for users table to avoid conflicts
-    const creators = alias(users, 'creators')
-    const reviewers = alias(users, 'reviewers')
+    const creators = alias(users, "creators")
+    const reviewers = alias(users, "reviewers")
 
     const submissionResults = await db
       .select({
@@ -845,7 +923,7 @@ export async function getSubmissionById(submissionId: string) {
       .leftJoin(creators, eq(submissions.creatorId, creators.id))
       .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
-      .leftJoin(ipKits, eq(submissions.ipId, ipKits.id))
+      .leftJoin(ipKits, eq(submissions.ipKitId, ipKits.id))
       .leftJoin(reviewers, eq(submissions.reviewedBy, reviewers.id))
       .where(eq(submissions.id, submissionId))
       .limit(1)
@@ -884,8 +962,8 @@ export async function getSubmissionById(submissionId: string) {
       reviewHistory,
     }
   } catch (error) {
-    console.error('Failed to fetch submission details:', error)
-    throw new Error('Failed to fetch submission details')
+    console.error("Failed to fetch submission details:", error)
+    throw new Error("Failed to fetch submission details")
   }
 }
 
@@ -916,7 +994,7 @@ export async function getSubmissionReviews(submissionId: string) {
       reviewer: result.reviewer,
     }))
   } catch (error) {
-    console.error('Failed to fetch submission reviews:', error)
+    console.error("Failed to fetch submission reviews:", error)
     return []
   }
 }
@@ -937,7 +1015,7 @@ export async function getCampaignsForFilter() {
 
     return campaignResults
   } catch (error) {
-    console.error('Failed to fetch campaigns for filter:', error)
+    console.error("Failed to fetch campaigns for filter:", error)
     return []
   }
 }
@@ -999,7 +1077,7 @@ export async function getAnalyticsData() {
       .leftJoin(submissions, eq(users.id, submissions.creatorId))
       .leftJoin(userRoles, eq(users.id, userRoles.userId))
       .leftJoin(roles, eq(userRoles.roleId, roles.id))
-      .where(eq(roles.name, 'creator'))
+      .where(eq(roles.name, "creator"))
       .groupBy(users.id)
       .orderBy(desc(count(submissions.id)))
       .limit(10)
@@ -1028,15 +1106,17 @@ export async function getAnalyticsData() {
       .groupBy(assets.category)
 
     // Overall totals
-    const [totalCampaigns] = await db.select({ count: count() }).from(campaigns)
-    const [totalSubmissions] = await db.select({ count: count() }).from(submissions)
-    const [totalAssets] = await db.select({ count: count() }).from(assets)
+    const [totalCampaigns] = await db.select({count: count()}).from(campaigns)
+    const [totalSubmissions] = await db
+      .select({count: count()})
+      .from(submissions)
+    const [totalAssets] = await db.select({count: count()}).from(assets)
     const [totalCreators] = await db
-      .select({ count: count() })
+      .select({count: count()})
       .from(users)
       .leftJoin(userRoles, eq(users.id, userRoles.userId))
       .leftJoin(roles, eq(userRoles.roleId, roles.id))
-      .where(eq(roles.name, 'creator'))
+      .where(eq(roles.name, "creator"))
 
     return {
       overview: {
@@ -1059,10 +1139,10 @@ export async function getAnalyticsData() {
       },
       creators: {
         topContributors: creatorEngagement,
-      }
+      },
     }
   } catch (error) {
-    console.error('Failed to fetch analytics data:', error)
+    console.error("Failed to fetch analytics data:", error)
     return {
       overview: {
         totalCampaigns: 0,
@@ -1084,7 +1164,7 @@ export async function getAnalyticsData() {
       },
       creators: {
         topContributors: [],
-      }
+      },
     }
   }
 }
@@ -1110,25 +1190,27 @@ export async function getReviewStats() {
         count: count(),
       })
       .from(submissions)
-      .where(and(
-        gte(submissions.reviewedAt, thirtyDaysAgo),
-        or(
-          eq(submissions.status, 'approved'),
-          eq(submissions.status, 'rejected')
+      .where(
+        and(
+          gte(submissions.reviewedAt, thirtyDaysAgo),
+          or(
+            eq(submissions.status, "approved"),
+            eq(submissions.status, "rejected")
+          )
         )
-      ))
+      )
 
     const statusMap = new Map(statusCounts.map(s => [s.status, s.count]))
 
     return {
-      pending: statusMap.get('pending') || 0,
-      approved: statusMap.get('approved') || 0,
-      rejected: statusMap.get('rejected') || 0,
-      withdrawn: statusMap.get('withdrawn') || 0,
+      pending: statusMap.get("pending") || 0,
+      approved: statusMap.get("approved") || 0,
+      rejected: statusMap.get("rejected") || 0,
+      withdrawn: statusMap.get("withdrawn") || 0,
       recentReviews: recentReviews[0]?.count || 0,
     }
   } catch (error) {
-    console.error('Failed to fetch review stats:', error)
+    console.error("Failed to fetch review stats:", error)
     return {
       pending: 0,
       approved: 0,
