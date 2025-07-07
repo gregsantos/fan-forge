@@ -235,57 +235,6 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
             </CardContent>
           </Card>
 
-          {/* Asset Kit */}
-          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
-            <CardHeader>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <CardTitle>Asset Kit</CardTitle>
-                  <CardDescription>
-                    Official brand assets for this campaign
-                  </CardDescription>
-                </div>
-                <Button variant='outline' size='sm'>
-                  <Download className='mr-2 h-4 w-4' />
-                  Download All
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {campaign.assets.length > 0 ? (
-                <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
-                  {campaign.assets.map((asset: any) => (
-                    <div key={asset.id} className='group relative'>
-                      <div className='aspect-square bg-muted rounded-lg overflow-hidden'>
-                        <img
-                          src={asset.url}
-                          alt={asset.filename}
-                          className='w-full h-full object-cover group-hover:scale-105 transition-transform'
-                        />
-                      </div>
-                      <div className='mt-2 space-y-1'>
-                        <p className='text-sm font-medium truncate'>
-                          {asset.filename}
-                        </p>
-                        <Badge variant='outline' className='text-xs'>
-                          {asset.category}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className='text-center py-8 text-muted-foreground'>
-                  <Image className='mx-auto h-8 w-8 mb-2' aria-hidden='true' />
-                  <p className='text-sm'>No assets uploaded yet</p>
-                  <Button variant='outline' size='sm' className='mt-2'>
-                    Upload Assets
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Recent Submissions */}
           <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
             <CardHeader>
@@ -367,6 +316,57 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
                     Submissions will appear here once creators start
                     participating
                   </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Asset Kit */}
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
+            <CardHeader>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <CardTitle>Asset Kit</CardTitle>
+                  <CardDescription>
+                    Official brand assets for this campaign
+                  </CardDescription>
+                </div>
+                <Button variant='outline' size='sm'>
+                  <Download className='mr-2 h-4 w-4' />
+                  Download All
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {campaign.assets.length > 0 ? (
+                <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
+                  {campaign.assets.map((asset: any) => (
+                    <div key={asset.id} className='group relative'>
+                      <div className='aspect-square bg-muted rounded-lg overflow-hidden'>
+                        <img
+                          src={asset.url}
+                          alt={asset.filename}
+                          className='w-full h-full object-cover group-hover:scale-105 transition-transform'
+                        />
+                      </div>
+                      <div className='mt-2 space-y-1'>
+                        <p className='text-sm font-medium truncate'>
+                          {asset.filename}
+                        </p>
+                        <Badge variant='outline' className='text-xs'>
+                          {asset.category}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className='text-center py-8 text-muted-foreground'>
+                  <Image className='mx-auto h-8 w-8 mb-2' aria-hidden='true' />
+                  <p className='text-sm'>No assets uploaded yet</p>
+                  <Button variant='outline' size='sm' className='mt-2'>
+                    Upload Assets
+                  </Button>
                 </div>
               )}
             </CardContent>
