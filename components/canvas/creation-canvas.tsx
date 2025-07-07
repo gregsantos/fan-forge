@@ -888,13 +888,27 @@ export function CreationCanvas({
     {id: "logos", label: "Logos", icon: Circle},
     {id: "titles", label: "Titles", icon: Square},
     {id: "props", label: "Props", icon: Circle},
+    {id: "other", label: "Other", icon: MoreHorizontal},
   ]
 
-  // Memoize filtered assets for performance
-  const filteredAssets = useMemo(() => {
-    return selectedCategory === "all"
-      ? assets
-      : assets.filter(asset => asset.category === selectedCategory)
+  // Memoize filtered and sorted assets for performance
+  const sortedAllAssets = useMemo(() => {
+    if (selectedCategory === "all") {
+      const backgrounds = assets.filter(
+        asset => asset.category === "backgrounds"
+      )
+      const otherAssets = assets.filter(
+        asset => asset.category !== "backgrounds"
+      )
+      return [...backgrounds, ...otherAssets]
+    }
+    if (selectedCategory === "other") {
+      // "Other" category includes assets that don't match standard categories
+      const standardCategories = ["characters", "backgrounds", "logos", "titles", "props"]
+      return assets.filter(asset => !standardCategories.includes(asset.category))
+    }
+    // For specific categories, return the filtered assets
+    return assets.filter(asset => asset.category === selectedCategory)
   }, [assets, selectedCategory])
 
   // Virtual scrolling state for large asset libraries
@@ -904,21 +918,21 @@ export function CreationCanvas({
 
   // Performance optimization: Only show visible assets
   useEffect(() => {
-    if (filteredAssets.length <= 20) {
-      // For small lists, show all assets
-      setVisibleAssets(filteredAssets)
+    if (sortedAllAssets.length <= 50) {
+      // For reasonable lists, show all assets with normal scrolling
+      setVisibleAssets(sortedAllAssets)
       return
     }
 
-    // For large lists, implement virtual scrolling
+    // For very large lists, implement virtual scrolling
     const itemHeight = 120 // Approximate height per asset item
     const containerHeight = assetContainerRef.current?.clientHeight || 400
-    const visibleCount = Math.ceil(containerHeight / itemHeight) + 2 // Buffer
+    const visibleCount = Math.ceil(containerHeight / itemHeight) + 4 // Increased buffer
     const startIndex = Math.floor(assetScrollTop / itemHeight)
-    const endIndex = Math.min(startIndex + visibleCount, filteredAssets.length)
+    const endIndex = Math.min(startIndex + visibleCount, sortedAllAssets.length)
 
-    setVisibleAssets(filteredAssets.slice(startIndex, endIndex))
-  }, [filteredAssets, assetScrollTop])
+    setVisibleAssets(sortedAllAssets.slice(startIndex, endIndex))
+  }, [sortedAllAssets, assetScrollTop])
 
   // Local storage functions
   const saveToLocalStorage = useCallback(() => {
@@ -2081,7 +2095,7 @@ export function CreationCanvas({
               <Palette className='h-4 w-4' />
               <span className='font-medium'>Assets</span>
               <Badge variant='outline' className='text-xs'>
-                {filteredAssets.length}
+                {sortedAllAssets.length}
               </Badge>
             </div>
             <Button
@@ -2118,9 +2132,9 @@ export function CreationCanvas({
                 </div>
 
                 <div className='grid grid-cols-3 sm:grid-cols-4 gap-2 h-52 overflow-y-auto'>
-                  {(filteredAssets.length > 20
+                  {(sortedAllAssets.length > 20
                     ? visibleAssets
-                    : filteredAssets
+                    : sortedAllAssets
                   ).map((asset, index) => (
                     <div
                       key={asset.id}
@@ -2219,7 +2233,7 @@ export function CreationCanvas({
       {/* Desktop Asset Palette */}
       {!isMobile && (
         <div
-          className='border-r bg-card flex flex-col flex-shrink-0'
+          className='border-r bg-card flex flex-col flex-shrink-0 h-full'
           style={{
             width:
               viewportWidth >= 1280
@@ -2261,18 +2275,10 @@ export function CreationCanvas({
               setAssetScrollTop(target.scrollTop)
             }}
           >
-            <div
-              className='grid grid-cols-2 gap-3'
-              style={{
-                minHeight:
-                  filteredAssets.length > 20
-                    ? `${Math.ceil(filteredAssets.length / 2) * 120}px`
-                    : "auto",
-              }}
-            >
-              {(filteredAssets.length > 20
+            <div className='grid grid-cols-2 gap-3'>
+              {(sortedAllAssets.length > 50
                 ? visibleAssets
-                : filteredAssets
+                : sortedAllAssets
               ).map((asset, index) => (
                 <div
                   key={asset.id}
@@ -2362,7 +2368,7 @@ export function CreationCanvas({
               ))}
             </div>
 
-            {filteredAssets.length === 0 && (
+            {sortedAllAssets.length === 0 && (
               <div className='text-center py-8 text-muted-foreground'>
                 <Palette className='mx-auto h-8 w-8 mb-2' />
                 <p className='text-sm'>No assets in this category</p>
