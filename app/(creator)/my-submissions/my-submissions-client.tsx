@@ -244,17 +244,33 @@ export default function MySubmissionsClient({
         </CardHeader>
         <CardContent>
           <div className='flex flex-wrap gap-2'>
-            <Badge variant='secondary' className='px-3 py-1'>
-              <Star className='mr-1 h-3 w-3' />
-              First Submission
-            </Badge>
-            <Badge variant='secondary' className='px-3 py-1'>
-              <CheckCircle className='mr-1 h-3 w-3' />
-              First Approval
-            </Badge>
-            <Badge variant='outline' className='px-3 py-1 opacity-50'>
-              <Trophy className='mr-1 h-3 w-3' />5 Approved Works
-            </Badge>
+            {stats.total > 0 && (
+              <Badge variant='secondary' className='px-3 py-1'>
+                <Star className='mr-1 h-3 w-3' />
+                First Submission
+              </Badge>
+            )}
+            {stats.approved > 0 && (
+              <Badge variant='secondary' className='px-3 py-1'>
+                <CheckCircle className='mr-1 h-3 w-3' />
+                First Approval
+              </Badge>
+            )}
+            {stats.approved >= 5 ? (
+              <Badge variant='secondary' className='px-3 py-1'>
+                <Trophy className='mr-1 h-3 w-3' />5 Approved Works
+              </Badge>
+            ) : stats.approved > 0 ? (
+              <Badge variant='outline' className='px-3 py-1 opacity-50'>
+                <Trophy className='mr-1 h-3 w-3' />
+                {stats.approved}/5 Approved Works
+              </Badge>
+            ) : (
+              <Badge variant='outline' className='px-3 py-1 opacity-50'>
+                <Trophy className='mr-1 h-3 w-3' />
+                0/5 Approved Works
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>
