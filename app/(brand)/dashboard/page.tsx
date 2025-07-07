@@ -465,7 +465,7 @@ export default async function BrandDashboardPage() {
                   Latest approved creator submissions
                 </CardDescription>
               </div>
-              <Link href='/submissions'>
+              <Link href='/submissions/?status=approved'>
                 <Button variant='outline' size='sm'>
                   View All
                   <ArrowRight className='ml-2 h-4 w-4' />
