@@ -175,7 +175,7 @@ export default function NewCampaignPage() {
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Basic Information */}
-            <Card>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
               <CardHeader>
                 <CardTitle>Basic Information</CardTitle>
                 <CardDescription>
@@ -269,7 +269,7 @@ export default function NewCampaignPage() {
             </Card>
 
             {/* IP Kit Assignment */}
-            <Card>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
               <CardHeader>
                 <CardTitle>IP Kit Selection</CardTitle>
                 <CardDescription>
@@ -318,7 +318,7 @@ export default function NewCampaignPage() {
             </Card>
 
             {/* Timeline */}
-            <Card>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
               <CardHeader>
                 <CardTitle>Timeline</CardTitle>
                 <CardDescription>
@@ -359,7 +359,7 @@ export default function NewCampaignPage() {
             </Card>
 
             {/* Advanced Options */}
-            <Card>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
               <CardHeader>
                 <CardTitle>Advanced Options</CardTitle>
                 <CardDescription>
@@ -439,7 +439,7 @@ export default function NewCampaignPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Actions */}
-            <Card>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
               <CardHeader>
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
@@ -465,6 +465,7 @@ export default function NewCampaignPage() {
 
                 <Button
                   type="button"
+                  variant="gradient"
                   onClick={handleSubmit(handlePublish)}
                   className="w-full"
                   disabled={isSaving}
@@ -495,7 +496,7 @@ export default function NewCampaignPage() {
             </Card>
 
             {/* Status */}
-            <Card>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
               <CardHeader>
                 <CardTitle>Campaign Status</CardTitle>
               </CardHeader>
@@ -526,7 +527,7 @@ export default function NewCampaignPage() {
             </Card>
 
             {/* Progress */}
-            <Card>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
               <CardHeader>
                 <CardTitle>Progress</CardTitle>
               </CardHeader>
@@ -542,9 +543,9 @@ export default function NewCampaignPage() {
                       )}%
                     </span>
                   </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
+                  <div className="w-full bg-muted/50 rounded-full h-3 backdrop-blur-sm">
                     <div
-                      className="bg-primary h-2 rounded-full transition-all"
+                      className="bg-gradient-to-r from-gradient-purple to-gradient-pink h-3 rounded-full transition-all"
                       style={{
                         width: `${Math.round(
                           (Object.values(watchedValues).filter(Boolean).length /

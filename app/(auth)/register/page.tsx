@@ -17,6 +17,7 @@ import {
 import {Badge} from "@/components/ui/badge"
 import {registerSchema} from "@/lib/validations"
 import {useAuth} from "@/lib/contexts/auth"
+import {AnimatedBackground} from "@/components/shared/animated-background"
 import {Palette, BarChart3, Mail, RefreshCw, ArrowLeft} from "lucide-react"
 import type {z} from "zod"
 
@@ -108,82 +109,85 @@ export default function RegisterPage() {
   // Show email confirmation screen if needed
   if (emailConfirmationState?.needed) {
     return (
-      <div className='min-h-screen flex items-center justify-center bg-muted/30 px-4 py-8'>
-        <Card className='w-full max-w-md'>
-          <CardHeader className='text-center'>
-            <div className='mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10'>
-              <Mail className='h-6 w-6 text-primary' />
-            </div>
-            <CardTitle className='text-2xl'>Check Your Email</CardTitle>
-            <p className='text-muted-foreground'>
-              We&apos;ve sent a confirmation link to{" "}
-              <span className='font-medium text-foreground'>
-                {emailConfirmationState.email}
-              </span>
-            </p>
-          </CardHeader>
-          <CardContent className='space-y-4'>
-            <div className='rounded-lg bg-blue-50 dark:bg-blue-950/20 p-4 text-center'>
-              <p className='text-sm text-blue-800 dark:text-blue-200'>
-                {emailConfirmationState.message}
-              </p>
-            </div>
-
-            <div className='space-y-3 text-sm text-muted-foreground'>
-              <p>• Click the confirmation link in your email</p>
-              <p>• You&apos;ll be automatically redirected back here</p>
-              <p>• Check your spam folder if you don&apos;t see the email</p>
-            </div>
-
-            {error && (
-              <div className='p-3 bg-destructive/10 border border-destructive/20 rounded-md'>
-                <p className='text-sm text-destructive'>{error}</p>
+      <AnimatedBackground variant="default">
+        <div className='min-h-screen flex items-center justify-center px-4 py-8'>
+          <Card className='w-full max-w-md bg-white/95 dark:bg-card/95 backdrop-blur-md border-white/20 dark:border-white/10 shadow-2xl'>
+            <CardHeader className='text-center'>
+              <div className='mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10'>
+                <Mail className='h-6 w-6 text-primary' />
               </div>
-            )}
+              <CardTitle className='text-2xl'>Check Your Email</CardTitle>
+              <p className='text-muted-foreground'>
+                We&apos;ve sent a confirmation link to{" "}
+                <span className='font-medium text-foreground'>
+                  {emailConfirmationState.email}
+                </span>
+              </p>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              <div className='rounded-lg bg-blue-50 dark:bg-blue-950/20 p-4 text-center'>
+                <p className='text-sm text-blue-800 dark:text-blue-200'>
+                  {emailConfirmationState.message}
+                </p>
+              </div>
 
-            <div className='flex gap-3'>
-              <Button
-                variant='outline'
-                onClick={handleResendEmail}
-                disabled={resendLoading}
-                className='flex-1'
-              >
-                {resendLoading ? (
-                  <RefreshCw className='h-4 w-4 mr-2 animate-spin' />
-                ) : (
-                  <Mail className='h-4 w-4 mr-2' />
-                )}
-                Resend Email
-              </Button>
-              <Button
-                variant='ghost'
-                onClick={() => setEmailConfirmationState(null)}
-                className='flex-1'
-              >
-                <ArrowLeft className='h-4 w-4 mr-2' />
-                Back to Form
-              </Button>
-            </div>
-          </CardContent>
-          <CardFooter className='text-center'>
-            <div className='text-sm text-muted-foreground'>
-              Wrong email?{" "}
-              <button
-                onClick={() => setEmailConfirmationState(null)}
-                className='text-primary hover:underline font-medium'
-              >
-                Try again
-              </button>
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
+              <div className='space-y-3 text-sm text-muted-foreground'>
+                <p>• Click the confirmation link in your email</p>
+                <p>• You&apos;ll be automatically redirected back here</p>
+                <p>• Check your spam folder if you don&apos;t see the email</p>
+              </div>
+
+              {error && (
+                <div className='p-3 bg-destructive/10 border border-destructive/20 rounded-md'>
+                  <p className='text-sm text-destructive'>{error}</p>
+                </div>
+              )}
+
+              <div className='flex gap-3'>
+                <Button
+                  variant='outline'
+                  onClick={handleResendEmail}
+                  disabled={resendLoading}
+                  className='flex-1'
+                >
+                  {resendLoading ? (
+                    <RefreshCw className='h-4 w-4 mr-2 animate-spin' />
+                  ) : (
+                    <Mail className='h-4 w-4 mr-2' />
+                  )}
+                  Resend Email
+                </Button>
+                <Button
+                  variant='ghost'
+                  onClick={() => setEmailConfirmationState(null)}
+                  className='flex-1'
+                >
+                  <ArrowLeft className='h-4 w-4 mr-2' />
+                  Back to Form
+                </Button>
+              </div>
+            </CardContent>
+            <CardFooter className='text-center'>
+              <div className='text-sm text-muted-foreground'>
+                Wrong email?{" "}
+                <button
+                  onClick={() => setEmailConfirmationState(null)}
+                  className='text-primary hover:underline font-medium'
+                >
+                  Try again
+                </button>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+      </AnimatedBackground>
     )
   }
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-muted/30 px-4 py-8'>
-      <Card className='w-full max-w-md'>
+    <AnimatedBackground variant="default">
+      <div className='min-h-screen flex items-center justify-center px-4 py-8'>
+        <Card className='w-full max-w-md bg-white/95 dark:bg-card/95 backdrop-blur-md border-white/20 dark:border-white/10 shadow-2xl'>
         <CardHeader className='text-center'>
           <CardTitle className='text-2xl'>Join FanForge</CardTitle>
           <p className='text-muted-foreground'>
@@ -331,7 +335,7 @@ export default function RegisterPage() {
                 </span>
               </div>
 
-              <Button type='submit' className='w-full' loading={loading}>
+              <Button type='submit' variant="gradient" className='w-full' loading={loading}>
                 Create Account
               </Button>
             </div>
@@ -348,7 +352,8 @@ export default function RegisterPage() {
             </Link>
           </div>
         </CardFooter>
-      </Card>
-    </div>
+        </Card>
+      </div>
+    </AnimatedBackground>
   )
 }

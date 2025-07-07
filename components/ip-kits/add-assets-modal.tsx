@@ -264,7 +264,8 @@ export function AddAssetsModal({
           )}
 
           {/* Asset Grid */}
-          <div className="max-h-96 overflow-y-auto border rounded-lg p-4">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 max-h-96 overflow-y-auto">
+            <CardContent className="p-4">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -293,8 +294,8 @@ export function AddAssetsModal({
                   <Card 
                     key={asset.id} 
                     className={cn(
-                      "cursor-pointer transition-all hover:shadow-md relative",
-                      selectedAssets.includes(asset.id) && "ring-2 ring-primary"
+                      "cursor-pointer transition-all duration-200 hover:shadow-xl hover:scale-105 relative border-0 bg-gradient-to-br from-card via-card to-muted/30 backdrop-blur-sm",
+                      selectedAssets.includes(asset.id) && "ring-2 ring-gradient-purple shadow-lg scale-105"
                     )}
                     onClick={() => handleAssetToggle(asset.id)}
                   >
@@ -343,7 +344,7 @@ export function AddAssetsModal({
                         
                         <div className="flex items-center justify-between">
                           <Badge
-                            className={getCategoryColor(asset.category)}
+                            className="bg-gradient-to-br from-gradient-blue/20 to-gradient-purple/20 text-gradient-blue border-gradient-blue/30"
                             variant="secondary"
                           >
                             {asset.category}
@@ -367,7 +368,8 @@ export function AddAssetsModal({
                 ))}
               </div>
             )}
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         <DialogFooter>
@@ -375,6 +377,7 @@ export function AddAssetsModal({
             Cancel
           </Button>
           <Button 
+            variant="gradient"
             onClick={handleAddAssets}
             disabled={selectedAssets.length === 0 || adding}
           >

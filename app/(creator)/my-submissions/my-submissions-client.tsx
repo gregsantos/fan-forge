@@ -162,7 +162,7 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
             Track the status of your creative submissions
           </p>
         </div>
-        <Button onClick={() => (window.location.href = "/discover")}>
+        <Button variant="gradient" onClick={() => (window.location.href = "/discover")}>
           <ExternalLink className="h-4 w-4 mr-2" />
           Browse Campaigns
         </Button>
@@ -170,36 +170,36 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl font-bold text-primary">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-br from-gradient-blue to-gradient-cyan bg-clip-text text-transparent">
               {stats.total}
             </CardTitle>
             <CardDescription>Total Submissions</CardDescription>
           </CardHeader>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl font-bold text-green-600">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent">
               {stats.approved}
             </CardTitle>
             <CardDescription>Approved Works</CardDescription>
           </CardHeader>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl font-bold text-yellow-600">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-br from-orange-500 to-red-500 bg-clip-text text-transparent">
               {stats.pending}
             </CardTitle>
             <CardDescription>Under Review</CardDescription>
           </CardHeader>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl font-bold text-red-600">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-br from-red-500 to-pink-500 bg-clip-text text-transparent">
               {stats.rejected}
             </CardTitle>
             <CardDescription>Need Updates</CardDescription>
@@ -208,10 +208,12 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
       </div>
 
       {/* Achievements Section */}
-      <Card className="mb-8">
+      <Card className="mb-8 border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
+            <div className="p-2 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 mr-2">
+              <Trophy className="h-5 w-5 bg-gradient-to-br from-yellow-500 to-orange-500 bg-clip-text text-transparent" />
+            </div>
             Achievements
           </CardTitle>
         </CardHeader>
@@ -233,7 +235,7 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
       </Card>
 
       {/* Filters */}
-      <Card>
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
@@ -280,7 +282,7 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
 
       {/* Submissions Grid */}
       {filteredSubmissions.length === 0 ? (
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
           <CardContent className="p-12 text-center">
             <div className="max-w-md mx-auto">
               <Eye className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -295,7 +297,7 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
                   : "Try adjusting your search or filters to find what you're looking for."}
               </p>
               {submissions.length === 0 && (
-                <Button onClick={() => (window.location.href = "/discover")}>
+                <Button variant="gradient" onClick={() => (window.location.href = "/discover")}>
                   Browse Campaigns
                 </Button>
               )}
@@ -307,7 +309,7 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
           {filteredSubmissions.map((submission) => (
             <Card
               key={submission.id}
-              className="hover:shadow-lg transition-shadow"
+              className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300"
             >
               <CardHeader className="p-4">
                 <div className="aspect-video relative overflow-hidden rounded-lg mb-3">
@@ -357,7 +359,7 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
                   </div>
 
                   {submission.feedback && (
-                    <div className="p-3 bg-muted rounded-lg">
+                    <div className="p-3 bg-gradient-to-br from-muted/30 to-muted/50 rounded-lg border border-white/20 backdrop-blur-sm">
                       <p className="text-sm font-medium mb-1">Feedback:</p>
                       <p className="text-sm text-muted-foreground">
                         {submission.feedback}

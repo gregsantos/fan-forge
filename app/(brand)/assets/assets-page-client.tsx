@@ -213,24 +213,42 @@ Are you sure you want to continue?`
       {/* Stats Cards */}
       <ErrorBoundary>
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4'>
-          {stats.map(stat => (
-            <Card key={stat.title}>
-              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                <CardTitle className='text-sm font-medium text-muted-foreground'>
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className='text-2xl font-bold'>{stat.value}</div>
-                <p className='text-xs text-muted-foreground'>
-                  {stat.description}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          {stats.map((stat, index) => {
+            const gradientClasses = [
+              "from-gradient-blue to-gradient-cyan",
+              "from-gradient-purple to-gradient-pink", 
+              "from-green-500 to-emerald-500",
+              "from-gradient-purple to-gradient-blue",
+              "from-gradient-pink to-gradient-rose",
+              "from-orange-500 to-red-500"
+            ];
+            const iconGradientClasses = [
+              "from-gradient-blue/20 to-gradient-cyan/20",
+              "from-gradient-purple/20 to-gradient-pink/20",
+              "from-green-500/20 to-emerald-500/20",
+              "from-gradient-purple/20 to-gradient-blue/20",
+              "from-gradient-pink/20 to-gradient-rose/20",
+              "from-orange-500/20 to-red-500/20"
+            ];
+            return (
+              <Card key={stat.title} className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium text-muted-foreground'>
+                    {stat.title}
+                  </CardTitle>
+                  <div className={`p-3 rounded-xl bg-gradient-to-br ${iconGradientClasses[index]} backdrop-blur-sm border border-white/20`}>
+                    <stat.icon className={`h-4 w-4 bg-gradient-to-br ${gradientClasses[index]} bg-clip-text text-transparent`} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-bold bg-gradient-to-br ${gradientClasses[index]} bg-clip-text text-transparent`}>{stat.value}</div>
+                  <p className='text-xs text-muted-foreground'>
+                    {stat.description}
+                  </p>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </ErrorBoundary>
 
@@ -246,7 +264,7 @@ Are you sure you want to continue?`
         </TabsList>
 
         <TabsContent value='upload' className='space-y-6'>
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
             <CardHeader>
               <CardTitle>Upload New Assets</CardTitle>
               <CardDescription>
@@ -294,7 +312,7 @@ Are you sure you want to continue?`
           </Card>
 
           {/* Upload Tips */}
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
             <CardHeader>
               <CardTitle className='text-lg'>Upload Tips</CardTitle>
             </CardHeader>
@@ -322,7 +340,7 @@ Are you sure you want to continue?`
         </TabsContent>
 
         <TabsContent value='grid' className='space-y-6'>
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
             <CardHeader>
               <CardTitle>Asset Library</CardTitle>
               <CardDescription>

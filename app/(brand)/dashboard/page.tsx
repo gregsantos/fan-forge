@@ -40,32 +40,32 @@ function calculateStats(campaigns: any[], submissions: any[], stats: any) {
       value: activeCampaigns.length,
       description: "Currently running",
       icon: FileText,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
+      gradient: "from-gradient-blue to-gradient-cyan",
+      iconBg: "bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20",
     },
     {
       title: "Total IP Kits",
       value: stats.ipKits.total,
       description: `${stats.ipKits.published} published`,
       icon: Package,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
+      gradient: "from-green-500 to-emerald-500",
+      iconBg: "bg-gradient-to-br from-green-500/20 to-emerald-500/20",
     },
     {
       title: "Total Assets",
       value: stats.assets.total,
       description: "All collections",
       icon: Image,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
+      gradient: "from-gradient-purple to-gradient-pink",
+      iconBg: "bg-gradient-to-br from-gradient-purple/20 to-gradient-pink/20",
     },
     {
       title: "Pending Reviews",
       value: pendingSubmissions,
       description: "Needs attention",
       icon: Eye,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
+      gradient: "from-orange-500 to-red-500",
+      iconBg: "bg-gradient-to-br from-orange-500/20 to-red-500/20",
     },
   ]
 }
@@ -98,7 +98,7 @@ export default async function BrandDashboardPage() {
           </p>
         </div>
         <Link href='/campaigns/new'>
-          <Button>
+          <Button variant="gradient" className="shadow-lg">
             <Plus className='mr-2 h-4 w-4' />
             New Campaign
           </Button>
@@ -108,18 +108,20 @@ export default async function BrandDashboardPage() {
       {/* Stats Cards */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
         {stats.map(stat => (
-          <Card key={stat.title}>
+          <Card key={stat.title} className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 {stat.title}
               </CardTitle>
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <div className={`p-3 rounded-xl ${stat.iconBg} backdrop-blur-sm border border-white/20`}>
+                <stat.icon className={`h-5 w-5 bg-gradient-to-br ${stat.gradient} bg-clip-text text-transparent`} />
               </div>
             </CardHeader>
             <CardContent>
-              <div className='text-2xl font-bold'>{stat.value}</div>
-              <p className='text-xs text-muted-foreground'>
+              <div className={`text-3xl font-bold bg-gradient-to-br ${stat.gradient} bg-clip-text text-transparent`}>
+                {stat.value}
+              </div>
+              <p className='text-xs text-muted-foreground mt-1'>
                 {stat.description}
               </p>
             </CardContent>
@@ -128,7 +130,7 @@ export default async function BrandDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <Card className='mb-8'>
+      <Card className='mb-8 border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20'>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
           <CardDescription>
@@ -139,7 +141,7 @@ export default async function BrandDashboardPage() {
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4'>
             <Link href='/campaigns/new'>
               <Button
-                variant='outline'
+                variant='gradient'
                 className='w-full h-20 flex flex-col gap-2'
               >
                 <Plus className='h-6 w-6' />
@@ -148,7 +150,7 @@ export default async function BrandDashboardPage() {
             </Link>
             <Link href='/ip-kits/new'>
               <Button
-                variant='outline'
+                variant='gradient-blue'
                 className='w-full h-20 flex flex-col gap-2'
               >
                 <Package className='h-6 w-6' />
@@ -157,7 +159,7 @@ export default async function BrandDashboardPage() {
             </Link>
             <Link href='/assets'>
               <Button
-                variant='outline'
+                variant='gradient-subtle'
                 className='w-full h-20 flex flex-col gap-2'
               >
                 <Upload className='h-6 w-6' />
@@ -167,7 +169,7 @@ export default async function BrandDashboardPage() {
             <Link href='/submissions'>
               <Button
                 variant='outline'
-                className='w-full h-20 flex flex-col gap-2'
+                className='w-full h-20 flex flex-col gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all'
               >
                 <Eye className='h-6 w-6' />
                 <span>Review Submissions</span>
@@ -176,7 +178,7 @@ export default async function BrandDashboardPage() {
             <Link href='/analytics'>
               <Button
                 variant='outline'
-                className='w-full h-20 flex flex-col gap-2'
+                className='w-full h-20 flex flex-col gap-2 border-secondary/30 hover:bg-secondary/10 hover:border-secondary/50 transition-all'
               >
                 <BarChart3 className='h-6 w-6' />
                 <span>View Analytics</span>
@@ -188,7 +190,7 @@ export default async function BrandDashboardPage() {
 
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
         {/* Recent Campaigns */}
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20">
           <CardHeader>
             <div className='flex items-center justify-between'>
               <div>
@@ -196,7 +198,7 @@ export default async function BrandDashboardPage() {
                 <CardDescription>Your latest campaign activity</CardDescription>
               </div>
               <Link href='/campaigns'>
-                <Button variant='outline' size='sm'>
+                <Button variant='outline' size='sm' className="border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all">
                   View All
                   <ArrowRight className='ml-2 h-4 w-4' />
                 </Button>
@@ -256,7 +258,7 @@ export default async function BrandDashboardPage() {
         </Card>
 
         {/* Recent Submissions */}
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20">
           <CardHeader>
             <div className='flex items-center justify-between'>
               <div>
@@ -266,7 +268,7 @@ export default async function BrandDashboardPage() {
                 </CardDescription>
               </div>
               <Link href='/submissions'>
-                <Button variant='outline' size='sm'>
+                <Button variant='outline' size='sm' className="border-secondary/30 hover:bg-secondary/10 hover:border-secondary/50 transition-all">
                   View All
                   <ArrowRight className='ml-2 h-4 w-4' />
                 </Button>
@@ -320,7 +322,7 @@ export default async function BrandDashboardPage() {
           </CardContent>
         </Card>
         {/* Recent IP Kits */}
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20">
           <CardHeader>
             <div className='flex items-center justify-between'>
               <div>
@@ -328,7 +330,7 @@ export default async function BrandDashboardPage() {
                 <CardDescription>Your latest intellectual property collections</CardDescription>
               </div>
               <Link href='/ip-kits'>
-                <Button variant='outline' size='sm'>
+                <Button variant='outline' size='sm' className="border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all">
                   View All
                   <ArrowRight className='ml-2 h-4 w-4' />
                 </Button>
@@ -380,7 +382,7 @@ export default async function BrandDashboardPage() {
         </Card>
 
         {/* Recent Assets */}
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20">
           <CardHeader>
             <div className='flex items-center justify-between'>
               <div>
@@ -390,7 +392,7 @@ export default async function BrandDashboardPage() {
                 </CardDescription>
               </div>
               <Link href='/assets'>
-                <Button variant='outline' size='sm'>
+                <Button variant='outline' size='sm' className="border-secondary/30 hover:bg-secondary/10 hover:border-secondary/50 transition-all">
                   View All
                   <ArrowRight className='ml-2 h-4 w-4' />
                 </Button>

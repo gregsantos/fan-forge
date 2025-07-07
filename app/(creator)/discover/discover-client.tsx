@@ -227,9 +227,9 @@ export default function DiscoverClient({ initialCampaigns, initialFeaturedCampai
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto">
               {featuredCampaigns.map((campaign) => (
                 <Link key={campaign.id} href={`/discover/${campaign.id}`} className="block h-full">
-                  <Card className="group relative overflow-hidden border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 w-full h-full cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] flex flex-col">
+                  <Card className="group relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-gradient-purple/10 via-gradient-pink/10 to-gradient-blue/10 backdrop-blur-sm w-full h-full cursor-pointer transition-all duration-200 hover:shadow-2xl hover:scale-[1.02] flex flex-col">
                     <div className="absolute top-4 right-4 z-10">
-                      <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-xs px-3 py-1 shadow-md border border-yellow-400">
+                      <Badge className="bg-gradient-to-r from-gradient-purple to-gradient-pink text-white font-bold text-xs px-3 py-1 shadow-lg border-0">
                         ⭐ FEATURED
                       </Badge>
                     </div>
@@ -308,7 +308,7 @@ export default function DiscoverClient({ initialCampaigns, initialFeaturedCampai
                             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 flex items-center justify-center">
+                          <div className="w-full h-full bg-gradient-to-br from-gradient-purple to-gradient-pink flex items-center justify-center">
                             <div className="text-center text-white p-4">
                               <h3 className="font-bold text-lg mb-2">{campaign.title}</h3>
                               <p className="text-sm opacity-90">by {campaign.brand_name}</p>
@@ -320,7 +320,8 @@ export default function DiscoverClient({ initialCampaigns, initialFeaturedCampai
                       {/* Action Button */}
                       <div className="pt-2 mt-auto">
                         <Button 
-                          className="w-full text-sm bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 transition-all duration-200"
+                          variant="gradient"
+                          className="w-full text-sm transition-all duration-200 shadow-lg"
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
@@ -548,7 +549,7 @@ export default function DiscoverClient({ initialCampaigns, initialFeaturedCampai
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto">
             {campaigns.map((campaign) => (
               <Link key={campaign.id} href={`/discover/${campaign.id}`} className="block h-full">
-                <Card className="campaign-card group w-full h-full cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] flex flex-col">
+                <Card className="campaign-card group w-full h-full cursor-pointer transition-all duration-200 hover:shadow-xl hover:scale-[1.02] flex flex-col border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -624,7 +625,7 @@ export default function DiscoverClient({ initialCampaigns, initialFeaturedCampai
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 flex items-center justify-center">
+                        <div className="w-full h-full bg-gradient-to-br from-gradient-blue via-gradient-purple to-gradient-pink flex items-center justify-center">
                           <div className="text-center text-white p-4">
                             <h3 className="font-bold text-lg mb-2">{campaign.title}</h3>
                             <p className="text-sm opacity-90">by {campaign.brand_name}</p>
@@ -636,6 +637,7 @@ export default function DiscoverClient({ initialCampaigns, initialFeaturedCampai
                     {/* Action Button */}
                     <div className="pt-2 mt-auto">
                       <Button 
+                        variant="gradient"
                         className="w-full text-sm transition-all duration-200"
                         onClick={(e) => {
                           e.preventDefault()

@@ -154,7 +154,7 @@ export default function IpKitsClient({ ipKits, brandName }: IpKitsClientProps) {
           </p>
         </div>
         <Link href="/ip-kits/new">
-          <Button>
+          <Button variant="gradient">
             <Plus className="mr-2 h-4 w-4" />
             Create IP Kit
           </Button>
@@ -164,29 +164,43 @@ export default function IpKitsClient({ ipKits, brandName }: IpKitsClientProps) {
       {/* Stats Cards */}
       <ErrorBoundary>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat) => (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stat.description}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          {stats.map((stat, index) => {
+            const gradientClasses = [
+              "from-gradient-blue to-gradient-cyan",
+              "from-green-500 to-emerald-500", 
+              "from-gradient-purple to-gradient-pink",
+              "from-orange-500 to-red-500"
+            ];
+            const iconGradientClasses = [
+              "from-gradient-blue/20 to-gradient-cyan/20",
+              "from-green-500/20 to-emerald-500/20",
+              "from-gradient-purple/20 to-gradient-pink/20", 
+              "from-orange-500/20 to-red-500/20"
+            ];
+            return (
+              <Card key={stat.title} className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {stat.title}
+                  </CardTitle>
+                  <div className={`p-3 rounded-xl bg-gradient-to-br ${iconGradientClasses[index]} backdrop-blur-sm border border-white/20`}>
+                    <stat.icon className={`h-4 w-4 bg-gradient-to-br ${gradientClasses[index]} bg-clip-text text-transparent`} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-bold bg-gradient-to-br ${gradientClasses[index]} bg-clip-text text-transparent`}>{stat.value}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stat.description}
+                  </p>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </ErrorBoundary>
 
       {/* Main Content */}
-      <Card>
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
         <CardHeader>
           <CardTitle>IP Kits</CardTitle>
           <CardDescription>
@@ -229,7 +243,7 @@ export default function IpKitsClient({ ipKits, brandName }: IpKitsClientProps) {
               </p>
               {!searchQuery && publishedFilter === 'all' && (
                 <Link href="/ip-kits/new">
-                  <Button>
+                  <Button variant="gradient">
                     <Plus className="mr-2 h-4 w-4" />
                     Create Your First IP Kit
                   </Button>
@@ -239,7 +253,7 @@ export default function IpKitsClient({ ipKits, brandName }: IpKitsClientProps) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredIpKits.map((ipKit) => (
-                <Card key={ipKit.id} className="group hover:shadow-md transition-shadow">
+                <Card key={ipKit.id} className="group border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
                   <CardContent className="p-6">
                     <div className="space-y-4">
                       {/* Header */}
@@ -288,11 +302,11 @@ export default function IpKitsClient({ ipKits, brandName }: IpKitsClientProps) {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           {ipKit.published ? (
-                            <Badge variant="default" className="bg-green-600">
+                            <Badge variant="default" className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
                               Published
                             </Badge>
                           ) : (
-                            <Badge variant="secondary">Draft</Badge>
+                            <Badge variant="secondary" className="bg-gradient-to-r from-gradient-purple/20 to-gradient-pink/20 border-0">Draft</Badge>
                           )}
                         </div>
                         <span className="text-sm text-muted-foreground">

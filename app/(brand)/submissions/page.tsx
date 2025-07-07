@@ -79,69 +79,79 @@ export default async function BrandSubmissionsPage({
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Submissions
             </CardTitle>
-            <FileImage className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 rounded-xl bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20 backdrop-blur-sm border border-white/20">
+              <FileImage className="h-4 w-4 bg-gradient-to-br from-gradient-blue to-gradient-cyan bg-clip-text text-transparent" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pagination.total}</div>
+            <div className="text-2xl font-bold bg-gradient-to-br from-gradient-blue to-gradient-cyan bg-clip-text text-transparent">{pagination.total}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Pending Review
             </CardTitle>
-            <Eye className="h-4 w-4 text-orange-500" />
+            <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-white/20">
+              <Eye className="h-4 w-4 bg-gradient-to-br from-orange-500 to-red-500 bg-clip-text text-transparent" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{reviewStats.pending}</div>
+            <div className="text-2xl font-bold bg-gradient-to-br from-orange-500 to-red-500 bg-clip-text text-transparent">{reviewStats.pending}</div>
             <p className="text-xs text-muted-foreground">
               Across all campaigns
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Approved
             </CardTitle>
-            <ThumbsUp className="h-4 w-4 text-green-500" />
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-white/20">
+              <ThumbsUp className="h-4 w-4 bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{reviewStats.approved}</div>
+            <div className="text-2xl font-bold bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent">{reviewStats.approved}</div>
             <p className="text-xs text-muted-foreground">
               +{reviewStats.recentReviews} this month
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Rejected
             </CardTitle>
-            <ThumbsDown className="h-4 w-4 text-red-500" />
+            <div className="p-3 rounded-xl bg-gradient-to-br from-red-500/20 to-pink-500/20 backdrop-blur-sm border border-white/20">
+              <ThumbsDown className="h-4 w-4 bg-gradient-to-br from-red-500 to-pink-500 bg-clip-text text-transparent" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{reviewStats.rejected}</div>
+            <div className="text-2xl font-bold bg-gradient-to-br from-red-500 to-pink-500 bg-clip-text text-transparent">{reviewStats.rejected}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Withdrawn
             </CardTitle>
-            <MessageSquare className="h-4 w-4 text-gray-500" />
+            <div className="p-3 rounded-xl bg-gradient-to-br from-gray-500/20 to-slate-500/20 backdrop-blur-sm border border-white/20">
+              <MessageSquare className="h-4 w-4 bg-gradient-to-br from-gray-500 to-slate-500 bg-clip-text text-transparent" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{reviewStats.withdrawn}</div>
+            <div className="text-2xl font-bold bg-gradient-to-br from-gray-500 to-slate-500 bg-clip-text text-transparent">{reviewStats.withdrawn}</div>
           </CardContent>
         </Card>
       </div>

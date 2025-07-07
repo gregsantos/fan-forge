@@ -157,7 +157,7 @@ export function IpKitForm({
                 Cancel
               </Button>
             )}
-            <Button type="submit" disabled={isLoading || !isDirty}>
+            <Button type="submit" variant="gradient" disabled={isLoading || !isDirty}>
               <Save className="mr-2 h-4 w-4" />
               {isLoading ? 'Saving...' : 'Save'}
             </Button>
@@ -165,7 +165,7 @@ export function IpKitForm({
         </div>
 
         {/* Basic Information */}
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
             <CardDescription>
@@ -203,7 +203,7 @@ export function IpKitForm({
         </Card>
 
         {/* Guidelines & Rules */}
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
           <CardHeader>
             <CardTitle>Creative Guidelines</CardTitle>
             <CardDescription>
@@ -228,7 +228,7 @@ export function IpKitForm({
         </Card>
 
         {/* Publishing Settings */}
-        <Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
           <CardHeader>
             <CardTitle>Publishing Settings</CardTitle>
             <CardDescription>
@@ -254,7 +254,7 @@ export function IpKitForm({
             </div>
 
             {watchedIsPublished && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-blue-50/50 to-blue-100/50 border border-blue-200/50 rounded-lg p-4 backdrop-blur-sm">
                 <div className="flex items-start space-x-3">
                   <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
                   <div className="space-y-1">
@@ -274,7 +274,7 @@ export function IpKitForm({
 
         {/* Asset Summary */}
         {ipKit && (
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
             <CardHeader>
               <CardTitle>Asset Summary</CardTitle>
               <CardDescription>

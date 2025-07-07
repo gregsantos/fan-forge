@@ -78,7 +78,7 @@ export default async function BrandCampaignsPage({
           </p>
         </div>
         <Link href='/campaigns/new'>
-          <Button className='flex items-center gap-2'>
+          <Button variant="gradient" className='flex items-center gap-2'>
             <Plus className='h-4 w-4' />
             Create Campaign
           </Button>
@@ -93,7 +93,7 @@ export default async function BrandCampaignsPage({
         {campaigns.map((campaign: any) => (
           <Card
             key={campaign.id}
-            className='group hover:shadow-lg transition-all duration-200'
+            className='group border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'
           >
             <CardHeader className='space-y-4'>
               <div className='flex items-start justify-between'>
@@ -187,7 +187,7 @@ export default async function BrandCampaignsPage({
               : "Get started by creating your first campaign."}
           </p>
           <Link href='/campaigns/new'>
-            <Button>
+            <Button variant="gradient">
               <Plus className='mr-2 h-4 w-4' />
               Create Campaign
             </Button>

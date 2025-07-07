@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { Navigation } from "@/components/shared/navigation"
+import { ConditionalLayout } from "@/components/shared/conditional-layout"
 import { AuthProvider } from "@/lib/contexts/auth"
 import { ThemeProvider } from "@/lib/contexts/theme"
 import { Toaster } from "sonner"
@@ -40,10 +40,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider defaultTheme="system" storageKey="fanforge-ui-theme">
           <AuthProvider>
-            <div className="min-h-screen bg-background">
-              <Navigation />
-              <main id="main-content">{children}</main>
-            </div>
+            <ConditionalLayout>
+              {children}
+            </ConditionalLayout>
             <Toaster richColors position="top-right" />
           </AuthProvider>
         </ThemeProvider>

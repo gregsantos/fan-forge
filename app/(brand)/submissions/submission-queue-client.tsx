@@ -102,23 +102,27 @@ export function SubmissionQueueClient({
     <div className='space-y-6'>
       {/* Bulk Selection Header */}
       {pendingSubmissions.length > 0 && (
-        <div className='flex items-center justify-between p-4 bg-muted/50 rounded-lg'>
-          <div className='flex items-center gap-3'>
-            <Checkbox
-              checked={allPendingSelected}
-              onCheckedChange={toggleAllSubmissions}
-              aria-label='Select all pending submissions'
-            />
-            <span className='text-sm font-medium'>
-              Select all pending submissions ({pendingSubmissions.length})
-            </span>
-          </div>
-          {selectedSubmissions.length > 0 && (
-            <span className='text-sm text-muted-foreground'>
-              {selectedSubmissions.length} selected
-            </span>
-          )}
-        </div>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
+          <CardContent className="p-4">
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center gap-3'>
+                <Checkbox
+                  checked={allPendingSelected}
+                  onCheckedChange={toggleAllSubmissions}
+                  aria-label='Select all pending submissions'
+                />
+                <span className='text-sm font-medium'>
+                  Select all pending submissions ({pendingSubmissions.length})
+                </span>
+              </div>
+              {selectedSubmissions.length > 0 && (
+                <Badge variant="secondary" className="bg-gradient-to-r from-gradient-purple/20 to-gradient-pink/20">
+                  {selectedSubmissions.length} selected
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Submissions Grid */}
@@ -130,8 +134,8 @@ export function SubmissionQueueClient({
           return (
             <Card
               key={submission.id}
-              className={`group hover:shadow-lg transition-all duration-200 ${
-                isSelected ? "ring-2 ring-primary" : ""
+              className={`group border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300 ${
+                isSelected ? "ring-2 ring-primary shadow-xl" : ""
               }`}
             >
               <div className='aspect-video bg-muted rounded-t-lg overflow-hidden relative'>
@@ -224,9 +228,11 @@ export function SubmissionQueueClient({
                 </div>
 
                 {submission.feedback && (
-                  <div className='p-3 bg-muted/50 rounded-lg'>
+                  <div className='p-3 bg-gradient-to-br from-muted/30 to-muted/50 rounded-lg border border-white/20 backdrop-blur-sm'>
                     <div className='flex items-center gap-2 mb-1'>
-                      <MessageSquare className='h-4 w-4 text-muted-foreground' />
+                      <div className="p-1 rounded bg-gradient-to-br from-gradient-blue/20 to-gradient-purple/20">
+                        <MessageSquare className='h-3 w-3 text-gradient-blue' />
+                      </div>
                       <span className='text-sm font-medium'>Feedback</span>
                     </div>
                     <p className='text-sm text-muted-foreground line-clamp-2'>
@@ -251,14 +257,14 @@ export function SubmissionQueueClient({
                       <Button
                         variant='outline'
                         size='sm'
-                        className='text-green-600 hover:text-green-700'
+                        className='text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200'
                       >
                         <ThumbsUp className='h-4 w-4' />
                       </Button>
                       <Button
                         variant='outline'
                         size='sm'
-                        className='text-red-600 hover:text-red-700'
+                        className='text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200'
                       >
                         <ThumbsDown className='h-4 w-4' />
                       </Button>

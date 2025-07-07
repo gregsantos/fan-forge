@@ -335,20 +335,25 @@ export function SubmissionModal({
                       {canvasElements.length} elements on canvas
                     </p>
                   </div>
+                  </CardContent>
                   {errors.canvas && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.canvas}
-                    </p>
+                    <div className="px-6 pb-4">
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.canvas}
+                      </p>
+                    </div>
                   )}
                   {errors.validation && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.validation}
-                    </p>
+                    <div className="px-6 pb-2">
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.validation}
+                      </p>
+                    </div>
                   )}
                   {validationWarnings.length > 0 && (
-                    <div className="space-y-1">
+                    <div className="px-6 pb-4 space-y-1">
                       {validationWarnings.map((warning, index) => (
                         <p key={index} className="text-sm text-yellow-600 flex items-center gap-1">
                           <AlertCircle className="h-4 w-4" />
@@ -357,7 +362,7 @@ export function SubmissionModal({
                       ))}
                     </div>
                   )}
-                </div>
+                </Card>
               )}
 
               {/* Upload Progress */}

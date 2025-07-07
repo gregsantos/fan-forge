@@ -181,7 +181,8 @@ export function ProjectManager({
         </DialogHeader>
 
         {/* Storage Stats */}
-        <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30">
+          <CardContent className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
             <HardDrive className="w-4 h-4" />
             <span className="text-sm">
@@ -190,10 +191,11 @@ export function ProjectManager({
               </span> of 50MB
             </span>
           </div>
-          <Badge variant="outline">
+          <Badge className="bg-gradient-to-br from-gradient-blue/20 to-gradient-purple/20 text-gradient-blue border-gradient-blue/30" variant="outline">
             {storageStats.projectCount} projects
           </Badge>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Search and Actions */}
         <div className="flex items-center gap-2 mb-4">
@@ -276,8 +278,8 @@ export function ProjectManager({
               {filteredProjects.map((project) => (
                 <Card 
                   key={project.id} 
-                  className={`cursor-pointer transition-colors hover:bg-accent ${
-                    currentProjectId === project.id ? 'ring-2 ring-primary' : ''
+                  className={`cursor-pointer transition-all duration-200 hover:shadow-xl hover:scale-[1.02] border-0 bg-gradient-to-br from-card via-card to-muted/30 backdrop-blur-sm ${
+                    currentProjectId === project.id ? 'ring-2 ring-gradient-purple shadow-lg scale-[1.02]' : ''
                   }`}
                 >
                   <CardContent className="p-4">
@@ -300,7 +302,7 @@ export function ProjectManager({
                             <Calendar className="w-3 h-3" />
                             {formatDate(project.updatedAt)}
                           </span>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge className="bg-gradient-to-br from-gradient-pink/20 to-gradient-purple/20 text-gradient-pink border-gradient-pink/30 text-xs" variant="outline">
                             {project.elements.length} elements
                           </Badge>
                         </div>
