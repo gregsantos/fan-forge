@@ -289,8 +289,8 @@ export default function IpKitDetailPage() {
                   {ipKit.assetCount}
                 </p>
               </div>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-purple/20 to-gradient-pink/20 backdrop-blur-sm border border-white/20'>
-                <Package className='h-5 w-5 bg-gradient-to-br from-gradient-purple to-gradient-pink bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-purple to-gradient-pink backdrop-blur-sm border border-white/20 shadow-lg'>
+                <Package className='h-5 w-5 text-white' />
               </div>
             </div>
           </CardContent>
@@ -306,8 +306,8 @@ export default function IpKitDetailPage() {
                   0
                 </p>
               </div>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-white/20'>
-                <Eye className='h-5 w-5 bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+                <Eye className='h-5 w-5 text-white' />
               </div>
             </div>
           </CardContent>
@@ -323,8 +323,8 @@ export default function IpKitDetailPage() {
                   0
                 </p>
               </div>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20 backdrop-blur-sm border border-white/20'>
-                <Download className='h-5 w-5 bg-gradient-to-br from-gradient-blue to-gradient-cyan bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-blue to-gradient-cyan backdrop-blur-sm border border-white/20 shadow-lg'>
+                <Download className='h-5 w-5 text-white' />
               </div>
             </div>
           </CardContent>
@@ -340,8 +340,8 @@ export default function IpKitDetailPage() {
                   v{ipKit.version}
                 </p>
               </div>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-white/20'>
-                <Calendar className='h-5 w-5 bg-gradient-to-br from-orange-500 to-red-500 bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+                <Calendar className='h-5 w-5 text-white' />
               </div>
             </div>
           </CardContent>

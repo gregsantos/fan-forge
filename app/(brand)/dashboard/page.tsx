@@ -20,6 +20,10 @@ import {
   Image,
   Upload,
   FolderOpen,
+  Megaphone,
+  Layers,
+  ImageIcon,
+  ClipboardList,
 } from "lucide-react"
 import Link from "next/link"
 import {getDashboardData} from "@/lib/data/campaigns"
@@ -95,7 +99,6 @@ function calculateStats(campaigns: any[], submissions: any[], stats: any) {
       description: "Currently running",
       icon: FileText,
       gradient: "from-gradient-blue to-gradient-cyan",
-      iconBg: "bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20",
     },
     {
       title: "Total IP Kits",
@@ -103,7 +106,6 @@ function calculateStats(campaigns: any[], submissions: any[], stats: any) {
       description: `${stats.ipKits.published} published`,
       icon: Package,
       gradient: "from-green-500 to-emerald-500",
-      iconBg: "bg-gradient-to-br from-green-500/20 to-emerald-500/20",
     },
     {
       title: "Total Assets",
@@ -111,7 +113,6 @@ function calculateStats(campaigns: any[], submissions: any[], stats: any) {
       description: "All collections",
       icon: Image,
       gradient: "from-gradient-purple to-gradient-pink",
-      iconBg: "bg-gradient-to-br from-gradient-purple/20 to-gradient-pink/20",
     },
     {
       title: "Pending Reviews",
@@ -119,7 +120,6 @@ function calculateStats(campaigns: any[], submissions: any[], stats: any) {
       description: "Needs attention",
       icon: Eye,
       gradient: "from-orange-500 to-red-500",
-      iconBg: "bg-gradient-to-br from-orange-500/20 to-red-500/20",
     },
   ]
 }
@@ -177,11 +177,9 @@ export default async function BrandDashboardPage() {
                 {stat.title}
               </CardTitle>
               <div
-                className={`p-3 rounded-xl ${stat.iconBg} backdrop-blur-sm border border-white/20`}
+                className={`p-3 rounded-xl bg-gradient-to-br ${stat.gradient} backdrop-blur-sm border border-white/20 shadow-lg`}
               >
-                <stat.icon
-                  className={`h-5 w-5 bg-gradient-to-br ${stat.gradient} bg-clip-text text-transparent`}
-                />
+                <stat.icon className='h-5 w-5 text-white' />
               </div>
             </CardHeader>
             <CardContent>

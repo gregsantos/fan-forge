@@ -163,8 +163,8 @@ export default async function AnalyticsPage() {
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Total Campaigns
               </CardTitle>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20 backdrop-blur-sm border border-white/20'>
-                <FileText className='h-4 w-4 bg-gradient-to-br from-gradient-blue to-gradient-cyan bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-blue to-gradient-cyan backdrop-blur-sm border border-white/20 shadow-lg'>
+                <FileText className='h-4 w-4 text-white' />
               </div>
             </CardHeader>
             <CardContent>
@@ -182,8 +182,8 @@ export default async function AnalyticsPage() {
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Total Creators
               </CardTitle>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-white/20'>
-                <Users className='h-4 w-4 bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+                <Users className='h-4 w-4 text-white' />
               </div>
             </CardHeader>
             <CardContent>
@@ -201,8 +201,8 @@ export default async function AnalyticsPage() {
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Total Assets
               </CardTitle>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-purple/20 to-gradient-pink/20 backdrop-blur-sm border border-white/20'>
-                <Image className='h-4 w-4 bg-gradient-to-br from-gradient-purple to-gradient-pink bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-purple to-gradient-pink backdrop-blur-sm border border-white/20 shadow-lg'>
+                <Image className='h-4 w-4 text-white' />
               </div>
             </CardHeader>
             <CardContent>
@@ -220,8 +220,8 @@ export default async function AnalyticsPage() {
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Approval Rate
               </CardTitle>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-white/20'>
-                <TrendingUp className='h-4 w-4 bg-gradient-to-br from-orange-500 to-red-500 bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+                <TrendingUp className='h-4 w-4 text-white' />
               </div>
             </CardHeader>
             <CardContent>

@@ -90,32 +90,24 @@ export default function IpKitsClient({ipKits, brandName}: IpKitsClientProps) {
         value: ipKits.length.toString(),
         description: "All IP kits created",
         icon: Package,
-        color: "text-blue-600",
-        bgColor: "bg-blue-100",
       },
       {
         title: "Published",
         value: ipKits.filter(kit => kit.published).length.toString(),
         description: "Live and available",
         icon: Eye,
-        color: "text-green-600",
-        bgColor: "bg-green-100",
       },
       {
         title: "Total Assets",
         value: ipKits.reduce((sum, kit) => sum + kit.asset_count, 0).toString(),
         description: "Across all kits",
         icon: Image,
-        color: "text-purple-600",
-        bgColor: "bg-purple-100",
       },
       {
         title: "In Use",
         value: "0", // TODO: Count campaigns using these kits
         description: "Active campaigns",
         icon: Users,
-        color: "text-orange-600",
-        bgColor: "bg-orange-100",
       },
     ],
     [ipKits]
@@ -185,12 +177,6 @@ export default function IpKitsClient({ipKits, brandName}: IpKitsClientProps) {
               "from-gradient-purple to-gradient-pink",
               "from-orange-500 to-red-500",
             ]
-            const iconGradientClasses = [
-              "from-gradient-blue/20 to-gradient-cyan/20",
-              "from-green-500/20 to-emerald-500/20",
-              "from-gradient-purple/20 to-gradient-pink/20",
-              "from-orange-500/20 to-red-500/20",
-            ]
             return (
               <Card
                 key={stat.title}
@@ -201,11 +187,9 @@ export default function IpKitsClient({ipKits, brandName}: IpKitsClientProps) {
                     {stat.title}
                   </CardTitle>
                   <div
-                    className={`p-3 rounded-xl bg-gradient-to-br ${iconGradientClasses[index]} backdrop-blur-sm border border-white/20`}
+                    className={`p-3 rounded-xl bg-gradient-to-br ${gradientClasses[index]} backdrop-blur-sm border border-white/20 shadow-lg`}
                   >
-                    <stat.icon
-                      className={`h-4 w-4 bg-gradient-to-br ${gradientClasses[index]} bg-clip-text text-transparent`}
-                    />
+                    <stat.icon className='h-4 w-4 text-white' />
                   </div>
                 </CardHeader>
                 <CardContent>

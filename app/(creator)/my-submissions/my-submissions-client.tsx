@@ -196,38 +196,58 @@ export default function MySubmissionsClient({
       {/* Stats Cards */}
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8'>
         <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'>
-          <CardHeader className='pb-2'>
-            <CardTitle className='text-2xl font-bold bg-gradient-to-br from-gradient-blue to-gradient-cyan bg-clip-text text-transparent'>
-              {stats.total}
-            </CardTitle>
-            <CardDescription>Total Submissions</CardDescription>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold bg-gradient-to-br from-gradient-blue to-gradient-cyan bg-clip-text text-transparent'>
+                {stats.total}
+              </CardTitle>
+              <CardDescription>Total Submissions</CardDescription>
+            </div>
+            <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-blue to-gradient-cyan backdrop-blur-sm border border-white/20 shadow-lg'>
+              <Edit3 className='h-4 w-4 text-white' />
+            </div>
           </CardHeader>
         </Card>
 
         <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'>
-          <CardHeader className='pb-2'>
-            <CardTitle className='text-2xl font-bold bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent'>
-              {stats.approved}
-            </CardTitle>
-            <CardDescription>Approved Works</CardDescription>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent'>
+                {stats.approved}
+              </CardTitle>
+              <CardDescription>Approved Works</CardDescription>
+            </div>
+            <div className='p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+              <CheckCircle className='h-4 w-4 text-white' />
+            </div>
           </CardHeader>
         </Card>
 
         <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'>
-          <CardHeader className='pb-2'>
-            <CardTitle className='text-2xl font-bold bg-gradient-to-br from-orange-500 to-red-500 bg-clip-text text-transparent'>
-              {stats.pending}
-            </CardTitle>
-            <CardDescription>Under Review</CardDescription>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold bg-gradient-to-br from-orange-500 to-red-500 bg-clip-text text-transparent'>
+                {stats.pending}
+              </CardTitle>
+              <CardDescription>Under Review</CardDescription>
+            </div>
+            <div className='p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+              <Clock className='h-4 w-4 text-white' />
+            </div>
           </CardHeader>
         </Card>
 
         <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'>
-          <CardHeader className='pb-2'>
-            <CardTitle className='text-2xl font-bold bg-gradient-to-br from-red-500 to-pink-500 bg-clip-text text-transparent'>
-              {stats.rejected}
-            </CardTitle>
-            <CardDescription>Need Updates</CardDescription>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold bg-gradient-to-br from-red-500 to-pink-500 bg-clip-text text-transparent'>
+                {stats.rejected}
+              </CardTitle>
+              <CardDescription>Need Updates</CardDescription>
+            </div>
+            <div className='p-3 rounded-xl bg-gradient-to-br from-red-500 to-pink-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+              <XCircle className='h-4 w-4 text-white' />
+            </div>
           </CardHeader>
         </Card>
       </div>
@@ -236,8 +256,8 @@ export default function MySubmissionsClient({
       <Card className='mb-8 border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
         <CardHeader>
           <CardTitle className='flex items-center'>
-            <div className='p-2 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 mr-2'>
-              <Trophy className='h-5 w-5 bg-gradient-to-br from-yellow-500 to-orange-500 bg-clip-text text-transparent' />
+            <div className='p-2 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 mr-2'>
+              <Trophy className='h-5 w-5 text-white' />
             </div>
             Achievements
           </CardTitle>
