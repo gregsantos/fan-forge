@@ -22,20 +22,24 @@ import Link from "next/link"
 import {getSubmissionById} from "@/lib/data/campaigns"
 import {SubmissionReviewActions} from "./submission-review-actions"
 import {ReviewHistoryPanel} from "./review-history-panel"
-import {StoryProtocolLink, StoryProtocolStatus} from "@/components/shared/story-protocol-link"
+import {
+  StoryProtocolLink,
+  StoryProtocolStatus,
+} from "@/components/shared/story-protocol-link"
+import {cn} from "@/lib/utils"
 
 function getStatusColor(status: string) {
   switch (status) {
     case "approved":
-      return "default"
+      return "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
     case "pending":
-      return "secondary"
+      return "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent"
     case "rejected":
-      return "destructive"
+      return "bg-gradient-to-r from-red-500 to-rose-500 text-white border-transparent"
     case "withdrawn":
-      return "outline"
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
     default:
-      return "secondary"
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
   }
 }
 
@@ -77,7 +81,12 @@ export default async function SubmissionDetailPage({
         </Button>
         <Separator orientation='vertical' className='h-6' />
         <div className='flex items-center gap-3'>
-          <Badge variant={getStatusColor(submission.status) as any}>
+          <Badge
+            className={cn(
+              "font-medium shadow-sm capitalize",
+              getStatusColor(submission.status)
+            )}
+          >
             {submission.status.charAt(0).toUpperCase() +
               submission.status.slice(1)}
           </Badge>
@@ -87,7 +96,7 @@ export default async function SubmissionDetailPage({
               <span>{submission.rating}/5</span>
             </div>
           )}
-          <StoryProtocolStatus 
+          <StoryProtocolStatus
             ipId={submission.storyProtocolIpId}
             submissionStatus={submission.status}
             showFull={true}
@@ -125,10 +134,10 @@ export default async function SubmissionDetailPage({
                       Open Original
                     </a>
                   </Button>
-                  <StoryProtocolLink 
+                  <StoryProtocolLink
                     ipId={submission.storyProtocolIpId}
                     submissionStatus={submission.status}
-                    size="sm"
+                    size='sm'
                   />
                 </div>
               </div>
@@ -287,18 +296,19 @@ export default async function SubmissionDetailPage({
                 <span>{submission.isPublic ? "Yes" : "No"}</span>
               </div>
 
-              {submission.storyProtocolIpId && submission.status === "approved" && (
-                <div className='pt-3 border-t'>
-                  <p className='text-sm font-medium mb-2'>Story Protocol</p>
-                  <StoryProtocolLink 
-                    ipId={submission.storyProtocolIpId}
-                    submissionStatus={submission.status}
-                    variant="button"
-                    size="sm"
-                    className="w-full"
-                  />
-                </div>
-              )}
+              {submission.storyProtocolIpId &&
+                submission.status === "approved" && (
+                  <div className='pt-3 border-t'>
+                    <p className='text-sm font-medium mb-2'>Story Protocol</p>
+                    <StoryProtocolLink
+                      ipId={submission.storyProtocolIpId}
+                      submissionStatus={submission.status}
+                      variant='button'
+                      size='sm'
+                      className='w-full'
+                    />
+                  </div>
+                )}
             </CardContent>
           </Card>
 

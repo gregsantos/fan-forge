@@ -23,6 +23,60 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import {getDashboardData} from "@/lib/data/campaigns"
+import {cn} from "@/lib/utils"
+
+function getCampaignStatusColor(status: string) {
+  switch (status) {
+    case "active":
+      return "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
+    case "draft":
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
+    case "closed":
+      return "bg-gradient-to-r from-red-500 to-rose-500 text-white border-transparent"
+    case "paused":
+      return "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent"
+    default:
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
+  }
+}
+
+function getSubmissionStatusColor(status: string) {
+  switch (status) {
+    case "approved":
+      return "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
+    case "pending":
+      return "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent"
+    case "rejected":
+      return "bg-gradient-to-r from-red-500 to-rose-500 text-white border-transparent"
+    default:
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
+  }
+}
+
+function getIpKitStatusColor(isPublished: boolean) {
+  return isPublished
+    ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
+    : "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
+}
+
+function getAssetCategoryColor(category: string) {
+  switch (category) {
+    case "characters":
+      return "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
+    case "backgrounds":
+      return "bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-transparent"
+    case "logos":
+      return "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent"
+    case "titles":
+      return "bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent"
+    case "props":
+      return "bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent"
+    case "other":
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
+    default:
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
+  }
+}
 
 function calculateStats(campaigns: any[], submissions: any[], stats: any) {
   const activeCampaigns = campaigns.filter(c => c.status === "active")
@@ -80,7 +134,13 @@ function formatDate(date: string | Date) {
 }
 
 export default async function BrandDashboardPage() {
-  const {campaigns, submissions, ipKits, assets, stats: dashboardStats} = await getDashboardData()
+  const {
+    campaigns,
+    submissions,
+    ipKits,
+    assets,
+    stats: dashboardStats,
+  } = await getDashboardData()
 
   const activeCampaigns = campaigns.filter((c: any) => c.status === "active")
   const stats = calculateStats(campaigns, submissions, dashboardStats)
@@ -98,7 +158,7 @@ export default async function BrandDashboardPage() {
           </p>
         </div>
         <Link href='/campaigns/new'>
-          <Button variant="gradient" className="shadow-lg">
+          <Button variant='gradient' className='shadow-lg'>
             <Plus className='mr-2 h-4 w-4' />
             New Campaign
           </Button>
@@ -108,17 +168,26 @@ export default async function BrandDashboardPage() {
       {/* Stats Cards */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
         {stats.map(stat => (
-          <Card key={stat.title} className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300">
+          <Card
+            key={stat.title}
+            className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'
+          >
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 {stat.title}
               </CardTitle>
-              <div className={`p-3 rounded-xl ${stat.iconBg} backdrop-blur-sm border border-white/20`}>
-                <stat.icon className={`h-5 w-5 bg-gradient-to-br ${stat.gradient} bg-clip-text text-transparent`} />
+              <div
+                className={`p-3 rounded-xl ${stat.iconBg} backdrop-blur-sm border border-white/20`}
+              >
+                <stat.icon
+                  className={`h-5 w-5 bg-gradient-to-br ${stat.gradient} bg-clip-text text-transparent`}
+                />
               </div>
             </CardHeader>
             <CardContent>
-              <div className={`text-3xl font-bold bg-gradient-to-br ${stat.gradient} bg-clip-text text-transparent`}>
+              <div
+                className={`text-3xl font-bold bg-gradient-to-br ${stat.gradient} bg-clip-text text-transparent`}
+              >
                 {stat.value}
               </div>
               <p className='text-xs text-muted-foreground mt-1'>
@@ -140,49 +209,46 @@ export default async function BrandDashboardPage() {
         <CardContent>
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4'>
             <Link href='/campaigns/new'>
-              <Button
-                variant='gradient'
-                className='w-full h-20 flex flex-col gap-2'
-              >
-                <Plus className='h-6 w-6' />
-                <span>New Campaign</span>
-              </Button>
+              <div className='w-full h-20 border border-primary/20 rounded-lg bg-gradient-to-br from-card via-card to-muted/10 hover:shadow-lg hover:bg-gradient-to-br hover:from-card hover:via-card hover:to-muted/20 transition-all duration-300 group cursor-pointer'>
+                <div className='w-full h-full flex flex-col items-center justify-center gap-2 text-foreground group-hover:text-primary transition-colors'>
+                  <Plus className='h-6 w-6' />
+                  <span className='text-sm font-medium'>New Campaign</span>
+                </div>
+              </div>
             </Link>
             <Link href='/ip-kits/new'>
-              <Button
-                variant='gradient-blue'
-                className='w-full h-20 flex flex-col gap-2'
-              >
-                <Package className='h-6 w-6' />
-                <span>New IP Kit</span>
-              </Button>
+              <div className='w-full h-20 border border-blue-300/20 rounded-lg bg-gradient-to-br from-card via-card to-muted/10 hover:shadow-lg hover:bg-gradient-to-br hover:from-card hover:via-card hover:to-muted/20 transition-all duration-300 group cursor-pointer'>
+                <div className='w-full h-full flex flex-col items-center justify-center gap-2 text-foreground group-hover:text-blue-600 transition-colors'>
+                  <Package className='h-6 w-6' />
+                  <span className='text-sm font-medium'>New IP Kit</span>
+                </div>
+              </div>
             </Link>
             <Link href='/assets'>
-              <Button
-                variant='gradient-subtle'
-                className='w-full h-20 flex flex-col gap-2'
-              >
-                <Upload className='h-6 w-6' />
-                <span>Upload Assets</span>
-              </Button>
+              <div className='w-full h-20 border border-purple-300/20 rounded-lg bg-gradient-to-br from-card via-card to-muted/10 hover:shadow-lg hover:bg-gradient-to-br hover:from-card hover:via-card hover:to-muted/20 transition-all duration-300 group cursor-pointer'>
+                <div className='w-full h-full flex flex-col items-center justify-center gap-2 text-foreground group-hover:text-purple-600 transition-colors'>
+                  <Upload className='h-6 w-6' />
+                  <span className='text-sm font-medium'>Upload Assets</span>
+                </div>
+              </div>
             </Link>
             <Link href='/submissions'>
-              <Button
-                variant='outline'
-                className='w-full h-20 flex flex-col gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all'
-              >
-                <Eye className='h-6 w-6' />
-                <span>Review Submissions</span>
-              </Button>
+              <div className='w-full h-20 border border-orange-300/20 rounded-lg bg-gradient-to-br from-card via-card to-muted/10 hover:shadow-lg hover:bg-gradient-to-br hover:from-card hover:via-card hover:to-muted/20 transition-all duration-300 group cursor-pointer'>
+                <div className='w-full h-full flex flex-col items-center justify-center gap-2 text-foreground group-hover:text-orange-600 transition-colors'>
+                  <Eye className='h-6 w-6' />
+                  <span className='text-sm font-medium'>
+                    Review Submissions
+                  </span>
+                </div>
+              </div>
             </Link>
             <Link href='/analytics'>
-              <Button
-                variant='outline'
-                className='w-full h-20 flex flex-col gap-2 border-secondary/30 hover:bg-secondary/10 hover:border-secondary/50 transition-all'
-              >
-                <BarChart3 className='h-6 w-6' />
-                <span>View Analytics</span>
-              </Button>
+              <div className='w-full h-20 border border-green-300/20 rounded-lg bg-gradient-to-br from-card via-card to-muted/10 hover:shadow-lg hover:bg-gradient-to-br hover:from-card hover:via-card hover:to-muted/20 transition-all duration-300 group cursor-pointer'>
+                <div className='w-full h-full flex flex-col items-center justify-center gap-2 text-foreground group-hover:text-green-600 transition-colors'>
+                  <BarChart3 className='h-6 w-6' />
+                  <span className='text-sm font-medium'>View Analytics</span>
+                </div>
+              </div>
             </Link>
           </div>
         </CardContent>
@@ -190,7 +256,7 @@ export default async function BrandDashboardPage() {
 
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
         {/* Recent Campaigns */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20">
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20'>
           <CardHeader>
             <div className='flex items-center justify-between'>
               <div>
@@ -198,7 +264,7 @@ export default async function BrandDashboardPage() {
                 <CardDescription>Your latest campaign activity</CardDescription>
               </div>
               <Link href='/campaigns'>
-                <Button variant='outline' size='sm' className="border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all">
+                <Button variant='outline' size='sm'>
                   View All
                   <ArrowRight className='ml-2 h-4 w-4' />
                 </Button>
@@ -228,9 +294,10 @@ export default async function BrandDashboardPage() {
                 </div>
                 <div className='flex flex-col items-end gap-2'>
                   <Badge
-                    variant={
-                      campaign.status === "active" ? "default" : "secondary"
-                    }
+                    className={cn(
+                      "font-medium shadow-sm capitalize",
+                      getCampaignStatusColor(campaign.status)
+                    )}
                   >
                     {campaign.status}
                   </Badge>
@@ -258,7 +325,7 @@ export default async function BrandDashboardPage() {
         </Card>
 
         {/* Recent Submissions */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20">
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20'>
           <CardHeader>
             <div className='flex items-center justify-between'>
               <div>
@@ -268,7 +335,7 @@ export default async function BrandDashboardPage() {
                 </CardDescription>
               </div>
               <Link href='/submissions'>
-                <Button variant='outline' size='sm' className="border-secondary/30 hover:bg-secondary/10 hover:border-secondary/50 transition-all">
+                <Button variant='outline' size='sm'>
                   View All
                   <ArrowRight className='ml-2 h-4 w-4' />
                 </Button>
@@ -294,13 +361,10 @@ export default async function BrandDashboardPage() {
                 </div>
                 <div className='flex flex-col items-end gap-2'>
                   <Badge
-                    variant={
-                      submission.status === "approved"
-                        ? "default"
-                        : submission.status === "pending"
-                          ? "secondary"
-                          : "destructive"
-                    }
+                    className={cn(
+                      "font-medium shadow-sm capitalize",
+                      getSubmissionStatusColor(submission.status)
+                    )}
                   >
                     {submission.status}
                   </Badge>
@@ -322,15 +386,17 @@ export default async function BrandDashboardPage() {
           </CardContent>
         </Card>
         {/* Recent IP Kits */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20">
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20'>
           <CardHeader>
             <div className='flex items-center justify-between'>
               <div>
                 <CardTitle>Recent IP Kits</CardTitle>
-                <CardDescription>Your latest intellectual property collections</CardDescription>
+                <CardDescription>
+                  Your latest intellectual property collections
+                </CardDescription>
               </div>
               <Link href='/ip-kits'>
-                <Button variant='outline' size='sm' className="border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all">
+                <Button variant='outline' size='sm'>
                   View All
                   <ArrowRight className='ml-2 h-4 w-4' />
                 </Button>
@@ -354,7 +420,10 @@ export default async function BrandDashboardPage() {
                 </div>
                 <div className='flex flex-col items-end gap-2'>
                   <Badge
-                    variant={ipKit.isPublished ? "default" : "secondary"}
+                    className={cn(
+                      "font-medium shadow-sm",
+                      getIpKitStatusColor(ipKit.isPublished)
+                    )}
                   >
                     {ipKit.isPublished ? "Published" : "Draft"}
                   </Badge>
@@ -382,7 +451,7 @@ export default async function BrandDashboardPage() {
         </Card>
 
         {/* Recent Assets */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20">
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20'>
           <CardHeader>
             <div className='flex items-center justify-between'>
               <div>
@@ -392,7 +461,7 @@ export default async function BrandDashboardPage() {
                 </CardDescription>
               </div>
               <Link href='/assets'>
-                <Button variant='outline' size='sm' className="border-secondary/30 hover:bg-secondary/10 hover:border-secondary/50 transition-all">
+                <Button variant='outline' size='sm'>
                   View All
                   <ArrowRight className='ml-2 h-4 w-4' />
                 </Button>
@@ -405,11 +474,11 @@ export default async function BrandDashboardPage() {
                 key={asset.id}
                 className='flex items-center justify-between p-4 border rounded-lg'
               >
-                <div className='flex items-center space-x-3'>
+                <div className='flex items-center space-x-3 flex-1 min-w-0'>
                   <div className='w-10 h-10 bg-muted rounded flex-shrink-0 flex items-center justify-center'>
                     {asset.thumbnailUrl ? (
-                      <img 
-                        src={asset.thumbnailUrl} 
+                      <img
+                        src={asset.thumbnailUrl}
                         alt={asset.originalFilename}
                         className='w-full h-full object-cover rounded'
                       />
@@ -417,9 +486,11 @@ export default async function BrandDashboardPage() {
                       <Image className='h-5 w-5 text-muted-foreground' />
                     )}
                   </div>
-                  <div className='space-y-1 min-w-0'>
-                    <h3 className='font-medium text-sm truncate'>{asset.originalFilename}</h3>
-                    <p className='text-xs text-muted-foreground'>
+                  <div className='space-y-1 min-w-0 flex-1'>
+                    <h3 className='font-medium text-sm truncate'>
+                      {asset.originalFilename}
+                    </h3>
+                    <p className='text-xs text-muted-foreground truncate'>
                       {asset.ipKitName}
                     </p>
                     <p className='text-xs text-muted-foreground'>
@@ -428,7 +499,12 @@ export default async function BrandDashboardPage() {
                   </div>
                 </div>
                 <div className='flex flex-col items-end gap-2'>
-                  <Badge variant="outline">
+                  <Badge
+                    className={cn(
+                      "font-medium shadow-sm capitalize",
+                      getAssetCategoryColor(asset.category)
+                    )}
+                  >
                     {asset.category}
                   </Badge>
                   <Button variant='ghost' size='sm'>
