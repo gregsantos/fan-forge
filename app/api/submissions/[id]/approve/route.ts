@@ -3,7 +3,6 @@ import {db, submissions, campaigns, users, auditLogs, notifications} from "@/db"
 import {eq} from "drizzle-orm"
 import {createServerClient} from "@supabase/ssr"
 import {getSubmissionAssetIpIds} from "@/lib/data/submissions"
-import {registerApprovedSubmission} from "@/lib/services/story-protocol"
 
 async function getCurrentUser(request: NextRequest) {
   const supabase = createServerClient(
@@ -188,6 +187,8 @@ export async function POST(
     )
 
     try {
+      // Dynamically import Story Protocol service to avoid build-time issues
+      const { registerApprovedSubmission } = await import("@/lib/services/story-protocol")
       const storyResult = await registerApprovedSubmission(submissionId)
 
       if (storyResult.success) {

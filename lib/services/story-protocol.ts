@@ -8,33 +8,33 @@ import sharp from "sharp"
 import {getSubmissionAssetIpIds} from "@/lib/data/submissions"
 import {db, submissions, campaigns, users} from "@/db"
 import {eq} from "drizzle-orm"
+import {getStoryProtocolExplorerUrl} from "@/lib/utils/story-protocol-config"
 
-// Log environment configuration on module load
-console.log(`🔧 [STORY-PROTOCOL] Service initialization:`)
-console.log(`   🌐 Network: ${process.env.STORY_NETWORK || "aeneid"}`)
-console.log(
-  `   🔑 Wallet configured: ${process.env.WALLET_ADDRESS ? "✅" : "❌"}`
-)
-console.log(
-  `   🔐 Pinata JWT configured: ${process.env.PINATA_JWT ? "✅" : "❌"}`
-)
-console.log(`   📋 Story Protocol client ready: ✅`)
-console.log(`   ⏰ Timestamp: ${new Date().toISOString()}`)
-console.log(``)
+// Validate required environment variables when needed
+function validateEnvironmentVariables(): void {
+  const requiredEnvVars = ["WALLET_PRIVATE_KEY", "WALLET_ADDRESS", "PINATA_JWT"]
+  const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName])
 
-// Validate required environment variables
-const requiredEnvVars = ["WALLET_PRIVATE_KEY", "WALLET_ADDRESS", "PINATA_JWT"]
-const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName])
+  if (missingEnvVars.length > 0) {
+    const errorMessage = `Missing required environment variables: ${missingEnvVars.join(', ')}`
+    console.error(`❌ [STORY-PROTOCOL] ${errorMessage}`)
+    missingEnvVars.forEach(varName => {
+      console.error(`   - ${varName}`)
+    })
+    console.error(
+      `   Story Protocol registration will fail without these variables.`
+    )
+    throw new Error(errorMessage)
+  }
 
-if (missingEnvVars.length > 0) {
-  console.error(`❌ [STORY-PROTOCOL] Missing required environment variables:`)
-  missingEnvVars.forEach(varName => {
-    console.error(`   - ${varName}`)
-  })
-  console.error(
-    `   Story Protocol registration will fail without these variables.`
-  )
-  console.error(``)
+  // Log configuration only when actually validating
+  console.log(`🔧 [STORY-PROTOCOL] Service validation:`)
+  console.log(`   🌐 Network: ${process.env.STORY_NETWORK || "aeneid"}`)
+  console.log(`   🔑 Wallet configured: ✅`)
+  console.log(`   🔐 Pinata JWT configured: ✅`)
+  console.log(`   📋 Story Protocol client ready: ✅`)
+  console.log(`   ⏰ Timestamp: ${new Date().toISOString()}`)
+  console.log(``)
 }
 
 // Configuration for different campaign collection contracts
@@ -121,11 +121,14 @@ interface StoryProtocolRegistrationResult {
   error?: string
 }
 
-// Initialize Pinata SDK
-const pinata = new PinataSDK({
-  pinataJwt: process.env.PINATA_JWT,
-  pinataGateway: process.env.PINATA_GATEWAY_URL,
-})
+// Initialize Pinata SDK (will be validated when used)
+function getPinataSDK() {
+  validateEnvironmentVariables()
+  return new PinataSDK({
+    pinataJwt: process.env.PINATA_JWT,
+    pinataGateway: process.env.PINATA_GATEWAY_URL,
+  })
+}
 
 // Upload image from URL to IPFS (optimized for Supabase storage)
 export async function uploadImageToIPFS(imageUrl: string): Promise<{
@@ -134,6 +137,7 @@ export async function uploadImageToIPFS(imageUrl: string): Promise<{
   contentHash: string
 }> {
   try {
+    validateEnvironmentVariables()
     console.log(`🚀 [IPFS] Starting image upload process`)
     console.log(`📥 [IPFS] Downloading image from: ${imageUrl}`)
 
@@ -238,6 +242,7 @@ export async function uploadJSONToIPFS({
   name: string
   jsonMetadata: any
 }): Promise<string> {
+  validateEnvironmentVariables()
   console.log(`📤 [JSON-IPFS] Uploading JSON to IPFS: ${name}`)
 
   const url = "https://api.pinata.cloud/pinning/pinJSONToIPFS"
@@ -374,6 +379,7 @@ export const registerDerivativeIpAsset = async (
   parentIpIds: Address[],
   collectionContract: Address
 ): Promise<RegisterDerivativeIpAssetResult> => {
+  validateEnvironmentVariables()
   console.log(
     `⛓️  [BLOCKCHAIN] Starting blockchain registration for: "${assetName}"`
   )
@@ -476,10 +482,10 @@ export const registerDerivativeIpAsset = async (
     console.log(`   🆔 New IP Asset ID: ${response.ipId}`)
     console.log(`   🔗 Transaction Hash: ${response.txHash}`)
     console.log(
-      `   🌐 Explorer: https://explorer.story.foundation/ipa/${response.ipId}`
+      `   🌐 Explorer: ${response.ipId ? getStoryProtocolExplorerUrl(response.ipId) : 'N/A'}`
     )
     console.log(
-      `   📄 Transaction: https://explorer.story.foundation/tx/${response.txHash}`
+      `   📄 Transaction: ${response.txHash}`
     )
 
     return {
@@ -559,7 +565,7 @@ export const registerSubmissionAsDerivative = async (
     console.log(`   🔗 Transaction Hash: ${result.txHash}`)
     console.log(`   🌐 IPFS Image: ${ipfsImageData.ipfsUrl}`)
     console.log(
-      `   🔍 Explorer: https://explorer.story.foundation/ipa/${result.ipId}`
+      `   🔍 Explorer: ${result.ipId ? getStoryProtocolExplorerUrl(result.ipId) : 'N/A'}`
     )
     console.log(``)
 
@@ -742,7 +748,7 @@ export async function registerApprovedSubmission(
     console.log(`   IP Asset ID: ${result.ipId}`)
     console.log(`   Transaction: ${result.txHash}`)
     console.log(
-      `   Explorer: https://explorer.story.foundation/ipa/${result.ipId}`
+      `   Explorer: ${result.ipId ? getStoryProtocolExplorerUrl(result.ipId) : 'N/A'}`
     )
     console.log(``)
 

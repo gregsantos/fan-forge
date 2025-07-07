@@ -16,6 +16,7 @@ import {
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { StoryProtocolStatus, StoryProtocolLink } from "@/components/shared/story-protocol-link"
 
 interface CampaignSubmissionsClientProps {
   campaign: any
@@ -163,6 +164,19 @@ export function CampaignSubmissionsClient({ campaign, initialData }: CampaignSub
                           {submission.likeCount}
                         </Badge>
                       )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <StoryProtocolStatus 
+                        ipId={submission.storyProtocolIpId}
+                        submissionStatus={submission.status}
+                      />
+                      <StoryProtocolLink 
+                        ipId={submission.storyProtocolIpId}
+                        submissionStatus={submission.status}
+                        variant="button"
+                        size="sm"
+                      />
                     </div>
 
                     <div className="text-xs text-muted-foreground">
