@@ -251,7 +251,7 @@ export default function IpKitDetailPage() {
           <Button
             variant='outline'
             onClick={handlePublishToggle}
-            className='border-orange-300/30 hover:bg-orange-50/10 hover:border-orange-400/50 transition-all'
+            className='border-orange-300/30 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:border-orange-400/50 transition-all'
           >
             {ipKit.isPublished ? (
               <Eye className='mr-2 h-4 w-4' />
@@ -263,7 +263,7 @@ export default function IpKitDetailPage() {
           <Link href={`/ip-kits/${ipKit.id}/edit`}>
             <Button
               variant='outline'
-              className='border-blue-300/30 hover:bg-blue-50/10 hover:border-blue-400/50 transition-all'
+              className='border-blue-300/30 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:border-blue-400/50 transition-all'
             >
               <Edit className='mr-2 h-4 w-4' />
               Edit
@@ -548,7 +548,7 @@ export default function IpKitDetailPage() {
                   <Link href={`/ip-kits/${ipKit.id}/edit`}>
                     <Button
                       variant='outline'
-                      className='border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all'
+                      className='border-primary/30 hover:bg-primary/10 dark:hover:bg-primary/10 hover:border-primary/50 hover:text-primary-foreground transition-all'
                     >
                       <Edit className='mr-2 h-4 w-4' />
                       Edit
@@ -568,7 +568,7 @@ export default function IpKitDetailPage() {
                   <Button
                     variant='outline'
                     onClick={handlePublishToggle}
-                    className='border-secondary/30 hover:bg-secondary/10 hover:border-secondary/50 transition-all'
+                    className='border-secondary/30 hover:bg-secondary hover:text-secondary-foreground hover:border-secondary/50 transition-all'
                   >
                     {ipKit.isPublished ? "Unpublish" : "Publish"}
                   </Button>
