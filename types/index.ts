@@ -131,6 +131,7 @@ export interface Submission {
   campaignId: string
   creatorId: string
   ipId?: string // IP Kit used for source assets (not destination after approval)
+  storyProtocolIpId?: string // Story Protocol blockchain IP Asset ID (0x address)
   status: SubmissionStatus
   reviewedBy?: string
   reviewedAt?: Date

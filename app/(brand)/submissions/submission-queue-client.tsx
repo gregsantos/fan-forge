@@ -23,6 +23,7 @@ import {
   Square,
 } from "lucide-react"
 import Link from "next/link"
+import { StoryProtocolLink, StoryProtocolStatus } from "@/components/shared/story-protocol-link"
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -170,6 +171,10 @@ export function SubmissionQueueClient({
                         <span>{submission.rating}/5</span>
                       </div>
                     )}
+                    <StoryProtocolStatus 
+                      ipId={submission.storyProtocolIpId}
+                      submissionStatus={submission.status}
+                    />
                   </div>
                   <div className='flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity'>
                     <Button variant='ghost' size='sm' asChild>
@@ -259,9 +264,16 @@ export function SubmissionQueueClient({
                       </Button>
                     </div>
                   ) : (
-                    <Button variant='outline' size='sm' asChild>
-                      <Link href={`/submissions/${submission.id}`}>Review</Link>
-                    </Button>
+                    <div className='flex gap-1'>
+                      <Button variant='outline' size='sm' asChild>
+                        <Link href={`/submissions/${submission.id}`}>Review</Link>
+                      </Button>
+                      <StoryProtocolLink 
+                        ipId={submission.storyProtocolIpId}
+                        submissionStatus={submission.status}
+                        size="sm"
+                      />
+                    </div>
                   )}
                 </div>
               </CardContent>

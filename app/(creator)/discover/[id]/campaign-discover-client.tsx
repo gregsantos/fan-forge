@@ -30,6 +30,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import NextImage from "next/image"
+import { StoryProtocolStatus } from "@/components/shared/story-protocol-link"
 
 interface CampaignDiscoverClientProps {
   campaign: any
@@ -311,65 +312,6 @@ export function CampaignDiscoverClient({
               </CardContent>
             </Card>
 
-            {/* Asset Preview */}
-            <Card>
-              <CardHeader>
-                <div className='flex items-center justify-between'>
-                  <div>
-                    <CardTitle>Available Assets</CardTitle>
-                    <CardDescription>
-                      Official brand assets you can use in your creation
-                    </CardDescription>
-                  </div>
-                  {isActive && (
-                    <Link href={`/create?campaign=${campaign.id}`}>
-                      <Button variant='outline' size='sm'>
-                        <ExternalLink className='mr-2 h-4 w-4' />
-                        Use in Canvas
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {campaign.assets.length > 0 ? (
-                  <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
-                    {campaign.assets.map((asset: any) => (
-                      <div key={asset.id} className='group relative'>
-                        <div className='aspect-square bg-muted rounded-lg overflow-hidden relative'>
-                          <NextImage
-                            src={asset.url}
-                            alt={asset.filename}
-                            fill
-                            className='object-cover group-hover:scale-105 transition-transform'
-                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                          />
-                        </div>
-                        <div className='mt-2 space-y-1'>
-                          <p className='text-sm font-medium truncate'>
-                            {asset.filename}
-                          </p>
-                          <Badge variant='outline' className='text-xs'>
-                            {asset.category}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className='text-center py-8 text-muted-foreground'>
-                    <Image
-                      className='mx-auto h-8 w-8 mb-2'
-                      aria-hidden='true'
-                    />
-                    <p className='text-sm'>
-                      Assets will be available when the campaign becomes active
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
             {/* Community Showcase */}
             <Card>
               <CardHeader>
@@ -441,6 +383,10 @@ export function CampaignDiscoverClient({
                               </Badge>
                             )}
                           </div>
+                          <StoryProtocolStatus 
+                            ipId={submission.storyProtocolIpId}
+                            submissionStatus={submission.status}
+                          />
                         </div>
                       </div>
                     ))}
@@ -451,6 +397,65 @@ export function CampaignDiscoverClient({
                     <p className='text-sm'>No submissions yet</p>
                     <p className='text-xs'>
                       Be the first to create something amazing!
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Available Assets */}
+            <Card>
+              <CardHeader>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <CardTitle>Available Assets</CardTitle>
+                    <CardDescription>
+                      Official brand assets you can use in your creation
+                    </CardDescription>
+                  </div>
+                  {isActive && (
+                    <Link href={`/create?campaign=${campaign.id}`}>
+                      <Button variant='outline' size='sm'>
+                        <ExternalLink className='mr-2 h-4 w-4' />
+                        Use in Canvas
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {campaign.assets.length > 0 ? (
+                  <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
+                    {campaign.assets.map((asset: any) => (
+                      <div key={asset.id} className='group relative'>
+                        <div className='aspect-square bg-muted rounded-lg overflow-hidden relative'>
+                          <NextImage
+                            src={asset.url}
+                            alt={asset.filename}
+                            fill
+                            className='object-cover group-hover:scale-105 transition-transform'
+                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          />
+                        </div>
+                        <div className='mt-2 space-y-1'>
+                          <p className='text-sm font-medium truncate'>
+                            {asset.filename}
+                          </p>
+                          <Badge variant='outline' className='text-xs'>
+                            {asset.category}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className='text-center py-8 text-muted-foreground'>
+                    <Image
+                      className='mx-auto h-8 w-8 mb-2'
+                      aria-hidden='true'
+                    />
+                    <p className='text-sm'>
+                      Assets will be available when the campaign becomes active
                     </p>
                   </div>
                 )}

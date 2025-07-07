@@ -33,6 +33,7 @@ import {
   Star,
 } from "lucide-react"
 import NextImage from "next/image"
+import { StoryProtocolLink, StoryProtocolStatus } from "@/components/shared/story-protocol-link"
 
 interface Submission {
   id: string
@@ -40,6 +41,7 @@ interface Submission {
   description: string
   status: "pending" | "approved" | "rejected" | "withdrawn"
   artworkUrl: string
+  storyProtocolIpId?: string | null
   createdAt: Date
   updatedAt: Date
   feedback?: string
@@ -338,6 +340,10 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
                   <p className="text-sm text-muted-foreground">
                     Campaign: {submission.campaign?.title || "Unknown Campaign"}
                   </p>
+                  <StoryProtocolStatus 
+                    ipId={submission.storyProtocolIpId} 
+                    submissionStatus={submission.status}
+                  />
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
@@ -360,9 +366,11 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
                   )}
 
                   <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
+                    <Button variant="outline" size="sm" className="flex-1" asChild>
+                      <a href={`/submission/${submission.id}`}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </a>
                     </Button>
                     {submission.status === "rejected" && (
                       <Button variant="outline" size="sm" className="flex-1">
@@ -370,6 +378,10 @@ export default function MySubmissionsClient({ submissions }: SubmissionsClientPr
                         Edit
                       </Button>
                     )}
+                    <StoryProtocolLink 
+                      ipId={submission.storyProtocolIpId}
+                      submissionStatus={submission.status}
+                    />
                   </div>
                 </div>
               </CardContent>

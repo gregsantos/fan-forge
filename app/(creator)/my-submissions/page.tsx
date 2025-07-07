@@ -22,6 +22,7 @@ export default async function MySubmissionsPage() {
       description: sub.description || "",
       status: sub.status as "pending" | "approved" | "rejected" | "withdrawn",
       artworkUrl: sub.artworkUrl || "",
+      storyProtocolIpId: sub.storyProtocolIpId,
       createdAt: new Date(sub.createdAt),
       updatedAt: new Date(sub.updatedAt),
       feedback: sub.feedback || undefined,

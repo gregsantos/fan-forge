@@ -1,8 +1,4 @@
 import {NextRequest, NextResponse} from "next/server"
-import {
-  registerApprovedSubmission,
-  isSubmissionEligibleForRegistration,
-} from "@/lib/services/story-protocol"
 import {createServerClient} from "@supabase/ssr"
 
 async function getCurrentUser(request: NextRequest) {
@@ -49,6 +45,9 @@ export async function POST(
 
     const submissionId = params.id
 
+    // Dynamically import Story Protocol service to avoid build-time issues
+    const { isSubmissionEligibleForRegistration } = await import("@/lib/services/story-protocol")
+    
     // Check if submission is eligible for registration
     const eligibility = await isSubmissionEligibleForRegistration(submissionId)
     if (!eligibility.eligible) {
@@ -65,6 +64,7 @@ export async function POST(
     console.log(
       `🚀 Starting Story Protocol registration for submission ${submissionId}`
     )
+    const { registerApprovedSubmission } = await import("@/lib/services/story-protocol")
     const result = await registerApprovedSubmission(submissionId)
 
     if (!result.success) {
@@ -102,6 +102,9 @@ export async function GET(
 ) {
   try {
     const submissionId = params.id
+
+    // Dynamically import Story Protocol service to avoid build-time issues
+    const { isSubmissionEligibleForRegistration } = await import("@/lib/services/story-protocol")
 
     // Check eligibility status
     const eligibility = await isSubmissionEligibleForRegistration(submissionId)

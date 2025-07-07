@@ -22,6 +22,7 @@ import Link from "next/link"
 import {getSubmissionById} from "@/lib/data/campaigns"
 import {SubmissionReviewActions} from "./submission-review-actions"
 import {ReviewHistoryPanel} from "./review-history-panel"
+import {StoryProtocolLink, StoryProtocolStatus} from "@/components/shared/story-protocol-link"
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -86,6 +87,11 @@ export default async function SubmissionDetailPage({
               <span>{submission.rating}/5</span>
             </div>
           )}
+          <StoryProtocolStatus 
+            ipId={submission.storyProtocolIpId}
+            submissionStatus={submission.status}
+            showFull={true}
+          />
         </div>
       </div>
 
@@ -119,6 +125,11 @@ export default async function SubmissionDetailPage({
                       Open Original
                     </a>
                   </Button>
+                  <StoryProtocolLink 
+                    ipId={submission.storyProtocolIpId}
+                    submissionStatus={submission.status}
+                    size="sm"
+                  />
                 </div>
               </div>
             </CardHeader>
@@ -275,6 +286,19 @@ export default async function SubmissionDetailPage({
                 <span>Public</span>
                 <span>{submission.isPublic ? "Yes" : "No"}</span>
               </div>
+
+              {submission.storyProtocolIpId && submission.status === "approved" && (
+                <div className='pt-3 border-t'>
+                  <p className='text-sm font-medium mb-2'>Story Protocol</p>
+                  <StoryProtocolLink 
+                    ipId={submission.storyProtocolIpId}
+                    submissionStatus={submission.status}
+                    variant="button"
+                    size="sm"
+                    className="w-full"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
