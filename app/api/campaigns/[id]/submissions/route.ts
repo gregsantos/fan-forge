@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server"
-import { db, submissions, users, ipKits } from "@/db"
-import { eq, and, desc, asc, ilike, or } from "drizzle-orm"
+import {NextRequest, NextResponse} from "next/server"
+import {db, submissions, users, ipKits} from "@/db"
+import {eq, and, desc, asc, ilike, or} from "drizzle-orm"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  {params}: {params: {id: string}}
 ) {
   try {
     const campaignId = params.id
@@ -16,9 +16,7 @@ export async function GET(
     const sortBy = searchParams.get("sortBy") || "newest"
 
     // Build where conditions
-    const whereConditions = [
-      eq(submissions.campaignId, campaignId)
-    ]
+    const whereConditions = [eq(submissions.campaignId, campaignId)]
 
     if (status === "approved") {
       whereConditions.push(eq(submissions.status, "approved"))
@@ -69,15 +67,19 @@ export async function GET(
       })
       .from(submissions)
       .leftJoin(users, eq(submissions.creatorId, users.id))
-      .leftJoin(ipKits, eq(submissions.ipId, ipKits.id))
+      .leftJoin(ipKits, eq(submissions.ipKitId, ipKits.id))
       .where(and(...whereConditions))
-      .orderBy(...(Array.isArray(getSortOrder()) ? getSortOrder() as any : [getSortOrder()]))
+      .orderBy(
+        ...(Array.isArray(getSortOrder())
+          ? (getSortOrder() as any)
+          : [getSortOrder()])
+      )
       .limit(limit)
       .offset((page - 1) * limit)
 
     // Get total count for pagination
     const totalSubmissions = await db
-      .select({ count: submissions.id })
+      .select({count: submissions.id})
       .from(submissions)
       .where(and(...whereConditions))
 
@@ -92,14 +94,13 @@ export async function GET(
         limit,
         total: totalSubmissions.length,
         pages: Math.ceil(totalSubmissions.length / limit),
-      }
+      },
     })
-
   } catch (error) {
-    console.error('Failed to fetch campaign submissions:', error)
+    console.error("Failed to fetch campaign submissions:", error)
     return NextResponse.json(
-      { error: "Failed to fetch submissions" },
-      { status: 500 }
+      {error: "Failed to fetch submissions"},
+      {status: 500}
     )
   }
 }

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
-import { db, submissions, reviews, users, auditLogs, notifications } from "@/db"
-import { eq, inArray, and } from "drizzle-orm"
-import { createServerClient } from '@supabase/ssr'
-import { ensureUserExists } from '@/lib/auth-utils'
-import { getSubmissionAssetIpIds } from "@/lib/data/submissions"
+import {NextRequest, NextResponse} from "next/server"
+import {db, submissions, reviews, users, auditLogs, notifications} from "@/db"
+import {eq, inArray, and} from "drizzle-orm"
+import {createServerClient} from "@supabase/ssr"
+import {ensureUserExists} from "@/lib/auth-utils"
+import {getSubmissionAssetIpIds} from "@/lib/data/submissions"
 
 async function getCurrentUser(request: NextRequest) {
   const supabase = createServerClient(
@@ -12,23 +12,30 @@ async function getCurrentUser(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.headers.get('cookie')?.split(';').map(cookie => {
-            const [name, value] = cookie.trim().split('=')
-            return { name, value }
-          }) || []
+          return (
+            request.headers
+              .get("cookie")
+              ?.split(";")
+              .map(cookie => {
+                const [name, value] = cookie.trim().split("=")
+                return {name, value}
+              }) || []
+          )
         },
         setAll() {}, // Not needed for read operations
       },
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-  
+  const {
+    data: {user},
+  } = await supabase.auth.getUser()
+
   // Ensure user exists in our database if authenticated
   if (user) {
     await ensureUserExists(user)
   }
-  
+
   return user
 }
 
@@ -38,50 +45,50 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser(request)
     if (!user) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        {error: "Authentication required"},
+        {status: 401}
       )
     }
 
     const body = await request.json()
-    const { submissionIds, action, feedback, rating, internalNotes } = body
+    const {submissionIds, action, feedback, rating, internalNotes} = body
 
     // Validate input
     if (!Array.isArray(submissionIds) || submissionIds.length === 0) {
       return NextResponse.json(
-        { error: "submissionIds must be a non-empty array" },
-        { status: 400 }
+        {error: "submissionIds must be a non-empty array"},
+        {status: 400}
       )
     }
 
-    if (!action || !['approve', 'reject'].includes(action)) {
+    if (!action || !["approve", "reject"].includes(action)) {
       return NextResponse.json(
-        { error: "Invalid action. Must be 'approve' or 'reject'" },
-        { status: 400 }
+        {error: "Invalid action. Must be 'approve' or 'reject'"},
+        {status: 400}
       )
     }
 
     // Require feedback for bulk rejections
-    if (action === 'reject' && !feedback) {
+    if (action === "reject" && !feedback) {
       return NextResponse.json(
-        { error: "Feedback is required when rejecting submissions" },
-        { status: 400 }
+        {error: "Feedback is required when rejecting submissions"},
+        {status: 400}
       )
     }
 
     // Validate rating if provided
     if (rating && (rating < 1 || rating > 5)) {
       return NextResponse.json(
-        { error: "Rating must be between 1 and 5" },
-        { status: 400 }
+        {error: "Rating must be between 1 and 5"},
+        {status: 400}
       )
     }
 
     // Limit bulk operations to prevent abuse
     if (submissionIds.length > 50) {
       return NextResponse.json(
-        { error: "Cannot process more than 50 submissions at once" },
-        { status: 400 }
+        {error: "Cannot process more than 50 submissions at once"},
+        {status: 400}
       )
     }
 
@@ -93,33 +100,30 @@ export async function POST(request: NextRequest) {
           id: users.id,
           email: users.email,
           displayName: users.displayName,
-        }
+        },
       })
       .from(submissions)
       .leftJoin(users, eq(submissions.creatorId, users.id))
       .where(inArray(submissions.id, submissionIds))
 
     if (submissionResults.length === 0) {
-      return NextResponse.json(
-        { error: "No submissions found" },
-        { status: 404 }
-      )
+      return NextResponse.json({error: "No submissions found"}, {status: 404})
     }
 
     // Filter only pending submissions
     const pendingSubmissions = submissionResults.filter(
-      result => result.submission.status === 'pending'
+      result => result.submission.status === "pending"
     )
 
     if (pendingSubmissions.length === 0) {
       return NextResponse.json(
-        { error: "No pending submissions found to process" },
-        { status: 400 }
+        {error: "No pending submissions found to process"},
+        {status: 400}
       )
     }
 
     const pendingIds = pendingSubmissions.map(s => s.submission.id)
-    const newStatus = action === 'approve' ? 'approved' : 'rejected'
+    const newStatus = action === "approve" ? "approved" : "rejected"
     const now = new Date()
 
     // Update all pending submissions
@@ -132,7 +136,7 @@ export async function POST(request: NextRequest) {
         feedback: feedback || null,
         rating: rating || null,
         updatedAt: now,
-        ...(action === 'approve' ? { isPublic: true } : {}), // Make approved submissions public
+        ...(action === "approve" ? {isPublic: true} : {}), // Make approved submissions public
       })
       .where(inArray(submissions.id, pendingIds))
       .returning()
@@ -141,7 +145,7 @@ export async function POST(request: NextRequest) {
     const reviewInserts = pendingIds.map(submissionId => ({
       submissionId,
       reviewerId: user.id,
-      status: newStatus as 'approved' | 'rejected',
+      status: newStatus as "approved" | "rejected",
       feedback: feedback || null,
       rating: rating || null,
       internalNotes: internalNotes || null,
@@ -156,24 +160,27 @@ export async function POST(request: NextRequest) {
     const auditInserts = pendingSubmissions.map((subResult, index) => ({
       userId: user.id,
       action: `bulk_submission_${action}`,
-      entityType: 'submission',
+      entityType: "submission",
       entityId: subResult.submission.id,
-      oldValues: { status: 'pending' },
-      newValues: { 
-        status: newStatus, 
-        reviewedBy: user.id, 
+      oldValues: {status: "pending"},
+      newValues: {
+        status: newStatus,
+        reviewedBy: user.id,
         reviewedAt: now,
         feedback: feedback || null,
-        rating: rating || null 
+        rating: rating || null,
       },
-      metadata: { 
+      metadata: {
         reviewId: reviewRecords[index]?.id,
         creatorId: subResult.submission.creatorId,
         bulkOperation: true,
-        totalProcessed: pendingIds.length
+        totalProcessed: pendingIds.length,
       },
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown',
+      ipAddress:
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        "unknown",
+      userAgent: request.headers.get("user-agent") || "unknown",
     }))
 
     await db.insert(auditLogs).values(auditInserts)
@@ -182,13 +189,15 @@ export async function POST(request: NextRequest) {
     const notificationInserts = pendingSubmissions
       .filter(result => result.creator) // Only for submissions with valid creators
       .map(result => {
-        const notificationTitle = action === 'approve' 
-          ? '🎉 Submission Approved!'
-          : '📝 Submission Needs Revision'
-        
-        const notificationMessage = action === 'approve'
-          ? `Your submission "${result.submission.title}" has been approved and is now live!`
-          : `Your submission "${result.submission.title}" requires some adjustments. Please check the feedback and resubmit.`
+        const notificationTitle =
+          action === "approve"
+            ? "🎉 Submission Approved!"
+            : "📝 Submission Needs Revision"
+
+        const notificationMessage =
+          action === "approve"
+            ? `Your submission "${result.submission.title}" has been approved and is now live!`
+            : `Your submission "${result.submission.title}" requires some adjustments. Please check the feedback and resubmit.`
 
         return {
           userId: result.submission.creatorId,
@@ -211,28 +220,90 @@ export async function POST(request: NextRequest) {
     }
 
     // Log and verify asset IP IDs for bulk approved submissions
-    if (action === 'approve' && updatedSubmissions.length > 0) {
-      console.log(`🎉 BULK SUBMISSIONS APPROVED - Processing ${updatedSubmissions.length} submissions for asset IP IDs:`)
-      
+    if (action === "approve" && updatedSubmissions.length > 0) {
+      console.log(
+        `🎉 BULK SUBMISSIONS APPROVED - Processing ${updatedSubmissions.length} submissions for asset IP IDs:`
+      )
+
       for (const approvedSubmission of updatedSubmissions) {
         try {
-          const assetIpIds = await getSubmissionAssetIpIds(approvedSubmission.id)
-          console.log(`   📋 Submission ${approvedSubmission.id} ("${approvedSubmission.title}"):`, {
-            submissionId: approvedSubmission.id,
-            campaignId: approvedSubmission.campaignId,
-            assetIpIds,
-            totalUniqueIpIds: assetIpIds.length
-          })
-          
+          const assetIpIds = await getSubmissionAssetIpIds(
+            approvedSubmission.id
+          )
+          console.log(
+            `   📋 Submission ${approvedSubmission.id} ("${approvedSubmission.title}"):`,
+            {
+              submissionId: approvedSubmission.id,
+              campaignId: approvedSubmission.campaignId,
+              assetIpIds,
+              totalUniqueIpIds: assetIpIds.length,
+            }
+          )
+
           if (assetIpIds.length === 0) {
-            console.warn(`   ⚠️  WARNING: Approved submission ${approvedSubmission.id} has no asset IP IDs.`)
+            console.warn(
+              `   ⚠️  WARNING: Approved submission ${approvedSubmission.id} has no asset IP IDs.`
+            )
           }
         } catch (error) {
-          console.error(`   ❌ ERROR: Failed to retrieve asset IP IDs for submission ${approvedSubmission.id}:`, error)
+          console.error(
+            `   ❌ ERROR: Failed to retrieve asset IP IDs for submission ${approvedSubmission.id}:`,
+            error
+          )
         }
       }
-      
-      console.log(`🎉 BULK APPROVAL COMPLETE - Processed ${updatedSubmissions.length} submissions at ${new Date().toISOString()}`)
+
+      console.log(
+        `🎉 BULK APPROVAL COMPLETE - Processed ${updatedSubmissions.length} submissions at ${new Date().toISOString()}`
+      )
+
+      // Register approved submissions as derivative IP assets on Story Protocol
+      console.log(
+        `🚀 [BULK] Starting Story Protocol registration for ${updatedSubmissions.length} approved submissions...`
+      )
+
+      for (const approvedSubmission of updatedSubmissions) {
+        try {
+          console.log(
+            `🚀 [BULK] Registering submission ${approvedSubmission.id} ("${approvedSubmission.title}")...`
+          )
+
+          const {registerApprovedSubmission} = await import(
+            "@/lib/services/story-protocol"
+          )
+          const storyResult = await registerApprovedSubmission(
+            approvedSubmission.id
+          )
+
+          if (storyResult.success) {
+            console.log(
+              `✅ [BULK] Successfully registered submission ${approvedSubmission.id} as derivative IP asset:`,
+              {
+                submissionTitle: approvedSubmission.title,
+                ipId: storyResult.ipId,
+                txHash: storyResult.txHash,
+                explorer: `https://explorer.story.foundation/ipa/${storyResult.ipId}`,
+              }
+            )
+          } else {
+            console.error(
+              `❌ [BULK] Failed to register submission ${approvedSubmission.id} on Story Protocol:`,
+              storyResult.error
+            )
+            // Continue with other submissions even if one fails
+          }
+        } catch (storyError) {
+          console.error(
+            `❌ [BULK] Error during Story Protocol registration for submission ${approvedSubmission.id}:`,
+            storyError
+          )
+          // Continue with other submissions even if one fails
+        }
+      }
+
+      console.log(
+        `🎉 [BULK] Story Protocol registration complete for all ${updatedSubmissions.length} submissions`
+      )
     }
 
     // Calculate results summary
@@ -251,12 +322,11 @@ export async function POST(request: NextRequest) {
       processedSubmissions: updatedSubmissions.map(sub => sub.id),
       reviews: reviewRecords.map(review => review.id),
     })
-
   } catch (error) {
-    console.error('Failed to bulk review submissions:', error)
+    console.error("Failed to bulk review submissions:", error)
     return NextResponse.json(
-      { error: "Failed to process bulk review" },
-      { status: 500 }
+      {error: "Failed to process bulk review"},
+      {status: 500}
     )
   }
 }

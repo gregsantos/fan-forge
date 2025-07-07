@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
-import { db, submissions, reviews, users, auditLogs, notifications } from "@/db"
-import { eq, and } from "drizzle-orm"
-import { createServerClient } from '@supabase/ssr'
-import { ensureUserExists } from '@/lib/auth-utils'
-import { getSubmissionAssetIpIds } from "@/lib/data/submissions"
+import {NextRequest, NextResponse} from "next/server"
+import {db, submissions, reviews, users, auditLogs, notifications} from "@/db"
+import {eq, and} from "drizzle-orm"
+import {createServerClient} from "@supabase/ssr"
+import {ensureUserExists} from "@/lib/auth-utils"
+import {getSubmissionAssetIpIds} from "@/lib/data/submissions"
 
 async function getCurrentUser(request: NextRequest) {
   const supabase = createServerClient(
@@ -12,64 +12,71 @@ async function getCurrentUser(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.headers.get('cookie')?.split(';').map(cookie => {
-            const [name, value] = cookie.trim().split('=')
-            return { name, value }
-          }) || []
+          return (
+            request.headers
+              .get("cookie")
+              ?.split(";")
+              .map(cookie => {
+                const [name, value] = cookie.trim().split("=")
+                return {name, value}
+              }) || []
+          )
         },
         setAll() {}, // Not needed for read operations
       },
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-  
+  const {
+    data: {user},
+  } = await supabase.auth.getUser()
+
   // Ensure user exists in our database if authenticated
   if (user) {
     await ensureUserExists(user)
   }
-  
+
   return user
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  {params}: {params: {id: string}}
 ) {
   try {
     // Get current user
     const user = await getCurrentUser(request)
     if (!user) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        {error: "Authentication required"},
+        {status: 401}
       )
     }
 
     const body = await request.json()
-    const { action, feedback, rating, internalNotes } = body
+    const {action, feedback, rating, internalNotes} = body
 
     // Validate action
-    if (!action || !['approve', 'reject'].includes(action)) {
+    if (!action || !["approve", "reject"].includes(action)) {
       return NextResponse.json(
-        { error: "Invalid action. Must be 'approve' or 'reject'" },
-        { status: 400 }
+        {error: "Invalid action. Must be 'approve' or 'reject'"},
+        {status: 400}
       )
     }
 
     // Require feedback for rejections
-    if (action === 'reject' && !feedback) {
+    if (action === "reject" && !feedback) {
       return NextResponse.json(
-        { error: "Feedback is required when rejecting a submission" },
-        { status: 400 }
+        {error: "Feedback is required when rejecting a submission"},
+        {status: 400}
       )
     }
 
     // Validate rating if provided
     if (rating && (rating < 1 || rating > 5)) {
       return NextResponse.json(
-        { error: "Rating must be between 1 and 5" },
-        { status: 400 }
+        {error: "Rating must be between 1 and 5"},
+        {status: 400}
       )
     }
 
@@ -81,7 +88,7 @@ export async function POST(
           id: users.id,
           email: users.email,
           displayName: users.displayName,
-        }
+        },
       })
       .from(submissions)
       .leftJoin(users, eq(submissions.creatorId, users.id))
@@ -89,23 +96,20 @@ export async function POST(
       .limit(1)
 
     if (submissionResults.length === 0) {
-      return NextResponse.json(
-        { error: "Submission not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({error: "Submission not found"}, {status: 404})
     }
 
-    const { submission, creator } = submissionResults[0]
+    const {submission, creator} = submissionResults[0]
 
     // Check if submission is in pending status
-    if (submission.status !== 'pending') {
+    if (submission.status !== "pending") {
       return NextResponse.json(
-        { error: "Only pending submissions can be reviewed" },
-        { status: 400 }
+        {error: "Only pending submissions can be reviewed"},
+        {status: 400}
       )
     }
 
-    const newStatus = action === 'approve' ? 'approved' : 'rejected'
+    const newStatus = action === "approve" ? "approved" : "rejected"
     const now = new Date()
 
     // Start a transaction to update submission, create review record, and log audit
@@ -118,7 +122,7 @@ export async function POST(
         feedback: feedback || null,
         rating: rating || null,
         updatedAt: now,
-        ...(action === 'approve' ? { isPublic: true } : {}), // Make approved submissions public
+        ...(action === "approve" ? {isPublic: true} : {}), // Make approved submissions public
       })
       .where(eq(submissions.id, params.id))
       .returning()
@@ -137,75 +141,120 @@ export async function POST(
       .returning()
 
     // Create audit log entry
-    await db
-      .insert(auditLogs)
-      .values({
-        userId: user.id,
-        action: `submission_${action}`,
-        entityType: 'submission',
-        entityId: params.id,
-        oldValues: { status: 'pending' },
-        newValues: { 
-          status: newStatus, 
-          reviewedBy: user.id, 
-          reviewedAt: now,
-          feedback: feedback || null,
-          rating: rating || null 
-        },
-        metadata: { 
-          reviewId: reviewRecord.id,
-          creatorId: submission.creatorId 
-        },
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown',
-      })
+    await db.insert(auditLogs).values({
+      userId: user.id,
+      action: `submission_${action}`,
+      entityType: "submission",
+      entityId: params.id,
+      oldValues: {status: "pending"},
+      newValues: {
+        status: newStatus,
+        reviewedBy: user.id,
+        reviewedAt: now,
+        feedback: feedback || null,
+        rating: rating || null,
+      },
+      metadata: {
+        reviewId: reviewRecord.id,
+        creatorId: submission.creatorId,
+      },
+      ipAddress:
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        "unknown",
+      userAgent: request.headers.get("user-agent") || "unknown",
+    })
 
     // Create notification for the creator
     if (creator) {
-      const notificationTitle = action === 'approve' 
-        ? '🎉 Submission Approved!'
-        : '📝 Submission Needs Revision'
-      
-      const notificationMessage = action === 'approve'
-        ? `Your submission "${submission.title}" has been approved and is now live!`
-        : `Your submission "${submission.title}" requires some adjustments. Please check the feedback and resubmit.`
+      const notificationTitle =
+        action === "approve"
+          ? "🎉 Submission Approved!"
+          : "📝 Submission Needs Revision"
 
-      await db
-        .insert(notifications)
-        .values({
-          userId: submission.creatorId,
-          type: `submission_${action}`,
-          title: notificationTitle,
-          message: notificationMessage,
-          data: {
-            submissionId: params.id,
-            submissionTitle: submission.title,
-            campaignId: submission.campaignId,
-            feedback: feedback || null,
-            rating: rating || null,
-          },
-        })
-    }
+      const notificationMessage =
+        action === "approve"
+          ? `Your submission "${submission.title}" has been approved and is now live!`
+          : `Your submission "${submission.title}" requires some adjustments. Please check the feedback and resubmit.`
 
-    // Log and verify asset IP IDs for approved submissions
-    if (action === 'approve') {
-      try {
-        const assetIpIds = await getSubmissionAssetIpIds(params.id)
-        console.log(`🎉 SUBMISSION APPROVED (via review) - Asset IP IDs for submission ${params.id}:`, {
+      await db.insert(notifications).values({
+        userId: submission.creatorId,
+        type: `submission_${action}`,
+        title: notificationTitle,
+        message: notificationMessage,
+        data: {
           submissionId: params.id,
           submissionTitle: submission.title,
           campaignId: submission.campaignId,
-          assetIpIds,
-          totalUniqueIpIds: assetIpIds.length,
-          reviewerId: user.id,
-          timestamp: new Date().toISOString()
-        })
-        
+          feedback: feedback || null,
+          rating: rating || null,
+        },
+      })
+    }
+
+    // Log and verify asset IP IDs for approved submissions
+    if (action === "approve") {
+      try {
+        const assetIpIds = await getSubmissionAssetIpIds(params.id)
+        console.log(
+          `🎉 SUBMISSION APPROVED (via review) - Asset IP IDs for submission ${params.id}:`,
+          {
+            submissionId: params.id,
+            submissionTitle: submission.title,
+            campaignId: submission.campaignId,
+            assetIpIds,
+            totalUniqueIpIds: assetIpIds.length,
+            reviewerId: user.id,
+            timestamp: new Date().toISOString(),
+          }
+        )
+
         if (assetIpIds.length === 0) {
-          console.warn(`⚠️  WARNING: Approved submission ${params.id} has no asset IP IDs. This may indicate missing asset relationships.`)
+          console.warn(
+            `⚠️  WARNING: Approved submission ${params.id} has no asset IP IDs. This may indicate missing asset relationships.`
+          )
         }
       } catch (error) {
-        console.error(`❌ ERROR: Failed to retrieve asset IP IDs for approved submission ${params.id}:`, error)
+        console.error(
+          `❌ ERROR: Failed to retrieve asset IP IDs for approved submission ${params.id}:`,
+          error
+        )
+      }
+
+      // Automatically register as derivative IP asset on Story Protocol
+      console.log(
+        `🚀 Starting automatic Story Protocol registration for approved submission ${params.id}`
+      )
+
+      try {
+        const {registerApprovedSubmission} = await import(
+          "@/lib/services/story-protocol"
+        )
+        const storyResult = await registerApprovedSubmission(params.id)
+
+        if (storyResult.success) {
+          console.log(
+            `✅ Successfully registered submission ${params.id} as derivative IP asset:`,
+            {
+              submissionTitle: submission.title,
+              ipId: storyResult.ipId,
+              txHash: storyResult.txHash,
+              explorer: `https://explorer.story.foundation/ipa/${storyResult.ipId}`,
+            }
+          )
+        } else {
+          console.error(
+            `❌ Failed to register submission ${params.id} on Story Protocol:`,
+            storyResult.error
+          )
+          // Continue with approval even if Story Protocol registration fails
+        }
+      } catch (storyError) {
+        console.error(
+          `❌ Error during Story Protocol registration for submission ${params.id}:`,
+          storyError
+        )
+        // Continue with approval even if Story Protocol registration fails
       }
     }
 
@@ -215,28 +264,24 @@ export async function POST(
       review: reviewRecord,
       message: `Submission ${action}d successfully`,
     })
-
   } catch (error) {
-    console.error('Failed to review submission:', error)
-    return NextResponse.json(
-      { error: "Failed to process review" },
-      { status: 500 }
-    )
+    console.error("Failed to review submission:", error)
+    return NextResponse.json({error: "Failed to process review"}, {status: 500})
   }
 }
 
 // GET endpoint to fetch review history for a submission
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  {params}: {params: {id: string}}
 ) {
   try {
     // Get current user for authorization
     const user = await getCurrentUser(request)
     if (!user) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        {error: "Authentication required"},
+        {status: 401}
       )
     }
 
@@ -248,7 +293,7 @@ export async function GET(
           id: users.id,
           displayName: users.displayName,
           email: users.email,
-        }
+        },
       })
       .from(reviews)
       .leftJoin(users, eq(reviews.reviewerId, users.id))
@@ -259,14 +304,13 @@ export async function GET(
       reviews: reviewHistory.map(r => ({
         ...r.review,
         reviewer: r.reviewer,
-      }))
+      })),
     })
-
   } catch (error) {
-    console.error('Failed to fetch review history:', error)
+    console.error("Failed to fetch review history:", error)
     return NextResponse.json(
-      { error: "Failed to fetch review history" },
-      { status: 500 }
+      {error: "Failed to fetch review history"},
+      {status: 500}
     )
   }
 }
