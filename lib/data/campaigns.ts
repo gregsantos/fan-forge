@@ -24,12 +24,26 @@ import {
   gte,
   lte,
   isNotNull,
+  isNull,
 } from "drizzle-orm"
 import {alias} from "drizzle-orm/pg-core"
+import {getCurrentUser, getUserBrandIds} from "@/lib/auth-utils"
 
 export async function getDashboardData() {
   try {
-    // Fetch recent campaigns
+    // Get current user to filter by their accessible brands
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error("User not authenticated")
+    }
+
+    // Get user's accessible brand IDs
+    const userBrandIds = await getUserBrandIds(currentUser.id)
+    if (userBrandIds.length === 0) {
+      throw new Error("User has no brand access")
+    }
+
+    // Fetch recent campaigns (filtered by user's brands)
     const recentCampaigns = await db
       .select({
         campaign: campaigns,
@@ -40,6 +54,7 @@ export async function getDashboardData() {
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
       .leftJoin(ipKits, eq(campaigns.ipKitId, ipKits.id))
       .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
+      .where(inArray(campaigns.brandId, userBrandIds))
       .groupBy(campaigns.id, brands.id)
       .orderBy(desc(campaigns.createdAt))
       .limit(10)
@@ -63,7 +78,7 @@ export async function getDashboardData() {
       submissionCounts.map(sc => [sc.campaignId, sc.submissionCount])
     )
 
-    // Fetch recent submissions (pending only for dashboard)
+    // Fetch recent submissions (pending only for dashboard, filtered by user's brands)
     const recentSubmissions = await db
       .select({
         submission: submissions,
@@ -71,11 +86,16 @@ export async function getDashboardData() {
       })
       .from(submissions)
       .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
-      .where(eq(submissions.status, "pending"))
+      .where(
+        and(
+          eq(submissions.status, "pending"),
+          inArray(campaigns.brandId, userBrandIds)
+        )
+      )
       .orderBy(desc(submissions.createdAt))
       .limit(10)
 
-    // Fetch recent IP kits
+    // Fetch recent IP kits (filtered by user's brands)
     const recentIpKits = await db
       .select({
         ipKit: ipKits,
@@ -85,11 +105,12 @@ export async function getDashboardData() {
       .from(ipKits)
       .leftJoin(brands, eq(ipKits.brandId, brands.id))
       .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
+      .where(inArray(ipKits.brandId, userBrandIds))
       .groupBy(ipKits.id, brands.id)
       .orderBy(desc(ipKits.createdAt))
       .limit(10)
 
-    // Fetch recent assets
+    // Fetch recent assets (filtered by user's brands)
     const recentAssets = await db
       .select({
         asset: assets,
@@ -97,23 +118,44 @@ export async function getDashboardData() {
       })
       .from(assets)
       .leftJoin(ipKits, eq(assets.ipKitId, ipKits.id))
+      .where(
+        or(
+          inArray(ipKits.brandId, userBrandIds),
+          isNull(assets.ipKitId) // Include global assets
+        )
+      )
       .orderBy(desc(assets.createdAt))
       .limit(10)
 
-    // Get IP kit statistics
-    const [totalIpKits] = await db.select({count: count()}).from(ipKits)
+    // Get IP kit statistics (filtered by user's brands)
+    const [totalIpKits] = await db
+      .select({count: count()})
+      .from(ipKits)
+      .where(inArray(ipKits.brandId, userBrandIds))
 
     const [publishedIpKits] = await db
       .select({count: count()})
       .from(ipKits)
-      .where(eq(ipKits.isPublished, true))
+      .where(
+        and(
+          eq(ipKits.isPublished, true),
+          inArray(ipKits.brandId, userBrandIds)
+        )
+      )
 
-    // Get asset statistics
+    // Get asset statistics (filtered by user's brands)
     const [assetStats] = await db
       .select({
         total: count(),
       })
       .from(assets)
+      .leftJoin(ipKits, eq(assets.ipKitId, ipKits.id))
+      .where(
+        or(
+          inArray(ipKits.brandId, userBrandIds),
+          isNull(assets.ipKitId) // Include global assets
+        )
+      )
 
     return {
       campaigns: recentCampaigns.map(result => ({
