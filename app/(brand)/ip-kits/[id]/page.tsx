@@ -251,7 +251,7 @@ export default function IpKitDetailPage() {
           <Button
             variant='outline'
             onClick={handlePublishToggle}
-            className='border-orange-300/30 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:border-orange-400/50 transition-all'
+            className='hover:bg-orange-100 hover:border-orange-400 hover:text-orange-800 dark:hover:bg-orange-950/40 dark:hover:text-orange-200 transition-all'
           >
             {ipKit.isPublished ? (
               <Eye className='mr-2 h-4 w-4' />
@@ -263,7 +263,7 @@ export default function IpKitDetailPage() {
           <Link href={`/ip-kits/${ipKit.id}/edit`}>
             <Button
               variant='outline'
-              className='border-blue-300/30 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:border-blue-400/50 transition-all'
+              className='hover:bg-blue-100 hover:border-blue-400 hover:text-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-200 transition-all'
             >
               <Edit className='mr-2 h-4 w-4' />
               Edit
@@ -548,7 +548,7 @@ export default function IpKitDetailPage() {
                   <Link href={`/ip-kits/${ipKit.id}/edit`}>
                     <Button
                       variant='outline'
-                      className='border-primary/30 hover:bg-primary/10 dark:hover:bg-primary/10 hover:border-primary/50 hover:text-primary-foreground transition-all'
+                      className='hover:bg-primary hover:border-primary hover:text-primary-foreground transition-all'
                     >
                       <Edit className='mr-2 h-4 w-4' />
                       Edit
@@ -568,7 +568,7 @@ export default function IpKitDetailPage() {
                   <Button
                     variant='outline'
                     onClick={handlePublishToggle}
-                    className='border-secondary/30 hover:bg-secondary hover:text-secondary-foreground hover:border-secondary/50 transition-all'
+                    className='hover:bg-secondary hover:border-secondary hover:text-secondary-foreground transition-all'
                   >
                     {ipKit.isPublished ? "Unpublish" : "Publish"}
                   </Button>
