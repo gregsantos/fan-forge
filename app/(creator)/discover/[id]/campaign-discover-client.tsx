@@ -30,7 +30,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import NextImage from "next/image"
-import { StoryProtocolStatus } from "@/components/shared/story-protocol-link"
+import {StoryProtocolStatus} from "@/components/shared/story-protocol-link"
 
 interface CampaignDiscoverClientProps {
   campaign: any
@@ -78,13 +78,13 @@ export function CampaignDiscoverClient({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "default"
+        return "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
       case "draft":
-        return "secondary"
+        return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
       case "closed":
-        return "outline"
+        return "bg-gradient-to-r from-red-500 to-rose-500 text-white border-transparent"
       default:
-        return "secondary"
+        return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
     }
   }
 
@@ -125,19 +125,21 @@ export function CampaignDiscoverClient({
                 fill
                 className='object-cover'
                 priority
-                sizes="100vw"
+                sizes='100vw'
               />
               {/* Gradient Overlay */}
               <div className='absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20' />
             </>
           ) : (
             /* Brand-themed gradient fallback */
-            <div className={cn(
-              "w-full h-full",
-              campaign.featured 
-                ? "bg-gradient-to-br from-amber-600 via-orange-500 to-red-500"
-                : "bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700"
-            )} />
+            <div
+              className={cn(
+                "w-full h-full",
+                campaign.featured
+                  ? "bg-gradient-to-br from-amber-600 via-orange-500 to-red-500"
+                  : "bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700"
+              )}
+            />
           )}
           {campaign.featured && (
             <div className='absolute inset-0 bg-gradient-to-t from-amber-900/60 via-amber-600/20 to-yellow-400/10' />
@@ -232,7 +234,6 @@ export function CampaignDiscoverClient({
             </div>
           </div>
         </div>
-
       </div>
 
       <div className='container mx-auto px-4 py-8 max-w-7xl'>
@@ -361,7 +362,7 @@ export function CampaignDiscoverClient({
                             alt={submission.title}
                             fill
                             className='object-cover group-hover:scale-105 transition-transform'
-                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            sizes='(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw'
                           />
                         </div>
                         <div className='space-y-1'>
@@ -383,7 +384,7 @@ export function CampaignDiscoverClient({
                               </Badge>
                             )}
                           </div>
-                          <StoryProtocolStatus 
+                          <StoryProtocolStatus
                             ipId={submission.storyProtocolIpId}
                             submissionStatus={submission.status}
                           />
@@ -434,7 +435,7 @@ export function CampaignDiscoverClient({
                             alt={asset.filename}
                             fill
                             className='object-cover group-hover:scale-105 transition-transform'
-                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                            sizes='(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw'
                           />
                         </div>
                         <div className='mt-2 space-y-1'>
@@ -476,7 +477,9 @@ export function CampaignDiscoverClient({
                     <span className='text-sm text-muted-foreground'>
                       Status
                     </span>
-                    <Badge variant={getStatusColor(campaign.status)}>
+                    <Badge
+                      className={`font-medium shadow-sm ${getStatusColor(campaign.status)}`}
+                    >
                       {campaign.status.charAt(0).toUpperCase() +
                         campaign.status.slice(1)}
                     </Badge>
