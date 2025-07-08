@@ -238,7 +238,7 @@ export async function getCampaigns(
     const limit = limitParam ? parseInt(limitParam) : 12
     const offset = (parseInt(page) - 1) * limit
 
-    // Get current user to filter by their accessible brands
+    // Get current user to determine access level
     const currentUser = await getCurrentUser()
     if (!currentUser) {
       throw new Error("User not authenticated")
@@ -246,21 +246,18 @@ export async function getCampaigns(
 
     // Get user's accessible brand IDs
     const userBrandIds = await getUserBrandIds(currentUser.id)
-    if (userBrandIds.length === 0) {
-      // Return empty result set for users with no brand access
-      return {
-        campaigns: [],
-        pagination: {
-          page: parseInt(page),
-          limit,
-          total: 0,
-          pages: 0,
-        },
-      }
-    }
-
+    
     // Build where conditions
-    const whereConditions = [inArray(campaigns.brandId, userBrandIds)]
+    const whereConditions = []
+    
+    // For creators with no brand access, show all active campaigns
+    // For brand admins, show only their brand campaigns
+    if (userBrandIds.length > 0) {
+      whereConditions.push(inArray(campaigns.brandId, userBrandIds))
+    } else {
+      // Show all active campaigns for creators (no brand filtering)
+      whereConditions.push(eq(campaigns.status, "active"))
+    }
 
     if (featured === "true") {
       const featuredCondition = and(
@@ -297,7 +294,7 @@ export async function getCampaigns(
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
       .leftJoin(ipKits, eq(campaigns.ipKitId, ipKits.id))
       .leftJoin(assetIpKits, eq(ipKits.id, assetIpKits.ipKitId))
-      .where(and(...whereConditions))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .groupBy(campaigns.id, brands.id)
       .orderBy(desc(campaigns.createdAt))
       .limit(limit)
@@ -326,7 +323,7 @@ export async function getCampaigns(
       .select({count: count()})
       .from(campaigns)
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
-      .where(and(...whereConditions))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
 
     return {
       campaigns: campaignResults.map(result => ({
