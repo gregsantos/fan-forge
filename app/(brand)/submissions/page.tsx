@@ -7,12 +7,25 @@ import {
 } from "@/components/ui/card"
 import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
-import {Eye, ThumbsUp, ThumbsDown, MessageSquare, FileImage} from "lucide-react"
+import {
+  Eye,
+  ThumbsUp,
+  ThumbsDown,
+  MessageSquare,
+  FileImage,
+  Plus,
+} from "lucide-react"
 import Link from "next/link"
 import {SubmissionsFilters} from "./submissions-filters"
 import {SubmissionQueueContainer} from "./submission-queue-container"
 import {createSearchParams} from "@/lib/utils"
-import {getSubmissionQueue, getReviewStats} from "@/lib/data/campaigns"
+import {
+  getSubmissionQueue,
+  getReviewStats,
+  getCampaigns,
+} from "@/lib/data/campaigns"
+import {getCurrentUser, getUserWithRoles} from "@/lib/auth-utils"
+import OnboardingModal from "@/components/shared/onboarding-modal"
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -66,13 +79,22 @@ export default async function BrandSubmissionsPage({
   }
 
   try {
-    // Fetch submissions queue data and review statistics
-    const [queueData, reviewStats] = await Promise.all([
+    // Get current user and check role
+    const user = await getCurrentUser()
+    const userWithRoles = user ? await getUserWithRoles(user.id) : null
+    const isBrandAdmin = userWithRoles?.roles?.some(
+      (r: any) => r.role.name === "brand_admin"
+    )
+
+    // Fetch submissions queue data, review statistics, and campaigns
+    const [queueData, reviewStats, campaignsData] = await Promise.all([
       getSubmissionQueue(params),
       getReviewStats(),
+      getCampaigns({limit: "1"}), // Just check if any campaigns exist
     ])
 
     const {submissions, pagination} = queueData
+    const hasCampaigns = campaignsData.campaigns.length > 0
 
     return (
       <div className='container mx-auto p-6 space-y-8'>
@@ -187,10 +209,28 @@ export default async function BrandSubmissionsPage({
             <FileImage className='h-16 w-16 text-muted-foreground mx-auto mb-4' />
             <h3 className='text-lg font-semibold mb-2'>No submissions found</h3>
             <p className='text-muted-foreground mb-4'>
-              {params.search || params.status !== "all"
-                ? "Try adjusting your filters to see more results."
-                : "No submissions have been made yet."}
+              {!hasCampaigns
+                ? "You need to create a campaign first to start receiving submissions from creators."
+                : params.search || params.status !== "all"
+                  ? "Try adjusting your filters to see more results."
+                  : "No submissions have been made yet. Share your campaigns with creators to get started."}
             </p>
+            {!hasCampaigns &&
+              (isBrandAdmin ? (
+                <Link href='/campaigns/new'>
+                  <Button variant='gradient'>
+                    <Plus className='mr-2 h-4 w-4' />
+                    Create Your First Campaign
+                  </Button>
+                </Link>
+              ) : (
+                <Link href='/dashboard'>
+                  <Button variant='gradient'>
+                    <Plus className='mr-2 h-4 w-4' />
+                    Go to Dashboard to Get Started
+                  </Button>
+                </Link>
+              ))}
           </div>
         )}
 

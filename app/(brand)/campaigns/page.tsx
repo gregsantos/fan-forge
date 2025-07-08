@@ -20,6 +20,8 @@ import Link from "next/link"
 import {CampaignFilters} from "./campaign-filters"
 import {createSearchParams} from "@/lib/utils"
 import {getCampaigns} from "@/lib/data/campaigns"
+import {getCurrentUser, getUserWithRoles} from "@/lib/auth-utils"
+import OnboardingModal from "@/components/shared/onboarding-modal"
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -66,8 +68,14 @@ export default async function BrandCampaignsPage({
       : searchParams.page || "1",
   }
 
+  // Get current user and check role
+  const user = await getCurrentUser()
+  const userWithRoles = user ? await getUserWithRoles(user.id) : null
+  const isBrandAdmin = userWithRoles?.roles?.some((r: any) => r.role.name === "brand_admin")
+
   const data = await getCampaigns(params)
   const {campaigns, pagination} = data
+  const hasCampaigns = campaigns.length > 0
 
   return (
     <div className='container mx-auto p-6 space-y-8'>
@@ -188,14 +196,27 @@ export default async function BrandCampaignsPage({
           <p className='text-muted-foreground mb-4'>
             {params.search || params.status !== "all"
               ? "Try adjusting your filters to see more results."
-              : "Get started by creating your first campaign."}
+              : "Get started by creating your first campaign to begin collaborating with creators."}
           </p>
-          <Link href='/campaigns/new'>
-            <Button variant='gradient'>
-              <Plus className='mr-2 h-4 w-4' />
-              Create Campaign
-            </Button>
-          </Link>
+          {!(params.search || params.status !== "all") && (
+            <div className="space-y-3">
+              {isBrandAdmin ? (
+                <Link href='/campaigns/new'>
+                  <Button variant='gradient'>
+                    <Plus className='mr-2 h-4 w-4' />
+                    Create Your First Campaign
+                  </Button>
+                </Link>
+              ) : (
+                <Link href='/dashboard'>
+                  <Button variant='gradient'>
+                    <Plus className='mr-2 h-4 w-4' />
+                    Go to Dashboard to Get Started
+                  </Button>
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       )}
 
