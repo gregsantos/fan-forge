@@ -71,6 +71,18 @@ interface EditCampaignClientProps {
   ipKits: IPKit[]
 }
 
+// Helper function to convert Date to datetime-local format
+function dateToDatetimeLocal(date: Date | null | undefined): string {
+  if (!date) return ""
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
 export default function EditCampaignClient({
   campaign,
   ipKits,
@@ -88,6 +100,24 @@ export default function EditCampaignClient({
     formState: {errors, isDirty},
   } = useForm<CampaignFormData>({
     resolver: zodResolver(campaignSchema),
+    defaultValues: {
+      title: campaign.title,
+      description: campaign.description,
+      guidelines: campaign.guidelines,
+      ipKitId: campaign.ipKitId || "",
+      status: campaign.status,
+      startDate: dateToDatetimeLocal(campaign.startDate),
+      endDate: dateToDatetimeLocal(campaign.endDate),
+      maxSubmissions: campaign.maxSubmissions || undefined,
+      rewardAmount: campaign.rewardAmount || undefined,
+      rewardCurrency: campaign.rewardCurrency as
+        | "USD"
+        | "EUR"
+        | "GBP"
+        | "CAD"
+        | "AUD",
+      briefDocument: campaign.briefDocument || undefined,
+    },
   })
 
   // Initialize form with campaign data
@@ -98,8 +128,8 @@ export default function EditCampaignClient({
       guidelines: campaign.guidelines,
       ipKitId: campaign.ipKitId || "",
       status: campaign.status,
-      startDate: campaign.startDate || undefined,
-      endDate: campaign.endDate || undefined,
+      startDate: dateToDatetimeLocal(campaign.startDate),
+      endDate: dateToDatetimeLocal(campaign.endDate),
       maxSubmissions: campaign.maxSubmissions || undefined,
       rewardAmount: campaign.rewardAmount || undefined,
       rewardCurrency: campaign.rewardCurrency as
@@ -124,8 +154,8 @@ export default function EditCampaignClient({
           },
           body: JSON.stringify({
             ...data,
-            startDate: data.startDate?.toISOString(),
-            endDate: data.endDate?.toISOString(),
+            startDate: data.startDate ? new Date(data.startDate).toISOString() : null,
+            endDate: data.endDate ? new Date(data.endDate).toISOString() : null,
           }),
         })
 
@@ -181,8 +211,8 @@ export default function EditCampaignClient({
         body: JSON.stringify({
           ...formData,
           status: newStatus,
-          startDate: formData.startDate?.toISOString(),
-          endDate: formData.endDate?.toISOString(),
+          startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+          endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
         }),
       })
 
@@ -392,9 +422,7 @@ export default function EditCampaignClient({
                     <Input
                       id='startDate'
                       type='datetime-local'
-                      {...register("startDate", {
-                        valueAsDate: true,
-                      })}
+                      {...register("startDate")}
                     />
                     {errors.startDate && (
                       <p className='text-sm text-destructive'>
@@ -408,9 +436,7 @@ export default function EditCampaignClient({
                     <Input
                       id='endDate'
                       type='datetime-local'
-                      {...register("endDate", {
-                        valueAsDate: true,
-                      })}
+                      {...register("endDate")}
                     />
                     {errors.endDate && (
                       <p className='text-sm text-destructive'>

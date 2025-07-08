@@ -1,42 +1,6 @@
-import { getCampaignById } from "@/lib/data/campaigns"
+import { getCampaignById, getIpKits } from "@/lib/data/campaigns"
 import { notFound } from "next/navigation"
 import EditCampaignClient from "./edit-campaign-client"
-import { db, ipKits } from "@/db"
-import { desc, count, eq } from "drizzle-orm"
-
-interface IPKit {
-  id: string
-  name: string
-  description: string
-  assetCount: number
-  isPublished: boolean
-}
-
-async function getIpKits(): Promise<IPKit[]> {
-  try {
-    const ipKitResults = await db
-      .select({
-        ipKit: ipKits,
-        assetCount: count(),
-      })
-      .from(ipKits)
-      .where(eq(ipKits.isPublished, true))
-      .groupBy(ipKits.id)
-      .orderBy(desc(ipKits.createdAt))
-      .limit(100)
-
-    return ipKitResults.map(result => ({
-      id: result.ipKit.id,
-      name: result.ipKit.name,
-      description: result.ipKit.description || "",
-      assetCount: result.assetCount || 0,
-      isPublished: result.ipKit.isPublished ?? false,
-    }))
-  } catch (error) {
-    console.error("Failed to fetch IP kits:", error)
-    return []
-  }
-}
 
 export default async function EditCampaignPage({
   params,
@@ -44,9 +8,9 @@ export default async function EditCampaignPage({
   params: { id: string }
 }) {
   // Fetch campaign data and IP kits in parallel
-  const [campaignData, ipKitsData] = await Promise.all([
+  const [campaignData, ipKitsResponse] = await Promise.all([
     getCampaignById(params.id),
-    getIpKits(),
+    getIpKits({ published: "true" }),
   ])
 
   if (!campaignData) {
@@ -71,6 +35,15 @@ export default async function EditCampaignPage({
     createdAt: campaignData.createdAt,
     updatedAt: campaignData.updatedAt,
   }
+
+  // Convert the response format to match the expected client component format
+  const ipKitsData = ipKitsResponse.ipKits.map(ipKit => ({
+    id: ipKit.id,
+    name: ipKit.name,
+    description: ipKit.description || "",
+    assetCount: ipKit.asset_count,
+    isPublished: ipKit.published ?? false,
+  }))
 
   return (
     <EditCampaignClient 

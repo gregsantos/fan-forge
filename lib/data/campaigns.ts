@@ -58,12 +58,12 @@ export async function getDashboardData() {
       .select({
         campaign: campaigns,
         brand: brands,
-        assetCount: count(assets.id),
+        assetCount: count(assetIpKits.assetId),
       })
       .from(campaigns)
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
       .leftJoin(ipKits, eq(campaigns.ipKitId, ipKits.id))
-      .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
+      .leftJoin(assetIpKits, eq(ipKits.id, assetIpKits.ipKitId))
       .where(inArray(campaigns.brandId, userBrandIds))
       .groupBy(campaigns.id, brands.id)
       .orderBy(desc(campaigns.createdAt))
@@ -105,11 +105,11 @@ export async function getDashboardData() {
       .select({
         ipKit: ipKits,
         brand: brands,
-        assetCount: count(assets.id),
+        assetCount: count(assetIpKits.assetId),
       })
       .from(ipKits)
       .leftJoin(brands, eq(ipKits.brandId, brands.id))
-      .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
+      .leftJoin(assetIpKits, eq(ipKits.id, assetIpKits.ipKitId))
       .where(inArray(ipKits.brandId, userBrandIds))
       .groupBy(ipKits.id, brands.id)
       .orderBy(desc(ipKits.createdAt))
@@ -291,12 +291,12 @@ export async function getCampaigns(
       .select({
         campaign: campaigns,
         brand: brands,
-        assetCount: count(assets.id),
+        assetCount: count(assetIpKits.assetId),
       })
       .from(campaigns)
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
       .leftJoin(ipKits, eq(campaigns.ipKitId, ipKits.id))
-      .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
+      .leftJoin(assetIpKits, eq(ipKits.id, assetIpKits.ipKitId))
       .where(and(...whereConditions))
       .groupBy(campaigns.id, brands.id)
       .orderBy(desc(campaigns.createdAt))
@@ -481,11 +481,11 @@ export async function getIpKits(
       .select({
         ipKit: ipKits,
         brand: brands,
-        assetCount: count(assets.id),
+        assetCount: count(assetIpKits.assetId),
       })
       .from(ipKits)
       .leftJoin(brands, eq(ipKits.brandId, brands.id))
-      .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
+      .leftJoin(assetIpKits, eq(ipKits.id, assetIpKits.ipKitId))
       .where(and(...whereConditions))
       .groupBy(ipKits.id, brands.id)
       .orderBy(desc(ipKits.createdAt))
@@ -688,9 +688,21 @@ export async function getCampaignById(id: string) {
     // Get assets for the campaign's IP kit (only if campaign has an IP kit)
     const campaignAssets = result.ipKit
       ? await db
-          .select()
+          .select({
+            id: assets.id,
+            filename: assets.filename,
+            originalFilename: assets.originalFilename,
+            url: assets.url,
+            thumbnailUrl: assets.thumbnailUrl,
+            category: assets.category,
+            tags: assets.tags,
+            metadata: assets.metadata,
+            ipId: assets.ipId,
+            createdAt: assets.createdAt,
+          })
           .from(assets)
-          .where(eq(assets.ipKitId, result.ipKit.id))
+          .innerJoin(assetIpKits, eq(assets.id, assetIpKits.assetId))
+          .where(eq(assetIpKits.ipKitId, result.ipKit.id))
       : []
 
     return {

@@ -63,8 +63,8 @@ export default function NewCampaignPage() {
           ...data,
           imageUrl: uploadedImage?.url || undefined,
           thumbnailUrl: uploadedImage?.thumbnailUrl || undefined,
-          startDate: data.startDate?.toISOString(),
-          endDate: data.endDate?.toISOString(),
+          startDate: data.startDate ? new Date(data.startDate).toISOString() : null,
+          endDate: data.endDate ? new Date(data.endDate).toISOString() : null,
         }),
       })
 

@@ -29,8 +29,8 @@ export const campaignSchema = z.object({
   ipKitId: z.string().optional(),
   imageUrl: z.string().url("Must be a valid URL").optional(),
   thumbnailUrl: z.string().url("Must be a valid URL").optional(),
-  startDate: z.date().optional(),
-  endDate: z.date().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   maxSubmissions: z.number().int().min(1, "Must allow at least 1 submission").optional(),
   rewardAmount: z.number().int().min(0, "Reward amount must be non-negative").optional(),
   rewardCurrency: z.enum(["USD", "EUR", "GBP", "CAD", "AUD"]).default("USD"),
@@ -38,7 +38,7 @@ export const campaignSchema = z.object({
   status: z.enum(["draft", "active", "paused", "closed"]).default("draft"),
 }).refine((data) => {
   if (data.startDate && data.endDate) {
-    return data.endDate > data.startDate;
+    return new Date(data.endDate) > new Date(data.startDate);
   }
   return true;
 }, {
@@ -46,7 +46,7 @@ export const campaignSchema = z.object({
   path: ["endDate"],
 }).refine((data) => {
   if (data.endDate) {
-    return data.endDate > new Date();
+    return new Date(data.endDate) > new Date();
   }
   return true;
 }, {
