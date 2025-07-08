@@ -1,36 +1,43 @@
 "use client"
 
-import { usePathname } from "next/navigation"
-import { useAuth } from "@/lib/contexts/auth"
-import { Navigation } from "@/components/shared/navigation"
+import {usePathname} from "next/navigation"
+import {useAuth} from "@/lib/contexts/auth"
+import {Navigation} from "@/components/shared/navigation"
 
 interface ConditionalLayoutProps {
   children: React.ReactNode
 }
 
-export function ConditionalLayout({ children }: ConditionalLayoutProps) {
+export function ConditionalLayout({children}: ConditionalLayoutProps) {
   const pathname = usePathname()
-  const { user, loading } = useAuth()
+  const {user, loading} = useAuth()
 
   // Define routes where navigation should be hidden for unauthenticated users
   const publicRoutes = [
     "/",
     "/login",
-    "/register", 
+    "/register",
     "/forgot-password",
     "/reset-password",
     "/auth/confirm",
-    "/auth/callback"
+    "/auth/callback",
   ]
 
-  // Check if current route is public and user is not authenticated
+  // Check if current route is public
   const isPublicRoute = publicRoutes.includes(pathname)
-  const shouldHideNavigation = isPublicRoute && !user && !loading
+
+  // Show navigation logic:
+  // - On protected routes: always show navigation (since auth is required anyway)
+  // - On public routes: only show if user is authenticated
+  // - While loading: don't show navigation on public routes to avoid flash
+  const shouldShowNavigation = isPublicRoute ? user && !loading : true
 
   return (
-    <div className="min-h-screen bg-background">
-      {!shouldHideNavigation && <Navigation />}
-      <main id="main-content" className={shouldHideNavigation ? "" : ""}>{children}</main>
+    <div className='min-h-screen bg-background'>
+      {shouldShowNavigation && <Navigation />}
+      <main id='main-content' className={shouldShowNavigation ? "" : ""}>
+        {children}
+      </main>
     </div>
   )
 }
