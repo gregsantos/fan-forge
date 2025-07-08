@@ -241,10 +241,41 @@ export function AssetGrid({
   if (error) {
     return (
       <div className='text-center py-8'>
-        <p className='text-destructive'>{error}</p>
-        <Button onClick={fetchAssets} className='mt-4'>
-          Retry
-        </Button>
+        <FileImage className='mx-auto h-12 w-12 text-muted-foreground mb-4' />
+        <h3 className='text-lg font-medium mb-2'>
+          {error === "Failed to fetch assets" ? "No Assets Found" : "Unable to Load Assets"}
+        </h3>
+        <p className='text-muted-foreground mb-4'>
+          {error === "Failed to fetch assets" 
+            ? "Start building your brand library by uploading your first assets. You can organize them into IP kits and use them in campaigns."
+            : error}
+        </p>
+        <div className='flex flex-col sm:flex-row gap-3 justify-center'>
+          {error === "Failed to fetch assets" ? (
+            <Button onClick={() => {
+              // Switch to upload tab
+              const uploadTab = document.querySelector('[data-value="upload"]') as HTMLElement
+              if (uploadTab) uploadTab.click()
+            }} variant="gradient">
+              <Plus className='mr-2 h-4 w-4' />
+              Upload Your First Assets
+            </Button>
+          ) : (
+            <>
+              <Button onClick={fetchAssets} variant="outline">
+                Try Again
+              </Button>
+              <Button onClick={() => {
+                // Switch to upload tab
+                const uploadTab = document.querySelector('[data-value="upload"]') as HTMLElement
+                if (uploadTab) uploadTab.click()
+              }} variant="gradient">
+                <Plus className='mr-2 h-4 w-4' />
+                Upload Assets
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     )
   }
@@ -291,11 +322,21 @@ export function AssetGrid({
         <div className='text-center py-12'>
           <FileImage className='mx-auto h-12 w-12 text-muted-foreground mb-4' />
           <h3 className='text-lg font-medium mb-2'>No assets found</h3>
-          <p className='text-muted-foreground'>
+          <p className='text-muted-foreground mb-4'>
             {searchQuery || selectedCategory !== "all"
-              ? "Try adjusting your search or filters"
-              : "Upload some assets to get started"}
+              ? "Try adjusting your search or filters to see more results."
+              : "Upload your first assets to start building your brand library and create IP kits for campaigns."}
           </p>
+          {!(searchQuery || selectedCategory !== "all") && (
+            <Button onClick={() => {
+              // Switch to upload tab
+              const uploadTab = document.querySelector('[data-value="upload"]') as HTMLElement
+              if (uploadTab) uploadTab.click()
+            }} variant="gradient">
+              <Plus className='mr-2 h-4 w-4' />
+              Upload Your First Assets
+            </Button>
+          )}
         </div>
       ) : (
         <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'>

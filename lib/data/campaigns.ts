@@ -40,7 +40,17 @@ export async function getDashboardData() {
     // Get user's accessible brand IDs
     const userBrandIds = await getUserBrandIds(currentUser.id)
     if (userBrandIds.length === 0) {
-      throw new Error("User has no brand access")
+      // Return empty dashboard data for users with no brand access
+      return {
+        campaigns: [],
+        submissions: [],
+        ipKits: [],
+        assets: [],
+        stats: {
+          ipKits: {total: 0, published: 0, draft: 0},
+          assets: {total: 0},
+        },
+      }
     }
 
     // Fetch recent campaigns (filtered by user's brands)
@@ -228,26 +238,49 @@ export async function getCampaigns(
     const limit = limitParam ? parseInt(limitParam) : 12
     const offset = (parseInt(page) - 1) * limit
 
+    // Get current user to filter by their accessible brands
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error("User not authenticated")
+    }
+
+    // Get user's accessible brand IDs
+    const userBrandIds = await getUserBrandIds(currentUser.id)
+    if (userBrandIds.length === 0) {
+      // Return empty result set for users with no brand access
+      return {
+        campaigns: [],
+        pagination: {
+          page: parseInt(page),
+          limit,
+          total: 0,
+          pages: 0,
+        },
+      }
+    }
+
     // Build where conditions
-    const whereConditions = []
+    const whereConditions = [inArray(campaigns.brandId, userBrandIds)]
 
     if (featured === "true") {
-      whereConditions.push(
-        and(
-          isNotNull(campaigns.featuredUntil),
-          gte(campaigns.featuredUntil, new Date())
-        )
+      const featuredCondition = and(
+        isNotNull(campaigns.featuredUntil),
+        gte(campaigns.featuredUntil, new Date())
       )
+      if (featuredCondition) {
+        whereConditions.push(featuredCondition)
+      }
     }
 
     if (search) {
-      whereConditions.push(
-        or(
-          ilike(campaigns.title, `%${search}%`),
-          ilike(campaigns.description, `%${search}%`),
-          ilike(brands.name, `%${search}%`)
-        )!
+      const searchCondition = or(
+        ilike(campaigns.title, `%${search}%`),
+        ilike(campaigns.description, `%${search}%`),
+        ilike(brands.name, `%${search}%`)
       )
+      if (searchCondition) {
+        whereConditions.push(searchCondition)
+      }
     }
 
     if (status && status !== "all") {
@@ -264,7 +297,7 @@ export async function getCampaigns(
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
       .leftJoin(ipKits, eq(campaigns.ipKitId, ipKits.id))
       .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .where(and(...whereConditions))
       .groupBy(campaigns.id, brands.id)
       .orderBy(desc(campaigns.createdAt))
       .limit(limit)
@@ -293,7 +326,7 @@ export async function getCampaigns(
       .select({count: count()})
       .from(campaigns)
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .where(and(...whereConditions))
 
     return {
       campaigns: campaignResults.map(result => ({
@@ -333,6 +366,27 @@ export async function getSubmissions(
     const limit = 12
     const offset = (parseInt(page) - 1) * limit
 
+    // Get current user to filter by their accessible brands
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error("User not authenticated")
+    }
+
+    // Get user's accessible brand IDs
+    const userBrandIds = await getUserBrandIds(currentUser.id)
+    if (userBrandIds.length === 0) {
+      // Return empty result set for users with no brand access
+      return {
+        submissions: [],
+        pagination: {
+          page: parseInt(page),
+          limit,
+          total: 0,
+          pages: 0,
+        },
+      }
+    }
+
     const submissionResults = await db
       .select({
         submission: submissions,
@@ -340,12 +394,17 @@ export async function getSubmissions(
       })
       .from(submissions)
       .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
+      .where(inArray(campaigns.brandId, userBrandIds))
       .orderBy(desc(submissions.createdAt))
       .limit(limit)
       .offset(offset)
 
     // Get total count for pagination
-    const [totalResult] = await db.select({count: count()}).from(submissions)
+    const [totalResult] = await db
+      .select({count: count()})
+      .from(submissions)
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
+      .where(inArray(campaigns.brandId, userBrandIds))
 
     return {
       submissions: submissionResults.map(result => ({
@@ -386,8 +445,29 @@ export async function getIpKits(
     const limit = 12
     const offset = (parseInt(page) - 1) * limit
 
+    // Get current user to filter by their accessible brands
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error("User not authenticated")
+    }
+
+    // Get user's accessible brand IDs
+    const userBrandIds = await getUserBrandIds(currentUser.id)
+    if (userBrandIds.length === 0) {
+      // Return empty result set for users with no brand access
+      return {
+        ipKits: [],
+        pagination: {
+          page: parseInt(page),
+          limit,
+          total: 0,
+          pages: 0,
+        },
+      }
+    }
+
     // Build where conditions
-    const whereConditions = []
+    const whereConditions = [inArray(ipKits.brandId, userBrandIds)]
 
     if (search) {
       whereConditions.push(ilike(ipKits.name, `%${search}%`))
@@ -406,7 +486,7 @@ export async function getIpKits(
       .from(ipKits)
       .leftJoin(brands, eq(ipKits.brandId, brands.id))
       .leftJoin(assets, eq(ipKits.id, assets.ipKitId))
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .where(and(...whereConditions))
       .groupBy(ipKits.id, brands.id)
       .orderBy(desc(ipKits.createdAt))
       .limit(limit)
@@ -416,7 +496,7 @@ export async function getIpKits(
     const [totalResult] = await db
       .select({count: count()})
       .from(ipKits)
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .where(and(...whereConditions))
 
     return {
       ipKits: ipKitResults.map(result => ({
@@ -788,12 +868,33 @@ export async function getSubmissionQueue(
     const limit = 20 // Higher limit for review queue
     const offset = (parseInt(page) - 1) * limit
 
+    // Get current user to filter by their accessible brands
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error("User not authenticated")
+    }
+
+    // Get user's accessible brand IDs
+    const userBrandIds = await getUserBrandIds(currentUser.id)
+    if (userBrandIds.length === 0) {
+      // Return empty result set for users with no brand access
+      return {
+        submissions: [],
+        pagination: {
+          page: parseInt(page),
+          limit,
+          total: 0,
+          pages: 0,
+        },
+      }
+    }
+
     // Create aliases for users table to avoid conflicts
     const creators = alias(users, "creators")
     const reviewers = alias(users, "reviewers")
 
-    // Build where conditions
-    const whereConditions = []
+    // Build where conditions (filter by brand ownership first)
+    const whereConditions = [inArray(campaigns.brandId, userBrandIds)]
 
     if (status && status !== "all") {
       whereConditions.push(eq(submissions.status, status as any))
@@ -872,7 +973,7 @@ export async function getSubmissionQueue(
       .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
       .leftJoin(brands, eq(campaigns.brandId, brands.id))
       .leftJoin(reviewers, eq(submissions.reviewedBy, reviewers.id))
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .where(and(...whereConditions))
       .orderBy(getSortOrder())
       .limit(limit)
       .offset(offset)
@@ -883,7 +984,7 @@ export async function getSubmissionQueue(
       .from(submissions)
       .leftJoin(creators, eq(submissions.creatorId, creators.id))
       .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .where(and(...whereConditions))
 
     return {
       submissions: submissionResults.map(result => ({
@@ -1040,6 +1141,18 @@ export async function getSubmissionReviews(submissionId: string) {
 // Get campaigns for filtering in review queue
 export async function getCampaignsForFilter() {
   try {
+    // Get current user to filter by their accessible brands
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return []
+    }
+
+    // Get user's accessible brand IDs
+    const userBrandIds = await getUserBrandIds(currentUser.id)
+    if (userBrandIds.length === 0) {
+      return []
+    }
+
     const campaignResults = await db
       .select({
         id: campaigns.id,
@@ -1048,6 +1161,7 @@ export async function getCampaignsForFilter() {
         brandId: campaigns.brandId,
       })
       .from(campaigns)
+      .where(inArray(campaigns.brandId, userBrandIds))
       .orderBy(desc(campaigns.createdAt))
       .limit(100) // Reasonable limit for dropdown
 
@@ -1061,6 +1175,41 @@ export async function getCampaignsForFilter() {
 // Get comprehensive analytics data for brand analytics page
 export async function getAnalyticsData() {
   try {
+    // Get current user to filter by their accessible brands
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error("User not authenticated")
+    }
+
+    // Get user's accessible brand IDs
+    const userBrandIds = await getUserBrandIds(currentUser.id)
+    if (userBrandIds.length === 0) {
+      // Return empty analytics for users with no brand access
+      return {
+        overview: {
+          totalCampaigns: 0,
+          totalSubmissions: 0,
+          totalAssets: 0,
+          totalCreators: 0,
+        },
+        campaigns: {
+          byStatus: [],
+          topPerforming: [],
+        },
+        assets: {
+          mostUsed: [],
+          byCategory: [],
+        },
+        submissions: {
+          byStatus: [],
+          recentActivity: [],
+        },
+        creators: {
+          topContributors: [],
+        },
+      }
+    }
+
     // Campaign analytics
     const campaignStats = await db
       .select({
@@ -1068,6 +1217,7 @@ export async function getAnalyticsData() {
         count: count(),
       })
       .from(campaigns)
+      .where(inArray(campaigns.brandId, userBrandIds))
       .groupBy(campaigns.status)
 
     // Get campaigns with submission counts for performance analysis
@@ -1078,6 +1228,7 @@ export async function getAnalyticsData() {
       })
       .from(campaigns)
       .leftJoin(submissions, eq(campaigns.id, submissions.campaignId))
+      .where(inArray(campaigns.brandId, userBrandIds))
       .groupBy(campaigns.id)
       .orderBy(desc(count(submissions.id)))
       .limit(10)
@@ -1092,6 +1243,12 @@ export async function getAnalyticsData() {
       .from(assets)
       .leftJoin(ipKits, eq(assets.ipKitId, ipKits.id))
       .leftJoin(submissionAssets, eq(assets.id, submissionAssets.assetId))
+      .where(
+        or(
+          inArray(ipKits.brandId, userBrandIds),
+          isNull(assets.ipKitId) // Include global assets
+        )
+      )
       .groupBy(assets.id, ipKits.id)
       .orderBy(desc(count(submissionAssets.submissionId)))
       .limit(10)
@@ -1103,9 +1260,11 @@ export async function getAnalyticsData() {
         count: count(),
       })
       .from(submissions)
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
+      .where(inArray(campaigns.brandId, userBrandIds))
       .groupBy(submissions.status)
 
-    // Creator engagement - most active creators
+    // Creator engagement - most active creators (for this brand's campaigns)
     const creatorEngagement = await db
       .select({
         creator: users,
@@ -1113,9 +1272,15 @@ export async function getAnalyticsData() {
       })
       .from(users)
       .leftJoin(submissions, eq(users.id, submissions.creatorId))
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
       .leftJoin(userRoles, eq(users.id, userRoles.userId))
       .leftJoin(roles, eq(userRoles.roleId, roles.id))
-      .where(eq(roles.name, "creator"))
+      .where(
+        and(
+          eq(roles.name, "creator"),
+          inArray(campaigns.brandId, userBrandIds)
+        )
+      )
       .groupBy(users.id)
       .orderBy(desc(count(submissions.id)))
       .limit(10)
@@ -1130,7 +1295,13 @@ export async function getAnalyticsData() {
         count: count(),
       })
       .from(submissions)
-      .where(gte(submissions.createdAt, thirtyDaysAgo))
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
+      .where(
+        and(
+          gte(submissions.createdAt, thirtyDaysAgo),
+          inArray(campaigns.brandId, userBrandIds)
+        )
+      )
       .groupBy(submissions.createdAt)
       .orderBy(submissions.createdAt)
 
@@ -1141,20 +1312,48 @@ export async function getAnalyticsData() {
         count: count(),
       })
       .from(assets)
+      .leftJoin(ipKits, eq(assets.ipKitId, ipKits.id))
+      .where(
+        or(
+          inArray(ipKits.brandId, userBrandIds),
+          isNull(assets.ipKitId) // Include global assets
+        )
+      )
       .groupBy(assets.category)
 
-    // Overall totals
-    const [totalCampaigns] = await db.select({count: count()}).from(campaigns)
+    // Overall totals (filtered by brand)
+    const [totalCampaigns] = await db
+      .select({count: count()})
+      .from(campaigns)
+      .where(inArray(campaigns.brandId, userBrandIds))
     const [totalSubmissions] = await db
       .select({count: count()})
       .from(submissions)
-    const [totalAssets] = await db.select({count: count()}).from(assets)
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
+      .where(inArray(campaigns.brandId, userBrandIds))
+    const [totalAssets] = await db
+      .select({count: count()})
+      .from(assets)
+      .leftJoin(ipKits, eq(assets.ipKitId, ipKits.id))
+      .where(
+        or(
+          inArray(ipKits.brandId, userBrandIds),
+          isNull(assets.ipKitId) // Include global assets
+        )
+      )
     const [totalCreators] = await db
       .select({count: count()})
       .from(users)
+      .leftJoin(submissions, eq(users.id, submissions.creatorId))
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
       .leftJoin(userRoles, eq(users.id, userRoles.userId))
       .leftJoin(roles, eq(userRoles.roleId, roles.id))
-      .where(eq(roles.name, "creator"))
+      .where(
+        and(
+          eq(roles.name, "creator"),
+          inArray(campaigns.brandId, userBrandIds)
+        )
+      )
 
     return {
       overview: {
@@ -1210,6 +1409,25 @@ export async function getAnalyticsData() {
 // Get review statistics for dashboard
 export async function getReviewStats() {
   try {
+    // Get current user to filter by their accessible brands
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error("User not authenticated")
+    }
+
+    // Get user's accessible brand IDs
+    const userBrandIds = await getUserBrandIds(currentUser.id)
+    if (userBrandIds.length === 0) {
+      // Return empty stats for users with no brand access
+      return {
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        withdrawn: 0,
+        recentReviews: 0,
+      }
+    }
+
     // Get submission counts by status
     const statusCounts = await db
       .select({
@@ -1217,6 +1435,8 @@ export async function getReviewStats() {
         count: count(),
       })
       .from(submissions)
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
+      .where(inArray(campaigns.brandId, userBrandIds))
       .groupBy(submissions.status)
 
     // Get recent review activity (last 30 days)
@@ -1228,13 +1448,15 @@ export async function getReviewStats() {
         count: count(),
       })
       .from(submissions)
+      .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
       .where(
         and(
           gte(submissions.reviewedAt, thirtyDaysAgo),
           or(
             eq(submissions.status, "approved"),
             eq(submissions.status, "rejected")
-          )
+          ),
+          inArray(campaigns.brandId, userBrandIds)
         )
       )
 

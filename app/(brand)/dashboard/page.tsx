@@ -24,10 +24,14 @@ import {
   Layers,
   ImageIcon,
   ClipboardList,
+  Building,
 } from "lucide-react"
 import Link from "next/link"
 import {getDashboardData} from "@/lib/data/campaigns"
+import {getCurrentUser, getUserWithRoles} from "@/lib/auth-utils"
 import {cn} from "@/lib/utils"
+import OnboardingModal from "@/components/shared/onboarding-modal"
+import {getUserBrandIds} from "@/lib/auth-utils"
 
 function getCampaignStatusColor(status: string) {
   switch (status) {
@@ -142,6 +146,13 @@ export default async function BrandDashboardPage() {
     stats: dashboardStats,
   } = await getDashboardData()
 
+  // Get current user and check if they're a brand admin with no brands
+  const user = await getCurrentUser()
+  const userWithRoles = user ? await getUserWithRoles(user.id) : null
+  const brandIds = user ? await getUserBrandIds(user.id) : []
+  const isBrandAdmin = userWithRoles?.roles?.some((r: any) => r.role.name === "brand_admin")
+  const showOnboarding = isBrandAdmin && brandIds.length === 0
+
   const activeCampaigns = campaigns.filter((c: any) => c.status === "active")
   const stats = calculateStats(campaigns, submissions, dashboardStats)
 
@@ -154,16 +165,64 @@ export default async function BrandDashboardPage() {
             Brand Dashboard
           </h1>
           <p className='text-muted-foreground'>
-            Manage your campaigns and review creator submissions
+            {showOnboarding 
+              ? "Welcome! Let's get you started by creating your brand first."
+              : "Manage your campaigns and review creator submissions"}
           </p>
         </div>
-        <Link href='/campaigns/new'>
-          <Button variant='gradient' className='shadow-lg'>
-            <Plus className='mr-2 h-4 w-4' />
-            New Campaign
-          </Button>
-        </Link>
+        {!showOnboarding && (
+          <Link href='/campaigns/new'>
+            <Button variant='gradient' className='shadow-lg'>
+              <Plus className='mr-2 h-4 w-4' />
+              New Campaign
+            </Button>
+          </Link>
+        )}
       </div>
+
+      {/* Brand Creation Section for new admins */}
+      {showOnboarding && (
+        <Card className='mb-8 border-0 shadow-lg bg-gradient-to-br from-gradient-blue/5 via-card to-gradient-cyan/5'>
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-gradient-blue to-gradient-cyan">
+              <Building className="h-8 w-8 text-white" />
+            </div>
+            <CardTitle className="text-2xl">Create Your Brand</CardTitle>
+            <CardDescription className="text-base">
+              Set up your brand to start creating campaigns, organizing assets, and collaborating with creators.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid md:grid-cols-3 gap-6 text-center">
+              <div className="space-y-2">
+                <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20 flex items-center justify-center">
+                  <span className="text-gradient-blue font-bold">1</span>
+                </div>
+                <h4 className="font-medium">Create Brand</h4>
+                <p className="text-sm text-muted-foreground">Set up your brand identity and information</p>
+              </div>
+              <div className="space-y-2">
+                <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-gradient-purple/20 to-gradient-pink/20 flex items-center justify-center">
+                  <span className="text-gradient-purple font-bold">2</span>
+                </div>
+                <h4 className="font-medium">Organize Assets</h4>
+                <p className="text-sm text-muted-foreground">Create IP kits and upload your brand assets</p>
+              </div>
+              <div className="space-y-2">
+                <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                  <span className="text-green-600 font-bold">3</span>
+                </div>
+                <h4 className="font-medium">Launch Campaigns</h4>
+                <p className="text-sm text-muted-foreground">Create campaigns and collaborate with creators</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-center">
+              <OnboardingModal />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
