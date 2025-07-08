@@ -20,7 +20,7 @@ import Link from "next/link"
 import {CampaignFilters} from "./campaign-filters"
 import {createSearchParams} from "@/lib/utils"
 import {getCampaigns} from "@/lib/data/campaigns"
-import {getCurrentUser, getUserWithRoles} from "@/lib/auth-utils"
+import {getCurrentUser, getUserWithRoles, getUserBrandIds} from "@/lib/auth-utils"
 import OnboardingModal from "@/components/shared/onboarding-modal"
 
 function getStatusColor(status: string) {
@@ -72,6 +72,8 @@ export default async function BrandCampaignsPage({
   const user = await getCurrentUser()
   const userWithRoles = user ? await getUserWithRoles(user.id) : null
   const isBrandAdmin = userWithRoles?.roles?.some((r: any) => r.role.name === "brand_admin")
+  const brandIds = user ? await getUserBrandIds(user.id) : []
+  const showBrandCreation = isBrandAdmin && brandIds.length === 0
 
   const data = await getCampaigns(params)
   const {campaigns, pagination} = data
@@ -87,19 +89,73 @@ export default async function BrandCampaignsPage({
             Manage your brand&apos;s creative campaigns and track submissions
           </p>
         </div>
-        <Link href='/campaigns/new'>
-          <Button variant='gradient' className='flex items-center gap-2'>
-            <Plus className='h-4 w-4' />
-            Create Campaign
-          </Button>
-        </Link>
+        {!showBrandCreation && (
+          <Link href='/campaigns/new'>
+            <Button variant='gradient' className='flex items-center gap-2'>
+              <Plus className='h-4 w-4' />
+              Create Campaign
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
-      <CampaignFilters />
+      {!showBrandCreation && <CampaignFilters />}
+
+      {/* Brand Creation Message */}
+      {showBrandCreation && (
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-gradient-blue/5 via-card to-gradient-cyan/5'>
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-gradient-blue to-gradient-cyan">
+                <FileText className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-2xl">Create Your Brand First</CardTitle>
+              <CardDescription className="text-base">
+                To create campaigns and manage your brand content, you need to set up your brand identity first.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-3 gap-6 text-center">
+                <div className="space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20 flex items-center justify-center">
+                    <span className="text-gradient-blue font-bold">1</span>
+                  </div>
+                  <h4 className="font-medium">Create Brand</h4>
+                  <p className="text-sm text-muted-foreground">Set up your brand identity and information</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-gradient-purple/20 to-gradient-pink/20 flex items-center justify-center">
+                    <span className="text-gradient-purple font-bold">2</span>
+                  </div>
+                  <h4 className="font-medium">Upload Assets</h4>
+                  <p className="text-sm text-muted-foreground">Upload and organize your brand assets</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                    <span className="text-green-600 font-bold">3</span>
+                  </div>
+                  <h4 className="font-medium">Launch Campaigns</h4>
+                  <p className="text-sm text-muted-foreground">Create campaigns for creators to participate</p>
+                </div>
+              </div>
+              
+              <div className="flex justify-center">
+                <OnboardingModal 
+                  trigger={
+                    <Button variant='gradient' size="lg" className='shadow-lg'>
+                      <Plus className='mr-2 h-5 w-5' />
+                      Create Your Brand
+                    </Button>
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+      )}
 
       {/* Campaign Grid */}
-      <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
+      {!showBrandCreation && (
+        <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
         {campaigns.map((campaign: any) => (
           <Card
             key={campaign.id}
@@ -186,36 +242,26 @@ export default async function BrandCampaignsPage({
             </CardContent>
           </Card>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Empty State */}
-      {campaigns.length === 0 && (
+      {!showBrandCreation && campaigns.length === 0 && (
         <div className='text-center py-12'>
-          <FileText className='h-16 w-16 text-muted-foreground mx-auto mb-4' />
-          <h3 className='text-lg font-semibold mb-2'>No campaigns found</h3>
+          <FileText className='mx-auto h-12 w-12 text-muted-foreground mb-4' />
+          <h3 className='text-lg font-medium mb-2'>No campaigns found</h3>
           <p className='text-muted-foreground mb-4'>
-            {params.search || params.status !== "all"
-              ? "Try adjusting your filters to see more results."
-              : "Get started by creating your first campaign to begin collaborating with creators."}
+            {params.search || (params.status && params.status !== "all")
+              ? "Try adjusting your search or filters"
+              : "Create your first campaign to get started"}
           </p>
-          {!(params.search || params.status !== "all") && (
-            <div className="space-y-3">
-              {isBrandAdmin ? (
-                <Link href='/campaigns/new'>
-                  <Button variant='gradient'>
-                    <Plus className='mr-2 h-4 w-4' />
-                    Create Your First Campaign
-                  </Button>
-                </Link>
-              ) : (
-                <Link href='/dashboard'>
-                  <Button variant='gradient'>
-                    <Plus className='mr-2 h-4 w-4' />
-                    Go to Dashboard to Get Started
-                  </Button>
-                </Link>
-              )}
-            </div>
+          {!(params.search || (params.status && params.status !== "all")) && (
+            <Link href='/campaigns/new'>
+              <Button variant='gradient'>
+                <Plus className='mr-2 h-4 w-4' />
+                Create Your First Campaign
+              </Button>
+            </Link>
           )}
         </div>
       )}

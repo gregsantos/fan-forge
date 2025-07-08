@@ -24,7 +24,7 @@ import {
   getReviewStats,
   getCampaigns,
 } from "@/lib/data/campaigns"
-import {getCurrentUser, getUserWithRoles} from "@/lib/auth-utils"
+import {getCurrentUser, getUserWithRoles, getUserBrandIds} from "@/lib/auth-utils"
 import OnboardingModal from "@/components/shared/onboarding-modal"
 
 function getStatusColor(status: string) {
@@ -85,6 +85,71 @@ export default async function BrandSubmissionsPage({
     const isBrandAdmin = userWithRoles?.roles?.some(
       (r: any) => r.role.name === "brand_admin"
     )
+    const brandIds = user ? await getUserBrandIds(user.id) : []
+    const showBrandCreation = isBrandAdmin && brandIds.length === 0
+
+    // If user needs to create a brand first, show brand creation UI
+    if (showBrandCreation) {
+      return (
+        <div className='container mx-auto p-6 space-y-8'>
+          {/* Header */}
+          <div>
+            <h1 className='text-3xl font-bold tracking-tight'>Review Queue</h1>
+            <p className='text-muted-foreground mt-2'>
+              Review and approve creator submissions across all campaigns
+            </p>
+          </div>
+
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-orange-500/5 via-card to-amber-500/5'>
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-500">
+                <Eye className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-2xl">Create Your Brand First</CardTitle>
+              <CardDescription className="text-base">
+                To review creator submissions, you need to set up your brand and create campaigns first.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-3 gap-6 text-center">
+                <div className="space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20 flex items-center justify-center">
+                    <span className="text-gradient-blue font-bold">1</span>
+                  </div>
+                  <h4 className="font-medium">Create Brand</h4>
+                  <p className="text-sm text-muted-foreground">Set up your brand identity and information</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-gradient-purple/20 to-gradient-pink/20 flex items-center justify-center">
+                    <span className="text-gradient-purple font-bold">2</span>
+                  </div>
+                  <h4 className="font-medium">Launch Campaigns</h4>
+                  <p className="text-sm text-muted-foreground">Create campaigns for creators to participate</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center">
+                    <span className="text-orange-600 font-bold">3</span>
+                  </div>
+                  <h4 className="font-medium">Review Submissions</h4>
+                  <p className="text-sm text-muted-foreground">Approve and manage creator work</p>
+                </div>
+              </div>
+              
+              <div className="flex justify-center">
+                <OnboardingModal 
+                  trigger={
+                    <Button variant='gradient' size="lg" className='shadow-lg'>
+                      <Plus className='mr-2 h-5 w-5' />
+                      Create Your Brand
+                    </Button>
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
 
     // Fetch submissions queue data, review statistics, and campaigns
     const [queueData, reviewStats, campaignsData] = await Promise.all([

@@ -170,13 +170,22 @@ export default async function BrandDashboardPage() {
               : "Manage your campaigns and review creator submissions"}
           </p>
         </div>
-        {!showOnboarding && (
+        {!showOnboarding ? (
           <Link href='/campaigns/new'>
             <Button variant='gradient' className='shadow-lg'>
               <Plus className='mr-2 h-4 w-4' />
               New Campaign
             </Button>
           </Link>
+        ) : (
+          <OnboardingModal 
+            trigger={
+              <Button variant='outline' className='shadow-lg'>
+                <Building className='mr-2 h-4 w-4' />
+                Create Brand
+              </Button>
+            }
+          />
         )}
       </div>
 
@@ -218,7 +227,7 @@ export default async function BrandDashboardPage() {
             </div>
             
             <div className="flex justify-center">
-              <OnboardingModal />
+              <OnboardingModal autoOpen />
             </div>
           </CardContent>
         </Card>
@@ -256,15 +265,16 @@ export default async function BrandDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <Card className='mb-8 border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20'>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>
-            Common tasks for brand administrators
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4'>
+      {!showOnboarding && (
+        <Card className='mb-8 border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20'>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>
+              Common tasks for brand administrators
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4'>
             <Link href='/campaigns/new'>
               <div className='w-full h-20 border border-primary/20 rounded-lg bg-gradient-to-br from-card via-card to-muted/10 hover:shadow-lg hover:bg-gradient-to-br hover:from-card hover:via-card hover:to-muted/20 transition-all duration-300 group cursor-pointer'>
                 <div className='w-full h-full flex flex-col items-center justify-center gap-2 text-foreground group-hover:text-primary transition-colors'>
@@ -310,6 +320,7 @@ export default async function BrandDashboardPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
         {/* Recent Campaigns */}
