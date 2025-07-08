@@ -3,6 +3,7 @@
 import {usePathname} from "next/navigation"
 import {useAuth} from "@/lib/contexts/auth"
 import {Navigation} from "@/components/shared/navigation"
+import {useEffect, useState} from "react"
 
 interface ConditionalLayoutProps {
   children: React.ReactNode
@@ -11,26 +12,25 @@ interface ConditionalLayoutProps {
 export function ConditionalLayout({children}: ConditionalLayoutProps) {
   const pathname = usePathname()
   const {user, loading} = useAuth()
+  const [isClient, setIsClient] = useState(false)
 
-  // Define routes where navigation should be hidden for unauthenticated users
-  const publicRoutes = [
-    "/",
-    "/login",
-    "/register",
-    "/forgot-password",
-    "/reset-password",
-    "/auth/confirm",
-    "/auth/callback",
-  ]
+  // Ensure we're on the client side to avoid hydration issues
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
-  // Check if current route is public
-  const isPublicRoute = publicRoutes.includes(pathname)
+  // Define the home page (special case - show nav only if authenticated)
+  const isHomePage = pathname === "/"
 
   // Show navigation logic:
-  // - On protected routes: always show navigation (since auth is required anyway)
-  // - On public routes: only show if user is authenticated
-  // - While loading: don't show navigation on public routes to avoid flash
-  const shouldShowNavigation = isPublicRoute ? user && !loading : true
+  // - Home page: only show if user is authenticated (avoid flash)
+  // - All other routes: Navigation component handles its own conditional logic
+  // - Wait for client-side hydration to avoid mismatch
+  const shouldShowNavigation = !isClient
+    ? false // Hide during hydration to avoid flash
+    : isHomePage
+      ? user && !loading
+      : true
 
   return (
     <div className='min-h-screen bg-background'>

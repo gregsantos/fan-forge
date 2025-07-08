@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <AnimatedBackground variant="default">
+      <AnimatedBackground variant='default'>
         <div className='min-h-screen flex items-center justify-center px-4'>
           <Card className='w-full max-w-md bg-white/95 dark:bg-card/95 backdrop-blur-md border-white/20 dark:border-white/10 shadow-2xl'>
             <CardHeader className='text-center'>
@@ -82,6 +82,14 @@ export default function ForgotPasswordPage() {
                   Back to Sign In
                 </Button>
               </Link>
+              <div className='text-center text-sm text-muted-foreground border-t pt-4'>
+                <Link
+                  href='/'
+                  className='text-muted-foreground hover:text-primary transition-colors'
+                >
+                  ← Back to FanForge
+                </Link>
+              </div>
             </CardFooter>
           </Card>
         </div>
@@ -90,7 +98,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AnimatedBackground variant="default">
+    <AnimatedBackground variant='default'>
       <div className='min-h-screen flex items-center justify-center px-4'>
         <Card className='w-full max-w-md bg-white/95 dark:bg-card/95 backdrop-blur-md border-white/20 dark:border-white/10 shadow-2xl'>
           <CardHeader className='text-center'>
@@ -119,7 +127,12 @@ export default function ForgotPasswordPage() {
                   error={errors.email?.message}
                 />
               </div>
-              <Button type='submit' variant="gradient" className='w-full' loading={loading}>
+              <Button
+                type='submit'
+                variant='gradient'
+                className='w-full'
+                loading={loading}
+              >
                 Send Reset Link
               </Button>
             </form>
@@ -132,6 +145,14 @@ export default function ForgotPasswordPage() {
                 className='text-primary hover:underline font-medium'
               >
                 Sign in
+              </Link>
+            </div>
+            <div className='text-center text-sm text-muted-foreground border-t pt-4'>
+              <Link
+                href='/'
+                className='text-muted-foreground hover:text-primary transition-colors'
+              >
+                ← Back to FanForge
               </Link>
             </div>
           </CardFooter>

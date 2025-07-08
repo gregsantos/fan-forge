@@ -48,7 +48,7 @@ function LoginForm() {
   // Show loading state while authenticating or redirecting
   if (loading || isRedirecting) {
     return (
-      <AnimatedBackground variant="default">
+      <AnimatedBackground variant='default'>
         <div className='min-h-screen flex items-center justify-center px-4'>
           <div className='text-center'>
             <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
@@ -62,7 +62,7 @@ function LoginForm() {
   }
 
   return (
-    <AnimatedBackground variant="default">
+    <AnimatedBackground variant='default'>
       <div className='min-h-screen flex items-center justify-center px-4'>
         <Card className='w-full max-w-md bg-white/95 dark:bg-card/95 backdrop-blur-md border-white/20 dark:border-white/10 shadow-2xl'>
           <CardHeader className='text-center'>
@@ -102,7 +102,12 @@ function LoginForm() {
                   error={errors.password?.message}
                 />
               </div>
-              <Button type='submit' variant="gradient" className='w-full' loading={loading}>
+              <Button
+                type='submit'
+                variant='gradient'
+                className='w-full'
+                loading={loading}
+              >
                 Sign In
               </Button>
             </form>
@@ -125,6 +130,14 @@ function LoginForm() {
                 Sign up
               </Link>
             </div>
+            <div className='text-center text-sm text-muted-foreground border-t pt-4'>
+              <Link
+                href='/'
+                className='text-muted-foreground hover:text-primary transition-colors'
+              >
+                ← Back to FanForge
+              </Link>
+            </div>
           </CardFooter>
         </Card>
       </div>
@@ -136,7 +149,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <AnimatedBackground variant="default">
+        <AnimatedBackground variant='default'>
           <div className='min-h-screen flex items-center justify-center px-4'>
             <div className='text-center'>
               <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
