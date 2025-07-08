@@ -23,20 +23,24 @@ import {
   Square,
 } from "lucide-react"
 import Link from "next/link"
-import { StoryProtocolLink, StoryProtocolStatus } from "@/components/shared/story-protocol-link"
+import {
+  StoryProtocolLink,
+  StoryProtocolStatus,
+} from "@/components/shared/story-protocol-link"
+import {cn} from "@/lib/utils"
 
 function getStatusColor(status: string) {
   switch (status) {
     case "approved":
-      return "default"
+      return "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
     case "pending":
-      return "secondary"
+      return "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent"
     case "rejected":
-      return "destructive"
+      return "bg-gradient-to-r from-red-500 to-rose-500 text-white border-transparent"
     case "withdrawn":
-      return "outline"
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
     default:
-      return "secondary"
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
   }
 }
 
@@ -102,23 +106,30 @@ export function SubmissionQueueClient({
     <div className='space-y-6'>
       {/* Bulk Selection Header */}
       {pendingSubmissions.length > 0 && (
-        <div className='flex items-center justify-between p-4 bg-muted/50 rounded-lg'>
-          <div className='flex items-center gap-3'>
-            <Checkbox
-              checked={allPendingSelected}
-              onCheckedChange={toggleAllSubmissions}
-              aria-label='Select all pending submissions'
-            />
-            <span className='text-sm font-medium'>
-              Select all pending submissions ({pendingSubmissions.length})
-            </span>
-          </div>
-          {selectedSubmissions.length > 0 && (
-            <span className='text-sm text-muted-foreground'>
-              {selectedSubmissions.length} selected
-            </span>
-          )}
-        </div>
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
+          <CardContent className='p-4'>
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center gap-3'>
+                <Checkbox
+                  checked={allPendingSelected}
+                  onCheckedChange={toggleAllSubmissions}
+                  aria-label='Select all pending submissions'
+                />
+                <span className='text-sm font-medium'>
+                  Select all pending submissions ({pendingSubmissions.length})
+                </span>
+              </div>
+              {selectedSubmissions.length > 0 && (
+                <Badge
+                  variant='secondary'
+                  className='bg-gradient-to-r from-gradient-purple/20 to-gradient-pink/20'
+                >
+                  {selectedSubmissions.length} selected
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Submissions Grid */}
@@ -130,8 +141,8 @@ export function SubmissionQueueClient({
           return (
             <Card
               key={submission.id}
-              className={`group hover:shadow-lg transition-all duration-200 ${
-                isSelected ? "ring-2 ring-primary" : ""
+              className={`group border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300 ${
+                isSelected ? "ring-2 ring-primary shadow-xl" : ""
               }`}
             >
               <div className='aspect-video bg-muted rounded-t-lg overflow-hidden relative'>
@@ -162,7 +173,12 @@ export function SubmissionQueueClient({
               <CardHeader className='space-y-4'>
                 <div className='flex items-start justify-between'>
                   <div className='flex items-center gap-2'>
-                    <Badge variant={getStatusColor(submission.status) as any}>
+                    <Badge
+                      className={cn(
+                        "font-medium shadow-sm",
+                        getStatusColor(submission.status)
+                      )}
+                    >
                       {getStatusText(submission.status)}
                     </Badge>
                     {submission.rating && (
@@ -171,7 +187,7 @@ export function SubmissionQueueClient({
                         <span>{submission.rating}/5</span>
                       </div>
                     )}
-                    <StoryProtocolStatus 
+                    <StoryProtocolStatus
                       ipId={submission.storyProtocolIpId}
                       submissionStatus={submission.status}
                     />
@@ -224,9 +240,11 @@ export function SubmissionQueueClient({
                 </div>
 
                 {submission.feedback && (
-                  <div className='p-3 bg-muted/50 rounded-lg'>
+                  <div className='p-3 bg-gradient-to-br from-muted/30 to-muted/50 rounded-lg border border-white/20 backdrop-blur-sm'>
                     <div className='flex items-center gap-2 mb-1'>
-                      <MessageSquare className='h-4 w-4 text-muted-foreground' />
+                      <div className='p-1 rounded bg-gradient-to-br from-gradient-blue/20 to-gradient-purple/20'>
+                        <MessageSquare className='h-3 w-3 text-gradient-blue' />
+                      </div>
                       <span className='text-sm font-medium'>Feedback</span>
                     </div>
                     <p className='text-sm text-muted-foreground line-clamp-2'>
@@ -251,14 +269,14 @@ export function SubmissionQueueClient({
                       <Button
                         variant='outline'
                         size='sm'
-                        className='text-green-600 hover:text-green-700'
+                        className='text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200'
                       >
                         <ThumbsUp className='h-4 w-4' />
                       </Button>
                       <Button
                         variant='outline'
                         size='sm'
-                        className='text-red-600 hover:text-red-700'
+                        className='text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200'
                       >
                         <ThumbsDown className='h-4 w-4' />
                       </Button>
@@ -266,12 +284,14 @@ export function SubmissionQueueClient({
                   ) : (
                     <div className='flex gap-1'>
                       <Button variant='outline' size='sm' asChild>
-                        <Link href={`/submissions/${submission.id}`}>Review</Link>
+                        <Link href={`/submissions/${submission.id}`}>
+                          Review
+                        </Link>
                       </Button>
-                      <StoryProtocolLink 
+                      <StoryProtocolLink
                         ipId={submission.storyProtocolIpId}
                         submissionStatus={submission.status}
-                        size="sm"
+                        size='sm'
                       />
                     </div>
                   )}

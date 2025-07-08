@@ -24,13 +24,15 @@ import {getCampaigns} from "@/lib/data/campaigns"
 function getStatusColor(status: string) {
   switch (status) {
     case "active":
-      return "default"
+      return "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
     case "draft":
-      return "secondary"
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
     case "closed":
-      return "outline"
+      return "bg-gradient-to-r from-red-500 to-rose-500 text-white border-transparent"
+    case "paused":
+      return "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent"
     default:
-      return "secondary"
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
   }
 }
 
@@ -78,7 +80,7 @@ export default async function BrandCampaignsPage({
           </p>
         </div>
         <Link href='/campaigns/new'>
-          <Button className='flex items-center gap-2'>
+          <Button variant='gradient' className='flex items-center gap-2'>
             <Plus className='h-4 w-4' />
             Create Campaign
           </Button>
@@ -93,11 +95,13 @@ export default async function BrandCampaignsPage({
         {campaigns.map((campaign: any) => (
           <Card
             key={campaign.id}
-            className='group hover:shadow-lg transition-all duration-200'
+            className='group border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'
           >
             <CardHeader className='space-y-4'>
               <div className='flex items-start justify-between'>
-                <Badge variant={getStatusColor(campaign.status) as any}>
+                <Badge
+                  className={`font-medium shadow-sm ${getStatusColor(campaign.status)}`}
+                >
                   {getStatusText(campaign.status)}
                 </Badge>
                 <div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity'>
@@ -187,7 +191,7 @@ export default async function BrandCampaignsPage({
               : "Get started by creating your first campaign."}
           </p>
           <Link href='/campaigns/new'>
-            <Button>
+            <Button variant='gradient'>
               <Plus className='mr-2 h-4 w-4' />
               Create Campaign
             </Button>

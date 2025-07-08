@@ -78,7 +78,7 @@ export async function getDashboardData() {
       submissionCounts.map(sc => [sc.campaignId, sc.submissionCount])
     )
 
-    // Fetch recent submissions (pending only for dashboard, filtered by user's brands)
+    // Fetch recent submissions (all statuses for dashboard, filtered by user's brands)
     const recentSubmissions = await db
       .select({
         submission: submissions,
@@ -86,14 +86,9 @@ export async function getDashboardData() {
       })
       .from(submissions)
       .leftJoin(campaigns, eq(submissions.campaignId, campaigns.id))
-      .where(
-        and(
-          eq(submissions.status, "pending"),
-          inArray(campaigns.brandId, userBrandIds)
-        )
-      )
+      .where(inArray(campaigns.brandId, userBrandIds))
       .orderBy(desc(submissions.createdAt))
-      .limit(10)
+      .limit(20)
 
     // Fetch recent IP kits (filtered by user's brands)
     const recentIpKits = await db
@@ -137,10 +132,7 @@ export async function getDashboardData() {
       .select({count: count()})
       .from(ipKits)
       .where(
-        and(
-          eq(ipKits.isPublished, true),
-          inArray(ipKits.brandId, userBrandIds)
-        )
+        and(eq(ipKits.isPublished, true), inArray(ipKits.brandId, userBrandIds))
       )
 
     // Get asset statistics (filtered by user's brands)

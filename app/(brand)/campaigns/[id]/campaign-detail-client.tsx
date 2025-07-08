@@ -67,13 +67,15 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "default"
+        return "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
       case "draft":
-        return "secondary"
+        return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
       case "closed":
-        return "outline"
+        return "bg-gradient-to-r from-red-500 to-rose-500 text-white border-transparent"
+      case "paused":
+        return "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent"
       default:
-        return "secondary"
+        return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
     }
   }
 
@@ -97,7 +99,9 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
             <h1 className='text-3xl font-bold text-foreground'>
               {campaign.title}
             </h1>
-            <Badge variant={getStatusColor(campaign.status)}>
+            <Badge
+              className={`font-medium shadow-sm ${getStatusColor(campaign.status)}`}
+            >
               {campaign.status.charAt(0).toUpperCase() +
                 campaign.status.slice(1)}
             </Badge>
@@ -115,7 +119,7 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
             Share
           </Button>
           <Link href={`/campaigns/${campaign.id}/edit`}>
-            <Button>
+            <Button variant='gradient'>
               <Edit className='mr-2 h-4 w-4' />
               Edit Campaign
             </Button>
@@ -125,15 +129,17 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
 
       {/* Campaign Stats */}
       <div className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-8'>
-        <Card>
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
             <CardTitle className='text-sm font-medium text-muted-foreground'>
               Total Submissions
             </CardTitle>
-            <Users className='h-4 w-4 text-muted-foreground' />
+            <div className='p-2 rounded-lg bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20 backdrop-blur-sm border border-white/20'>
+              <Users className='h-4 w-4 bg-gradient-to-br from-gradient-blue to-gradient-cyan bg-clip-text text-transparent' />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-2xl font-bold bg-gradient-to-br from-gradient-blue to-gradient-cyan bg-clip-text text-transparent'>
               {campaignSubmissions.length}
             </div>
             <p className='text-xs text-muted-foreground'>
@@ -142,45 +148,51 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
             <CardTitle className='text-sm font-medium text-muted-foreground'>
               Pending Review
             </CardTitle>
-            <Eye className='h-4 w-4 text-orange-500' />
+            <div className='p-2 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-white/20'>
+              <Eye className='h-4 w-4 bg-gradient-to-br from-orange-500 to-red-500 bg-clip-text text-transparent' />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-2xl font-bold bg-gradient-to-br from-orange-500 to-red-500 bg-clip-text text-transparent'>
               {pendingSubmissions.length}
             </div>
             <p className='text-xs text-muted-foreground'>Needs attention</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
             <CardTitle className='text-sm font-medium text-muted-foreground'>
               Approved Works
             </CardTitle>
-            <ThumbsUp className='h-4 w-4 text-green-500' />
+            <div className='p-2 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-white/20'>
+              <ThumbsUp className='h-4 w-4 bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent' />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-2xl font-bold bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent'>
               {approvedSubmissions.length}
             </div>
             <p className='text-xs text-muted-foreground'>Ready to showcase</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
             <CardTitle className='text-sm font-medium text-muted-foreground'>
               Time Remaining
             </CardTitle>
-            <Clock className='h-4 w-4 text-muted-foreground' />
+            <div className='p-2 rounded-lg bg-gradient-to-br from-gradient-purple/20 to-gradient-pink/20 backdrop-blur-sm border border-white/20'>
+              <Clock className='h-4 w-4 bg-gradient-to-br from-gradient-purple to-gradient-pink bg-clip-text text-transparent' />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-2xl font-bold bg-gradient-to-br from-gradient-purple to-gradient-pink bg-clip-text text-transparent'>
               {daysLeft > 0 ? `${daysLeft}d` : "Ended"}
             </div>
             <p className='text-xs text-muted-foreground'>
@@ -197,7 +209,7 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
         {/* Main Content */}
         <div className='lg:col-span-2 space-y-6'>
           {/* Campaign Description */}
-          <Card>
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
             <CardHeader>
               <CardTitle>Campaign Description</CardTitle>
             </CardHeader>
@@ -209,7 +221,7 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
           </Card>
 
           {/* Guidelines */}
-          <Card>
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
             <CardHeader>
               <CardTitle>Creative Guidelines</CardTitle>
               <CardDescription>
@@ -217,65 +229,14 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className='p-4 bg-muted/50 rounded-lg'>
+              <div className='p-4 bg-gradient-to-br from-muted/30 to-muted/50 rounded-lg border border-white/20 backdrop-blur-sm'>
                 <p className='text-sm leading-relaxed'>{campaign.guidelines}</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Asset Kit */}
-          <Card>
-            <CardHeader>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <CardTitle>Asset Kit</CardTitle>
-                  <CardDescription>
-                    Official brand assets for this campaign
-                  </CardDescription>
-                </div>
-                <Button variant='outline' size='sm'>
-                  <Download className='mr-2 h-4 w-4' />
-                  Download All
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {campaign.assets.length > 0 ? (
-                <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
-                  {campaign.assets.map((asset: any) => (
-                    <div key={asset.id} className='group relative'>
-                      <div className='aspect-square bg-muted rounded-lg overflow-hidden'>
-                        <img
-                          src={asset.url}
-                          alt={asset.filename}
-                          className='w-full h-full object-cover group-hover:scale-105 transition-transform'
-                        />
-                      </div>
-                      <div className='mt-2 space-y-1'>
-                        <p className='text-sm font-medium truncate'>
-                          {asset.filename}
-                        </p>
-                        <Badge variant='outline' className='text-xs'>
-                          {asset.category}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className='text-center py-8 text-muted-foreground'>
-                  <Image className='mx-auto h-8 w-8 mb-2' aria-hidden='true' />
-                  <p className='text-sm'>No assets uploaded yet</p>
-                  <Button variant='outline' size='sm' className='mt-2'>
-                    Upload Assets
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Recent Submissions */}
-          <Card>
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
             <CardHeader>
               <div className='flex items-center justify-between'>
                 <div>
@@ -359,12 +320,63 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
               )}
             </CardContent>
           </Card>
+
+          {/* Asset Kit */}
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
+            <CardHeader>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <CardTitle>Asset Kit</CardTitle>
+                  <CardDescription>
+                    Official brand assets for this campaign
+                  </CardDescription>
+                </div>
+                <Button variant='outline' size='sm'>
+                  <Download className='mr-2 h-4 w-4' />
+                  Download All
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {campaign.assets.length > 0 ? (
+                <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
+                  {campaign.assets.map((asset: any) => (
+                    <div key={asset.id} className='group relative'>
+                      <div className='aspect-square bg-muted rounded-lg overflow-hidden'>
+                        <img
+                          src={asset.url}
+                          alt={asset.filename}
+                          className='w-full h-full object-cover group-hover:scale-105 transition-transform'
+                        />
+                      </div>
+                      <div className='mt-2 space-y-1'>
+                        <p className='text-sm font-medium truncate'>
+                          {asset.filename}
+                        </p>
+                        <Badge variant='outline' className='text-xs'>
+                          {asset.category}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className='text-center py-8 text-muted-foreground'>
+                  <Image className='mx-auto h-8 w-8 mb-2' aria-hidden='true' />
+                  <p className='text-sm'>No assets uploaded yet</p>
+                  <Button variant='outline' size='sm' className='mt-2'>
+                    Upload Assets
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}
         <div className='space-y-6'>
           {/* Campaign Status */}
-          <Card>
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
             <CardHeader>
               <CardTitle>Campaign Status</CardTitle>
             </CardHeader>
@@ -372,7 +384,9 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
               <div className='space-y-3'>
                 <div className='flex justify-between items-center'>
                   <span className='text-sm text-muted-foreground'>Status</span>
-                  <Badge variant={getStatusColor(campaign.status)}>
+                  <Badge
+                    className={`font-medium shadow-sm ${getStatusColor(campaign.status)}`}
+                  >
                     {campaign.status.charAt(0).toUpperCase() +
                       campaign.status.slice(1)}
                   </Badge>
@@ -424,14 +438,14 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
           </Card>
 
           {/* Quick Actions */}
-          <Card>
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className='space-y-4'>
               <div>
                 <Link href={`/campaigns/${campaign.id}/edit`}>
-                  <Button className='w-full'>
+                  <Button variant='gradient' className='w-full'>
                     <Edit className='mr-2 h-4 w-4' />
                     Edit Campaign
                   </Button>
@@ -461,7 +475,7 @@ export function CampaignDetailClient({campaign}: CampaignDetailClientProps) {
           </Card>
 
           {/* Campaign Details */}
-          <Card>
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
             <CardHeader>
               <CardTitle>Campaign Details</CardTitle>
             </CardHeader>

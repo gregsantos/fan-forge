@@ -21,8 +21,8 @@ import {
   Squirrel,
 } from "lucide-react"
 import {ErrorBoundary} from "@/components/ui/error-boundary"
-import { AssetCategory } from "@/types"
-import { useAssetUpload } from "@/lib/hooks/use-asset-upload"
+import {AssetCategory} from "@/types"
+import {useAssetUpload} from "@/lib/hooks/use-asset-upload"
 
 interface AssetsPageClientProps {
   initialStats: {
@@ -46,21 +46,22 @@ export default function AssetsPageClient({
   const [activeTab, setActiveTab] = useState("grid")
   const [uploadingFiles, setUploadingFiles] = useState<UploadedFile[]>([])
   const [selectedIpKitId, setSelectedIpKitId] = useState<string | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<AssetCategory>('other')
+  const [selectedCategory, setSelectedCategory] =
+    useState<AssetCategory>("other")
 
-  const { handleUpload, isProcessing } = useAssetUpload({
+  const {handleUpload, isProcessing} = useAssetUpload({
     ipKitId: selectedIpKitId,
     defaultCategory: selectedCategory,
-    onSuccess: (result) => {
+    onSuccess: result => {
       console.log(`Successfully created ${result.success} asset records`)
     },
-    onError: (errors) => {
+    onError: errors => {
       alert(`Upload completed with some failures. Check console for details.`)
     },
     onRefresh: () => {
       // Refresh the asset grid
       window.location.reload() // Simple refresh - in production you'd update state
-    }
+    },
   })
 
   const handleFilesUploaded = async (files: UploadedFile[]) => {
@@ -81,7 +82,9 @@ export default function AssetsPageClient({
 
       if (response.ok) {
         const result = await response.json()
-        alert(`Asset deleted successfully! ${result.details?.cleanedSubmissions ? `Cleaned ${result.details.cleanedSubmissions} submissions.` : ''}`)
+        alert(
+          `Asset deleted successfully! ${result.details?.cleanedSubmissions ? `Cleaned ${result.details.cleanedSubmissions} submissions.` : ""}`
+        )
         window.location.reload()
         return
       }
@@ -89,11 +92,11 @@ export default function AssetsPageClient({
       if (response.status === 409) {
         // Asset is in use - show confirmation dialog
         const conflictData = await response.json()
-        
+
         const confirmMessage = `This asset is currently in use:
         
-${conflictData.details.activeCampaigns > 0 ? `• ${conflictData.details.activeCampaigns} active campaigns: ${conflictData.details.campaignNames?.join(', ') || 'Unknown'}` : ''}
-${conflictData.details.affectedSubmissions > 0 ? `• ${conflictData.details.affectedSubmissions} submissions will be affected` : ''}
+${conflictData.details.activeCampaigns > 0 ? `• ${conflictData.details.activeCampaigns} active campaigns: ${conflictData.details.campaignNames?.join(", ") || "Unknown"}` : ""}
+${conflictData.details.affectedSubmissions > 0 ? `• ${conflictData.details.affectedSubmissions} submissions will be affected` : ""}
 
 Deleting this asset will:
 - Remove it from all IP kits
@@ -104,13 +107,18 @@ Are you sure you want to continue?`
 
         if (confirm(confirmMessage)) {
           // Force delete with confirmation
-          const forceResponse = await fetch(`/api/assets/${assetId}?force=true`, {
-            method: "DELETE",
-          })
-          
+          const forceResponse = await fetch(
+            `/api/assets/${assetId}?force=true`,
+            {
+              method: "DELETE",
+            }
+          )
+
           if (forceResponse.ok) {
             const result = await forceResponse.json()
-            alert(`Asset force-deleted successfully! ${result.details?.cleanedSubmissions ? `Cleaned ${result.details.cleanedSubmissions} submissions.` : ''}`)
+            alert(
+              `Asset force-deleted successfully! ${result.details?.cleanedSubmissions ? `Cleaned ${result.details.cleanedSubmissions} submissions.` : ""}`
+            )
             window.location.reload()
           } else {
             const errorData = await forceResponse.json()
@@ -119,7 +127,7 @@ Are you sure you want to continue?`
         }
       } else {
         const errorData = await response.json()
-        alert(`Failed to delete asset: ${errorData.error || 'Unknown error'}`)
+        alert(`Failed to delete asset: ${errorData.error || "Unknown error"}`)
       }
     } catch (error) {
       console.error("Error deleting asset:", error)
@@ -153,48 +161,36 @@ Are you sure you want to continue?`
       value: initialStats.totalAssets.toString(),
       description: `Across ${initialStats.totalIpKits} IP kits`,
       icon: Image,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
     },
     {
       title: "Logos",
       value: getCategoryCount("logos").toString(),
       description: "Logo assets",
       icon: Target,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
     },
     {
       title: "Characters",
       value: getCategoryCount("characters").toString(),
       description: "Character assets",
       icon: PersonStanding,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
     },
     {
       title: "Backgrounds",
       value: getCategoryCount("backgrounds").toString(),
       description: "Background assets",
       icon: Palette,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
     },
     {
       title: "Other",
       value: getCategoryCount("other").toString(),
       description: "Other assets",
       icon: Squirrel,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
     },
     {
       title: "Storage Used",
       value: formatBytes(initialStats.storageUsed),
       description: `${storagePercentage}% of ${formatBytes(initialStats.storageLimit)}`,
       icon: Upload,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
     },
   ]
 
@@ -213,24 +209,43 @@ Are you sure you want to continue?`
       {/* Stats Cards */}
       <ErrorBoundary>
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4'>
-          {stats.map(stat => (
-            <Card key={stat.title}>
-              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                <CardTitle className='text-sm font-medium text-muted-foreground'>
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className='text-2xl font-bold'>{stat.value}</div>
-                <p className='text-xs text-muted-foreground'>
-                  {stat.description}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          {stats.map((stat, index) => {
+            const gradientClasses = [
+              "from-gradient-blue to-gradient-cyan",
+              "from-gradient-purple to-gradient-pink",
+              "from-green-500 to-emerald-500",
+              "from-gradient-purple to-gradient-blue",
+              "from-gradient-pink to-gradient-rose",
+              "from-orange-500 to-red-500",
+            ]
+            return (
+              <Card
+                key={stat.title}
+                className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'
+              >
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium text-muted-foreground'>
+                    {stat.title}
+                  </CardTitle>
+                  <div
+                    className={`p-3 rounded-xl bg-gradient-to-br ${gradientClasses[index]} backdrop-blur-sm border border-white/20 shadow-lg`}
+                  >
+                    <stat.icon className='h-4 w-4 text-white' />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    className={`text-2xl font-bold bg-gradient-to-br ${gradientClasses[index]} bg-clip-text text-transparent`}
+                  >
+                    {stat.value}
+                  </div>
+                  <p className='text-xs text-muted-foreground'>
+                    {stat.description}
+                  </p>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </ErrorBoundary>
 
@@ -246,7 +261,7 @@ Are you sure you want to continue?`
         </TabsList>
 
         <TabsContent value='upload' className='space-y-6'>
-          <Card>
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
             <CardHeader>
               <CardTitle>Upload New Assets</CardTitle>
               <CardDescription>
@@ -284,7 +299,7 @@ Are you sure you want to continue?`
                     onFilesRemoved={handleFilesRemoved}
                     ipKitId={selectedIpKitId}
                     categorySelectable={true}
-                    onCategoryChange={(category) => setSelectedCategory(category)}
+                    onCategoryChange={category => setSelectedCategory(category)}
                     maxFiles={20}
                     showIpIdInput={true}
                   />
@@ -294,7 +309,7 @@ Are you sure you want to continue?`
           </Card>
 
           {/* Upload Tips */}
-          <Card>
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
             <CardHeader>
               <CardTitle className='text-lg'>Upload Tips</CardTitle>
             </CardHeader>
@@ -322,7 +337,7 @@ Are you sure you want to continue?`
         </TabsContent>
 
         <TabsContent value='grid' className='space-y-6'>
-          <Card>
+          <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30'>
             <CardHeader>
               <CardTitle>Asset Library</CardTitle>
               <CardDescription>

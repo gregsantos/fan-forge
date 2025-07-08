@@ -30,6 +30,7 @@ export function Navigation() {
   const {user, signOut, loading, isClient} = useAuth()
   const router = useRouter()
 
+  // All hooks must be called before any early returns
   const creatorLinks = useMemo(
     () => [
       {href: "/discover", label: "Discover", icon: Search},
@@ -120,6 +121,27 @@ export function Navigation() {
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [user, router, creatorLinks, brandLinks])
+
+  // Define auth pages that should never show navigation (distraction-free)
+  const authPages = [
+    "/login",
+    "/login/",
+    "/register",
+    "/register/",
+    "/forgot-password",
+    "/forgot-password/",
+    "/reset-password",
+    "/reset-password/",
+    "/auth/confirm",
+    "/auth/confirm/",
+    "/auth/callback",
+    "/auth/callback/",
+  ]
+
+  // Don't render Navigation at all on auth pages (after all hooks are called)
+  if (authPages.includes(pathname)) {
+    return null
+  }
 
   return (
     <>

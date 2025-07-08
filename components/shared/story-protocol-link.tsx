@@ -1,7 +1,10 @@
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ExternalLink, Link2 } from "lucide-react"
-import { getStoryProtocolExplorerUrl, isValidStoryProtocolIpId } from "@/lib/utils/story-protocol-config"
+import {Button} from "@/components/ui/button"
+import {Badge} from "@/components/ui/badge"
+import {ExternalLink, Link2} from "lucide-react"
+import {
+  getStoryProtocolExplorerUrl,
+  isValidStoryProtocolIpId,
+} from "@/lib/utils/story-protocol-config"
 
 interface StoryProtocolLinkProps {
   ipId: string | null | undefined
@@ -11,12 +14,12 @@ interface StoryProtocolLinkProps {
   className?: string
 }
 
-export function StoryProtocolLink({ 
-  ipId, 
+export function StoryProtocolLink({
+  ipId,
   submissionStatus,
-  variant = "button", 
+  variant = "button",
   size = "sm",
-  className = ""
+  className = "",
 }: StoryProtocolLinkProps) {
   // Only show for approved submissions with valid IP IDs
   if (!isValidStoryProtocolIpId(ipId) || submissionStatus !== "approved") {
@@ -27,18 +30,20 @@ export function StoryProtocolLink({
 
   const content = (
     <>
-      <Link2 className="h-4 w-4 mr-2" />
-      View on Story Protocol
-      <ExternalLink className="h-3 w-3 ml-1" />
+      <Link2 className='h-4 w-4 mr-2' />
+      View on Story
+      <ExternalLink className='h-3 w-3 ml-1' />
     </>
   )
 
   if (variant === "badge") {
     return (
-      <Badge 
-        variant="secondary" 
+      <Badge
+        variant='secondary'
         className={`cursor-pointer hover:bg-primary/10 transition-colors ${className}`}
-        onClick={() => window.open(explorerUrl, '_blank', 'noopener,noreferrer')}
+        onClick={() =>
+          window.open(explorerUrl, "_blank", "noopener,noreferrer")
+        }
       >
         {content}
       </Badge>
@@ -49,8 +54,8 @@ export function StoryProtocolLink({
     return (
       <a
         href={explorerUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+        target='_blank'
+        rel='noopener noreferrer'
         className={`inline-flex items-center text-primary hover:text-primary/80 transition-colors text-sm ${className}`}
       >
         {content}
@@ -61,16 +66,12 @@ export function StoryProtocolLink({
   // Default button variant
   return (
     <Button
-      variant="outline"
+      variant='outline'
       size={size}
       className={`flex-1 ${className}`}
       asChild
     >
-      <a
-        href={explorerUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a href={explorerUrl} target='_blank' rel='noopener noreferrer'>
         {content}
       </a>
     </Button>
@@ -83,10 +84,10 @@ interface StoryProtocolStatusProps {
   showFull?: boolean
 }
 
-export function StoryProtocolStatus({ 
-  ipId, 
+export function StoryProtocolStatus({
+  ipId,
   submissionStatus,
-  showFull = false 
+  showFull = false,
 }: StoryProtocolStatusProps) {
   if (submissionStatus !== "approved") {
     return null
@@ -94,16 +95,18 @@ export function StoryProtocolStatus({
 
   if (!isValidStoryProtocolIpId(ipId)) {
     return (
-      <div className="flex items-center text-sm text-muted-foreground">
-        <Link2 className="h-4 w-4 mr-2" />
-        {showFull ? "Story Protocol registration pending" : "Registration pending"}
+      <div className='flex items-center text-sm text-muted-foreground'>
+        <Link2 className='h-4 w-4 mr-2' />
+        {showFull
+          ? "Story Protocol registration pending"
+          : "Registration pending"}
       </div>
     )
   }
 
   return (
-    <div className="flex items-center text-sm text-green-600">
-      <Link2 className="h-4 w-4 mr-2" />
+    <div className='flex items-center text-sm text-green-600'>
+      <Link2 className='h-4 w-4 mr-2' />
       {showFull ? "Registered on Story Protocol" : "Registered"}
     </div>
   )
