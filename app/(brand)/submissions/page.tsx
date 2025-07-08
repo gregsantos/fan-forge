@@ -96,8 +96,8 @@ export default async function BrandSubmissionsPage({
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Total Submissions
               </CardTitle>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20 backdrop-blur-sm border border-white/20'>
-                <FileImage className='h-4 w-4 bg-gradient-to-br from-gradient-blue to-gradient-cyan bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-gradient-blue to-gradient-cyan backdrop-blur-sm border border-white/20 shadow-lg'>
+                <FileImage className='h-4 w-4 text-white' />
               </div>
             </CardHeader>
             <CardContent>
@@ -112,8 +112,8 @@ export default async function BrandSubmissionsPage({
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Pending Review
               </CardTitle>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-white/20'>
-                <Eye className='h-4 w-4 bg-gradient-to-br from-orange-500 to-red-500 bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+                <Eye className='h-4 w-4 text-white' />
               </div>
             </CardHeader>
             <CardContent>
@@ -131,8 +131,8 @@ export default async function BrandSubmissionsPage({
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Approved
               </CardTitle>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-white/20'>
-                <ThumbsUp className='h-4 w-4 bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+                <ThumbsUp className='h-4 w-4 text-white' />
               </div>
             </CardHeader>
             <CardContent>
@@ -150,8 +150,8 @@ export default async function BrandSubmissionsPage({
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Rejected
               </CardTitle>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-red-500/20 to-pink-500/20 backdrop-blur-sm border border-white/20'>
-                <ThumbsDown className='h-4 w-4 bg-gradient-to-br from-red-500 to-pink-500 bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-red-500 to-pink-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+                <ThumbsDown className='h-4 w-4 text-white' />
               </div>
             </CardHeader>
             <CardContent>
@@ -166,8 +166,8 @@ export default async function BrandSubmissionsPage({
               <CardTitle className='text-sm font-medium text-muted-foreground'>
                 Withdrawn
               </CardTitle>
-              <div className='p-3 rounded-xl bg-gradient-to-br from-gray-500/20 to-slate-500/20 backdrop-blur-sm border border-white/20'>
-                <MessageSquare className='h-4 w-4 bg-gradient-to-br from-gray-500 to-slate-500 bg-clip-text text-transparent' />
+              <div className='p-3 rounded-xl bg-gradient-to-br from-gray-500 to-slate-500 backdrop-blur-sm border border-white/20 shadow-lg'>
+                <MessageSquare className='h-4 w-4 text-white' />
               </div>
             </CardHeader>
             <CardContent>
