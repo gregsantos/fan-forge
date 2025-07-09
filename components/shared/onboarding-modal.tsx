@@ -35,6 +35,20 @@ export default function OnboardingModal({ trigger, autoOpen = false }: Onboardin
     </Button>
   )
 
+  // If autoOpen is true and no trigger is provided, render only the dialog content
+  if (autoOpen && !trigger) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl p-0 gap-0">
+          <BrandCreationForm 
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
+          />
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
