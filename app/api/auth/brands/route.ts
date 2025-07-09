@@ -5,6 +5,7 @@ import {createPermissionService} from "@/lib/auth/permissions"
 import {db, brands, userRoles, roles} from "@/db"
 import {eq, and} from "drizzle-orm"
 import {z} from "zod"
+import {clearUserRoleCache} from "@/lib/auth-utils"
 
 const createBrandSchema = z.object({
   name: z.string().min(1, "Brand name is required").max(100, "Brand name too long"),
@@ -88,12 +89,19 @@ export async function POST(request: NextRequest) {
       })
       .returning()
 
-    // Associate the user with their new brand
-    await db.insert(userRoles).values({
-      userId: user.id,
-      roleId: brandAdminRole.id,
-      brandId: newBrand.id,
-    })
+    // Update the existing user role to associate with the new brand
+    await db
+      .update(userRoles)
+      .set({
+        brandId: newBrand.id,
+      })
+      .where(and(
+        eq(userRoles.userId, user.id),
+        eq(userRoles.roleId, brandAdminRole.id)
+      ))
+
+    // Clear the user's role cache so the dashboard refreshes properly
+    clearUserRoleCache(user.id)
 
     return NextResponse.json({
       brand: newBrand,
