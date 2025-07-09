@@ -83,6 +83,12 @@ function dateToDatetimeLocal(date: Date | null | undefined): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
+// Helper function to convert datetime-local string to Date
+function datetimeLocalToDate(dateString: string): Date | undefined {
+  if (!dateString) return undefined
+  return new Date(dateString)
+}
+
 export default function EditCampaignClient({
   campaign,
   ipKits,
@@ -106,8 +112,8 @@ export default function EditCampaignClient({
       guidelines: campaign.guidelines,
       ipKitId: campaign.ipKitId || "",
       status: campaign.status,
-      startDate: dateToDatetimeLocal(campaign.startDate),
-      endDate: dateToDatetimeLocal(campaign.endDate),
+      startDate: campaign.startDate ? new Date(campaign.startDate) : undefined,
+      endDate: campaign.endDate ? new Date(campaign.endDate) : undefined,
       maxSubmissions: campaign.maxSubmissions || undefined,
       rewardAmount: campaign.rewardAmount || undefined,
       rewardCurrency: campaign.rewardCurrency as
@@ -128,8 +134,8 @@ export default function EditCampaignClient({
       guidelines: campaign.guidelines,
       ipKitId: campaign.ipKitId || "",
       status: campaign.status,
-      startDate: dateToDatetimeLocal(campaign.startDate),
-      endDate: dateToDatetimeLocal(campaign.endDate),
+      startDate: campaign.startDate ? new Date(campaign.startDate) : undefined,
+      endDate: campaign.endDate ? new Date(campaign.endDate) : undefined,
       maxSubmissions: campaign.maxSubmissions || undefined,
       rewardAmount: campaign.rewardAmount || undefined,
       rewardCurrency: campaign.rewardCurrency as
@@ -154,8 +160,8 @@ export default function EditCampaignClient({
           },
           body: JSON.stringify({
             ...data,
-            startDate: data.startDate ? new Date(data.startDate).toISOString() : null,
-            endDate: data.endDate ? new Date(data.endDate).toISOString() : null,
+            startDate: data.startDate ? data.startDate.toISOString() : null,
+            endDate: data.endDate ? data.endDate.toISOString() : null,
           }),
         })
 
@@ -422,7 +428,7 @@ export default function EditCampaignClient({
                     <Input
                       id='startDate'
                       type='datetime-local'
-                      {...register("startDate")}
+                      {...register("startDate", { valueAsDate: true })}
                     />
                     {errors.startDate && (
                       <p className='text-sm text-destructive'>
@@ -436,7 +442,7 @@ export default function EditCampaignClient({
                     <Input
                       id='endDate'
                       type='datetime-local'
-                      {...register("endDate")}
+                      {...register("endDate", { valueAsDate: true })}
                     />
                     {errors.endDate && (
                       <p className='text-sm text-destructive'>
@@ -444,6 +450,83 @@ export default function EditCampaignClient({
                       </p>
                     )}
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Advanced Options */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Advanced Options</CardTitle>
+                <CardDescription>
+                  Additional campaign settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className='space-y-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='maxSubmissions'>Maximum Submissions</Label>
+                  <Input
+                    id='maxSubmissions'
+                    type='number'
+                    min='1'
+                    placeholder='Leave empty for unlimited'
+                    {...register("maxSubmissions", {
+                      valueAsNumber: true,
+                    })}
+                  />
+                  {errors.maxSubmissions && (
+                    <p className='text-sm text-destructive'>{errors.maxSubmissions.message}</p>
+                  )}
+                </div>
+
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                  <div className='space-y-2'>
+                    <Label htmlFor='rewardAmount'>Reward Amount</Label>
+                    <Input
+                      id='rewardAmount'
+                      type='number'
+                      min='0'
+                      placeholder='0'
+                      {...register("rewardAmount", {
+                        valueAsNumber: true,
+                      })}
+                    />
+                    {errors.rewardAmount && (
+                      <p className='text-sm text-destructive'>{errors.rewardAmount.message}</p>
+                    )}
+                  </div>
+
+                  <div className='space-y-2'>
+                    <Label htmlFor='rewardCurrency'>Currency</Label>
+                    <Select
+                      value={watchedValues.rewardCurrency || "USD"}
+                      onValueChange={(value) => setValue("rewardCurrency", value as any)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="GBP">GBP</SelectItem>
+                        <SelectItem value="CAD">CAD</SelectItem>
+                        <SelectItem value="AUD">AUD</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='briefDocument'>Brief Document URL</Label>
+                  <Input
+                    id='briefDocument'
+                    type='url'
+                    placeholder='https://example.com/campaign-brief.pdf'
+                    {...register("briefDocument")}
+                  />
+                  {errors.briefDocument && (
+                    <p className='text-sm text-destructive'>{errors.briefDocument.message}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -26,19 +26,19 @@ export const campaignSchema = z.object({
   guidelines: z.string()
     .min(20, "Guidelines must be at least 20 characters")
     .max(2000, "Guidelines must not exceed 2000 characters"),
-  ipKitId: z.string().optional(),
-  imageUrl: z.string().url("Must be a valid URL").optional(),
-  thumbnailUrl: z.string().url("Must be a valid URL").optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  maxSubmissions: z.number().int().min(1, "Must allow at least 1 submission").optional(),
-  rewardAmount: z.number().int().min(0, "Reward amount must be non-negative").optional(),
+  ipKitId: z.string().optional().transform(val => val === "" ? undefined : val),
+  imageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")).transform(val => val === "" ? undefined : val),
+  thumbnailUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")).transform(val => val === "" ? undefined : val),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
+  maxSubmissions: z.number().int().min(1, "Must allow at least 1 submission").optional().or(z.nan().transform(() => undefined)),
+  rewardAmount: z.number().int().min(0, "Reward amount must be non-negative").optional().or(z.nan().transform(() => undefined)),
   rewardCurrency: z.enum(["USD", "EUR", "GBP", "CAD", "AUD"]).default("USD"),
-  briefDocument: z.string().optional(),
+  briefDocument: z.string().url("Must be a valid URL").optional().or(z.literal("")).transform(val => val === "" ? undefined : val),
   status: z.enum(["draft", "active", "paused", "closed"]).default("draft"),
 }).refine((data) => {
   if (data.startDate && data.endDate) {
-    return new Date(data.endDate) > new Date(data.startDate);
+    return data.endDate > data.startDate;
   }
   return true;
 }, {
@@ -46,7 +46,7 @@ export const campaignSchema = z.object({
   path: ["endDate"],
 }).refine((data) => {
   if (data.endDate) {
-    return new Date(data.endDate) > new Date();
+    return data.endDate > new Date();
   }
   return true;
 }, {
