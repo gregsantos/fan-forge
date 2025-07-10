@@ -259,35 +259,37 @@ export default async function BrandDashboardPage() {
       )}
 
       {/* Stats Cards */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
-        {stats.map(stat => (
-          <Card
-            key={stat.title}
-            className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'
-          >
-            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium text-muted-foreground'>
-                {stat.title}
-              </CardTitle>
-              <div
-                className={`p-3 rounded-xl bg-gradient-to-br ${stat.gradient} backdrop-blur-sm border border-white/20 shadow-lg`}
-              >
-                <stat.icon className='h-5 w-5 text-white' />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`text-3xl font-bold bg-gradient-to-br ${stat.gradient} bg-clip-text text-transparent`}
-              >
-                {stat.value}
-              </div>
-              <p className='text-xs text-muted-foreground mt-1'>
-                {stat.description}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {!showOnboarding && (
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
+          {stats.map(stat => (
+            <Card
+              key={stat.title}
+              className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'
+            >
+              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                <CardTitle className='text-sm font-medium text-muted-foreground'>
+                  {stat.title}
+                </CardTitle>
+                <div
+                  className={`p-3 rounded-xl bg-gradient-to-br ${stat.gradient} backdrop-blur-sm border border-white/20 shadow-lg`}
+                >
+                  <stat.icon className='h-5 w-5 text-white' />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div
+                  className={`text-3xl font-bold bg-gradient-to-br ${stat.gradient} bg-clip-text text-transparent`}
+                >
+                  {stat.value}
+                </div>
+                <p className='text-xs text-muted-foreground mt-1'>
+                  {stat.description}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Quick Actions */}
       {!showOnboarding && (
@@ -347,7 +349,8 @@ export default async function BrandDashboardPage() {
       </Card>
       )}
 
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+      {!showOnboarding && (
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
         {/* Recent Campaigns */}
         <Card className='border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/20'>
           <CardHeader>
@@ -615,7 +618,8 @@ export default async function BrandDashboardPage() {
             )}
           </CardContent>
         </Card>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
