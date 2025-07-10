@@ -148,7 +148,16 @@ export default async function BrandDashboardPage() {
 
   // Get current user and check if they're a brand admin with no brands
   const user = await getCurrentUser()
-  const userWithRoles = user ? await getUserWithRoles(user.id) : null
+  
+  // Ensure user profile exists in our database (fallback for missed registrations)
+  if (user && !(await getUserWithRoles(user.id))) {
+    console.log(`⚠️  User ${user.id} missing from database, creating profile...`)
+    const { ensureUserExistsSync } = await import('@/lib/auth-utils')
+    await ensureUserExistsSync(user)
+    console.log(`✅ User profile created for ${user.id}`)
+  }
+  
+  const userWithRoles = user ? await getUserWithRoles(user.id, false) : null // Force fresh query
   const brandIds = user ? await getUserBrandIds(user.id) : []
   const isBrandAdmin = userWithRoles?.roles?.some((r: any) => r.role.name === "brand_admin")
   const showOnboarding = isBrandAdmin && brandIds.length === 0

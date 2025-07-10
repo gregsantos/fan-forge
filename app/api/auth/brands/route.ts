@@ -90,6 +90,8 @@ export async function POST(request: NextRequest) {
       .returning()
 
     // Update the existing user role to associate with the new brand
+    console.log(`🔄 Updating user role for user ${user.id} with brand ${newBrand.id}`)
+    
     await db
       .update(userRoles)
       .set({
@@ -99,6 +101,25 @@ export async function POST(request: NextRequest) {
         eq(userRoles.userId, user.id),
         eq(userRoles.roleId, brandAdminRole.id)
       ))
+
+    // Verify the update worked by querying the updated role
+    const updatedRole = await db
+      .select({ brandId: userRoles.brandId })
+      .from(userRoles)
+      .where(and(
+        eq(userRoles.userId, user.id),
+        eq(userRoles.roleId, brandAdminRole.id)
+      ))
+      .limit(1)
+
+    if (!updatedRole.length || updatedRole[0].brandId !== newBrand.id) {
+      console.error(`❌ Failed to update user role for user ${user.id} with brand ${newBrand.id}`)
+      return NextResponse.json({
+        error: "Failed to associate user with brand"
+      }, {status: 500})
+    }
+
+    console.log(`✅ Successfully associated user ${user.id} with brand ${newBrand.id}`)
 
     // Clear the user's role cache so the dashboard refreshes properly
     clearUserRoleCache(user.id)
