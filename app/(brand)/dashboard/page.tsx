@@ -155,12 +155,11 @@ export default async function BrandDashboardPage() {
     clearUserRoleCache(user.id)
   }
   
-  // Ensure user profile exists in our database (fallback for missed registrations)
-  if (user && !(await getUserWithRoles(user.id))) {
-    console.log(`⚠️  User ${user.id} missing from database, creating profile...`)
+  // CRITICAL: Ensure user profile exists BEFORE checking roles (fixes new user onboarding)
+  if (user) {
     const { ensureUserExistsSync } = await import('@/lib/auth-utils')
     await ensureUserExistsSync(user)
-    console.log(`✅ User profile created for ${user.id}`)
+    console.log(`✅ User profile ensured for ${user.id}`)
   }
   
   const userWithRoles = user ? await getUserWithRoles(user.id, false) : null // Force fresh query
@@ -172,10 +171,13 @@ export default async function BrandDashboardPage() {
   if (user) {
     console.log(`🔍 Dashboard debug for user ${user.id}:`)
     console.log(`  - userWithRoles exists: ${!!userWithRoles}`)
+    console.log(`  - userWithRoles.roles:`, userWithRoles?.roles)
     console.log(`  - roles: ${userWithRoles?.roles?.map((r: any) => r.role.name).join(', ') || 'none'}`)
     console.log(`  - brandIds: [${brandIds.join(', ')}]`)
+    console.log(`  - brandIds.length: ${brandIds.length}`)
     console.log(`  - isBrandAdmin: ${isBrandAdmin}`)
-    console.log(`  - showOnboarding: ${showOnboarding}`)
+    console.log(`  - showOnboarding calculation: ${isBrandAdmin} && ${brandIds.length === 0} = ${showOnboarding}`)
+    console.log(`  - final showOnboarding: ${showOnboarding}`)
   }
 
   const activeCampaigns = campaigns.filter((c: any) => c.status === "active")
