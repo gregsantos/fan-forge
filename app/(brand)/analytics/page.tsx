@@ -108,8 +108,14 @@ export default async function AnalyticsPage() {
   }
 
   try {
+    // Clear cache to ensure fresh data (fixes brand creation redirect timing)
+    if (user) {
+      const { clearUserRoleCache } = await import('@/lib/auth-utils')
+      clearUserRoleCache(user.id)
+    }
+    
     // Verify user has brand access
-    const userBrandIds = await getUserBrandIds(user.id)
+    const userBrandIds = await getUserBrandIds(user.id, false) // Force fresh query
     if (userBrandIds.length === 0) {
       redirect("/dashboard")
     }

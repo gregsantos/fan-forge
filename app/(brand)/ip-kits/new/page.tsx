@@ -15,9 +15,15 @@ export default async function NewIpKitPage() {
   }
 
   try {
+    // Clear cache to ensure fresh data (fixes brand creation redirect timing)
+    if (user) {
+      const { clearUserRoleCache } = await import('@/lib/auth-utils')
+      clearUserRoleCache(user.id)
+    }
+    
     // Get user's brand IDs and roles
-    const brandIds = await getUserBrandIds(user.id)
-    const userWithRoles = await getUserWithRoles(user.id)
+    const brandIds = await getUserBrandIds(user.id, false) // Force fresh query
+    const userWithRoles = await getUserWithRoles(user.id, false) // Force fresh query
     
     // Check if user is a brand admin
     const isBrandAdmin = userWithRoles?.roles?.some((r: any) => r.role.name === "brand_admin")

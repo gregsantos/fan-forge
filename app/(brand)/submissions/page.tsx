@@ -81,11 +81,18 @@ export default async function BrandSubmissionsPage({
   try {
     // Get current user and check role
     const user = await getCurrentUser()
-    const userWithRoles = user ? await getUserWithRoles(user.id) : null
+    
+    // Clear cache to ensure fresh data (fixes brand creation redirect timing)
+    if (user) {
+      const { clearUserRoleCache } = await import('@/lib/auth-utils')
+      clearUserRoleCache(user.id)
+    }
+    
+    const userWithRoles = user ? await getUserWithRoles(user.id, false) : null // Force fresh query
     const isBrandAdmin = userWithRoles?.roles?.some(
       (r: any) => r.role.name === "brand_admin"
     )
-    const brandIds = user ? await getUserBrandIds(user.id) : []
+    const brandIds = user ? await getUserBrandIds(user.id, false) : [] // Force fresh query
     const showBrandCreation = isBrandAdmin && brandIds.length === 0
 
     // If user needs to create a brand first, show brand creation UI

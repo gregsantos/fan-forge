@@ -30,8 +30,14 @@ export default async function IpKitEditPage({ params }: PageProps) {
       redirect("/ip-kits")
     }
 
+    // Clear cache to ensure fresh data (fixes brand creation redirect timing)
+    if (user) {
+      const { clearUserRoleCache } = await import('@/lib/auth-utils')
+      clearUserRoleCache(user.id)
+    }
+    
     // Verify user has access to this IP kit's brand
-    const userBrandIds = await getUserBrandIds(user.id)
+    const userBrandIds = await getUserBrandIds(user.id, false) // Force fresh query
     if (!userBrandIds.includes(ipKitData.brandId)) {
       redirect("/ip-kits")
     }
