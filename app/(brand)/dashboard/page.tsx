@@ -149,6 +149,12 @@ export default async function BrandDashboardPage() {
   // Get current user and check if they're a brand admin with no brands
   const user = await getCurrentUser()
   
+  // Clear cache for dashboard to ensure fresh data (fixes login redirect timing issues)
+  if (user) {
+    const { clearUserRoleCache } = await import('@/lib/auth-utils')
+    clearUserRoleCache(user.id)
+  }
+  
   // Ensure user profile exists in our database (fallback for missed registrations)
   if (user && !(await getUserWithRoles(user.id))) {
     console.log(`⚠️  User ${user.id} missing from database, creating profile...`)
@@ -158,9 +164,19 @@ export default async function BrandDashboardPage() {
   }
   
   const userWithRoles = user ? await getUserWithRoles(user.id, false) : null // Force fresh query
-  const brandIds = user ? await getUserBrandIds(user.id) : []
+  const brandIds = user ? await getUserBrandIds(user.id, false) : [] // Force fresh query for brand IDs too
   const isBrandAdmin = userWithRoles?.roles?.some((r: any) => r.role.name === "brand_admin")
   const showOnboarding = isBrandAdmin && brandIds.length === 0
+
+  // Debug logging for troubleshooting
+  if (user) {
+    console.log(`🔍 Dashboard debug for user ${user.id}:`)
+    console.log(`  - userWithRoles exists: ${!!userWithRoles}`)
+    console.log(`  - roles: ${userWithRoles?.roles?.map((r: any) => r.role.name).join(', ') || 'none'}`)
+    console.log(`  - brandIds: [${brandIds.join(', ')}]`)
+    console.log(`  - isBrandAdmin: ${isBrandAdmin}`)
+    console.log(`  - showOnboarding: ${showOnboarding}`)
+  }
 
   const activeCampaigns = campaigns.filter((c: any) => c.status === "active")
   const stats = calculateStats(campaigns, submissions, dashboardStats)

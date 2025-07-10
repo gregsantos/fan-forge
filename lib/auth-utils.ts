@@ -256,9 +256,9 @@ export function clearUserRoleCache(userId?: string) {
 /**
  * Get brand IDs that a user has access to
  */
-export async function getUserBrandIds(userId: string): Promise<string[]> {
+export async function getUserBrandIds(userId: string, useCache = true): Promise<string[]> {
   try {
-    const userWithRoles = await getUserWithRoles(userId)
+    const userWithRoles = await getUserWithRoles(userId, useCache)
     if (!userWithRoles) {
       return []
     }
