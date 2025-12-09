@@ -1,21 +1,16 @@
-import { mockCampaigns } from "@/lib/mock-data"
 import { notFound } from "next/navigation"
 import { CampaignDiscoverClient } from "./campaign-discover-client"
-
-export async function generateStaticParams() {
-  return mockCampaigns.map((campaign) => ({
-    id: campaign.id,
-  }))
-}
+import { getCampaignById } from "@/lib/data/campaigns"
 
 interface CampaignDiscoverPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
-export default function CampaignDiscoverPage({ params }: CampaignDiscoverPageProps) {
-  const campaign = mockCampaigns.find(c => c.id === params.id)
+export default async function CampaignDiscoverPage({ params }: CampaignDiscoverPageProps) {
+  const { id } = await params
+  const campaign = await getCampaignById(id)
   
   if (!campaign) {
     notFound()

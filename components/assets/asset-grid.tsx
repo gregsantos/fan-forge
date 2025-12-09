@@ -1,0 +1,540 @@
+"use client"
+
+import {useState, useEffect, useCallback} from "react"
+import {Card, CardContent} from "@/components/ui/card"
+import {Button} from "@/components/ui/button"
+import {Input} from "@/components/ui/input"
+import {Badge} from "@/components/ui/badge"
+import {Skeleton} from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Search,
+  MoreVertical,
+  Download,
+  Trash2,
+  Eye,
+  Copy,
+  FileImage,
+  File,
+  Package,
+  Plus,
+  Minus,
+} from "lucide-react"
+import {cn} from "@/lib/utils"
+
+export interface Asset {
+  id: string
+  filename: string
+  originalFilename: string
+  url: string
+  thumbnailUrl?: string
+  category:
+    | "characters"
+    | "backgrounds"
+    | "logos"
+    | "titles"
+    | "props"
+    | "other"
+  tags: string[]
+  metadata: {
+    width: number
+    height: number
+    fileSize: number
+    mimeType: string
+    colorPalette?: string[]
+  }
+  ipId?: string // Optional blockchain address
+  ipKitId: string
+  uploadedBy?: string
+  createdAt: string
+}
+
+interface AssetGridProps {
+  ipKitId?: string
+  onAssetSelect?: (asset: Asset) => void
+  onAssetDelete?: (assetId: string) => void
+  selectable?: boolean
+  selectedAssets?: string[]
+  className?: string
+  availableIpKits?: Array<{
+    id: string
+    title: string
+    description?: string
+  }>
+}
+
+const CATEGORIES = [
+  {value: "all", label: "All Categories"},
+  {value: "characters", label: "Characters"},
+  {value: "backgrounds", label: "Backgrounds"},
+  {value: "logos", label: "Logos"},
+  {value: "titles", label: "Titles"},
+  {value: "props", label: "Props"},
+  {value: "other", label: "Other"},
+]
+
+export function AssetGrid({
+  ipKitId,
+  onAssetSelect,
+  onAssetDelete,
+  selectable = false,
+  selectedAssets = [],
+  className,
+  availableIpKits = [],
+}: AssetGridProps) {
+  const [assets, setAssets] = useState<Asset[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchAssets = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const params = new URLSearchParams()
+      // Note: ipKitId is intentionally not included to fetch ALL brand assets
+      // if (ipKitId) params.append('ipKitId', ipKitId)
+      if (selectedCategory !== "all")
+        params.append("category", selectedCategory)
+      if (searchQuery) params.append("search", searchQuery)
+
+      const response = await fetch(`/api/assets?${params}`)
+      if (!response.ok) {
+        throw new Error("Failed to fetch assets")
+      }
+
+      const data = await response.json()
+      setAssets(data.assets)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load assets")
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedCategory, searchQuery])
+
+  useEffect(() => {
+    fetchAssets()
+  }, [fetchAssets])
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const sizes = ["Bytes", "KB", "MB", "GB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+  }
+
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith("image/")) {
+      return <FileImage className='h-8 w-8' />
+    }
+    return <File className='h-8 w-8' />
+  }
+
+  const handleAssetClick = (asset: Asset) => {
+    if (selectable && onAssetSelect) {
+      onAssetSelect(asset)
+    }
+  }
+
+  const handleDownload = async (asset: Asset) => {
+    try {
+      const response = await fetch(asset.url)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = asset.originalFilename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error("Download failed:", err)
+    }
+  }
+
+  const handleCopyUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url)
+      // You might want to show a toast notification here
+    } catch (err) {
+      console.error("Failed to copy URL:", err)
+    }
+  }
+
+  const getCategoryBadgeStyles = (category: string) => {
+    switch (category) {
+      case "characters":
+        return "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
+      case "backgrounds":
+        return "bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-transparent"
+      case "logos":
+        return "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent"
+      case "titles":
+        return "bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent"
+      case "props":
+        return "bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent"
+      case "other":
+        return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
+      default:
+        return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
+    }
+  }
+
+  const handleAddToIpKit = async (assetId: string, ipKitId: string) => {
+    try {
+      const response = await fetch(`/api/assets/${assetId}/ip-kits`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ipKitId}),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to add asset to IP kit")
+      }
+
+      // Refresh assets to show updated assignments
+      fetchAssets()
+    } catch (err) {
+      console.error("Failed to add asset to IP kit:", err)
+    }
+  }
+
+  const handleRemoveFromIpKit = async (assetId: string, ipKitId: string) => {
+    try {
+      const response = await fetch(`/api/assets/${assetId}/ip-kits`, {
+        method: "DELETE",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ipKitId}),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to remove asset from IP kit")
+      }
+
+      // Refresh assets to show updated assignments
+      fetchAssets()
+    } catch (err) {
+      console.error("Failed to remove asset from IP kit:", err)
+    }
+  }
+
+  if (error) {
+    return (
+      <div className='text-center py-8'>
+        <FileImage className='mx-auto h-12 w-12 text-muted-foreground mb-4' />
+        <h3 className='text-lg font-medium mb-2'>
+          {error === "Failed to fetch assets" ? "No Assets Found" : "Unable to Load Assets"}
+        </h3>
+        <p className='text-muted-foreground mb-4'>
+          {error === "Failed to fetch assets" 
+            ? "Start building your brand library by uploading your first assets. You can organize them into IP kits and use them in campaigns."
+            : error}
+        </p>
+        <div className='flex flex-col sm:flex-row gap-3 justify-center'>
+          {error === "Failed to fetch assets" ? (
+            <Button onClick={() => {
+              // Switch to upload tab
+              const uploadTab = document.querySelector('[data-value="upload"]') as HTMLElement
+              if (uploadTab) uploadTab.click()
+            }} variant="gradient">
+              <Plus className='mr-2 h-4 w-4' />
+              Upload Your First Assets
+            </Button>
+          ) : (
+            <>
+              <Button onClick={fetchAssets} variant="outline">
+                Try Again
+              </Button>
+              <Button onClick={() => {
+                // Switch to upload tab
+                const uploadTab = document.querySelector('[data-value="upload"]') as HTMLElement
+                if (uploadTab) uploadTab.click()
+              }} variant="gradient">
+                <Plus className='mr-2 h-4 w-4' />
+                Upload Assets
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn("space-y-6", className)}>
+      {/* Filters */}
+      <div className='flex flex-col sm:flex-row gap-4'>
+        <div className='relative flex-1'>
+          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+          <Input
+            placeholder='Search assets...'
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className='pl-10'
+          />
+        </div>
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className='w-full sm:w-48'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORIES.map(category => (
+              <SelectItem key={category.value} value={category.value}>
+                {category.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Asset Grid */}
+      {loading ? (
+        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'>
+          {Array.from({length: 8}).map((_, i) => (
+            <Card key={i} className='aspect-square'>
+              <CardContent className='p-0'>
+                <Skeleton className='w-full h-full rounded-lg' />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : assets.length === 0 ? (
+        <div className='text-center py-12'>
+          <FileImage className='mx-auto h-12 w-12 text-muted-foreground mb-4' />
+          <h3 className='text-lg font-medium mb-2'>No assets found</h3>
+          <p className='text-muted-foreground mb-4'>
+            {searchQuery || selectedCategory !== "all"
+              ? "Try adjusting your search or filters to see more results."
+              : "Upload your first assets to start building your brand library and create IP kits for campaigns."}
+          </p>
+          {!(searchQuery || selectedCategory !== "all") && (
+            <Button onClick={() => {
+              // Switch to upload tab
+              const uploadTab = document.querySelector('[data-value="upload"]') as HTMLElement
+              if (uploadTab) uploadTab.click()
+            }} variant="gradient">
+              <Plus className='mr-2 h-4 w-4' />
+              Upload Your First Assets
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'>
+          {assets.map(asset => (
+            <Card
+              key={asset.id}
+              className={cn(
+                "group relative aspect-square overflow-hidden transition-all hover:shadow-md",
+                selectable && "cursor-pointer hover:ring-2 hover:ring-primary",
+                selectedAssets.includes(asset.id) && "ring-2 ring-primary"
+              )}
+              onClick={() => handleAssetClick(asset)}
+            >
+              <CardContent className='p-0 h-full'>
+                {/* Asset Preview */}
+                <div className='relative h-full'>
+                  {asset.thumbnailUrl ||
+                  asset.metadata.mimeType.startsWith("image/") ? (
+                    <img
+                      src={asset.thumbnailUrl || asset.url}
+                      alt={asset.originalFilename}
+                      className='w-full h-full object-cover'
+                      loading='lazy'
+                      onError={e => {
+                        // Handle broken images by showing a placeholder
+                        const target = e.target as HTMLImageElement
+                        target.style.display = "none"
+                        const parent = target.parentElement
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="w-full h-full bg-muted flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed border-muted-foreground/20">
+                              <svg class="h-8 w-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span class="text-xs">Image not found</span>
+                            </div>
+                          `
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className='w-full h-full bg-muted flex items-center justify-center'>
+                      {getFileIcon(asset.metadata.mimeType)}
+                    </div>
+                  )}
+
+                  {/* Overlay with info */}
+                  <div className='absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-end'>
+                    <div className='w-full p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity'>
+                      <p className='text-sm font-medium truncate mb-1'>
+                        {asset.originalFilename}
+                      </p>
+                      {asset.ipId && (
+                        <p
+                          className='text-xs font-mono text-gray-300 truncate mb-1'
+                          title={asset.ipId}
+                        >
+                          {asset.ipId}
+                        </p>
+                      )}
+                      <div className='flex items-center justify-between text-xs'>
+                        <span>
+                          {asset.metadata.width}×{asset.metadata.height}
+                        </span>
+                        <span>{formatFileSize(asset.metadata.fileSize)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Category Badge */}
+                  <Badge
+                    className={cn(
+                      "absolute top-2 left-2 capitalize font-medium shadow-sm",
+                      getCategoryBadgeStyles(asset.category)
+                    )}
+                  >
+                    {asset.category}
+                  </Badge>
+
+                  {/* Actions Menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-black/50 hover:bg-black/70 text-white'
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <MoreVertical className='h-4 w-4' />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align='end'>
+                      <DropdownMenuItem
+                        onClick={() => window.open(asset.url, "_blank")}
+                      >
+                        <Eye className='mr-2 h-4 w-4' />
+                        View Full Size
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDownload(asset)}>
+                        <Download className='mr-2 h-4 w-4' />
+                        Download
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleCopyUrl(asset.url)}
+                      >
+                        <Copy className='mr-2 h-4 w-4' />
+                        Copy URL
+                      </DropdownMenuItem>
+                      {asset.ipId && (
+                        <DropdownMenuItem
+                          onClick={() => handleCopyUrl(asset.ipId!)}
+                        >
+                          <Copy className='mr-2 h-4 w-4' />
+                          Copy IP ID
+                        </DropdownMenuItem>
+                      )}
+
+                      {/* IP Kit Management */}
+                      {availableIpKits.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                              <Package className='mr-2 h-4 w-4' />
+                              IP Kit Management
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                              {availableIpKits.map(ipKit => (
+                                <DropdownMenuItem
+                                  key={ipKit.id}
+                                  onClick={() =>
+                                    handleAddToIpKit(asset.id, ipKit.id)
+                                  }
+                                >
+                                  <Plus className='mr-2 h-4 w-4' />
+                                  Add to {ipKit.title}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              {availableIpKits.map(ipKit => (
+                                <DropdownMenuItem
+                                  key={`remove-${ipKit.id}`}
+                                  onClick={() =>
+                                    handleRemoveFromIpKit(asset.id, ipKit.id)
+                                  }
+                                  className='text-orange-600'
+                                >
+                                  <Minus className='mr-2 h-4 w-4' />
+                                  Remove from {ipKit.title}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                        </>
+                      )}
+
+                      {onAssetDelete && (
+                        <DropdownMenuItem
+                          onClick={() => onAssetDelete(asset.id)}
+                          className='text-destructive'
+                        >
+                          <Trash2 className='mr-2 h-4 w-4' />
+                          Delete
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+
+              {/* Tags */}
+              {asset.tags.length > 0 && (
+                <div className='absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent'>
+                  <div className='flex flex-wrap gap-1'>
+                    {asset.tags.slice(0, 2).map(tag => (
+                      <Badge
+                        key={tag}
+                        variant='outline'
+                        className='text-xs bg-black/50 text-white border-white/30'
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                    {asset.tags.length > 2 && (
+                      <Badge
+                        variant='outline'
+                        className='text-xs bg-black/50 text-white border-white/30'
+                      >
+                        +{asset.tags.length - 2}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

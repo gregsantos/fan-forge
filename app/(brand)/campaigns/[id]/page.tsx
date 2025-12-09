@@ -1,21 +1,16 @@
-import { mockCampaigns } from "@/lib/mock-data"
 import { notFound } from "next/navigation"
 import { CampaignDetailClient } from "./campaign-detail-client"
-
-export async function generateStaticParams() {
-  return mockCampaigns.map((campaign) => ({
-    id: campaign.id,
-  }))
-}
+import { getCampaignById } from "@/lib/data/campaigns"
 
 interface CampaignDetailPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
-export default function CampaignDetailPage({ params }: CampaignDetailPageProps) {
-  const campaign = mockCampaigns.find(c => c.id === params.id)
+export default async function CampaignDetailPage({ params }: CampaignDetailPageProps) {
+  const { id } = await params
+  const campaign = await getCampaignById(id)
   
   if (!campaign) {
     notFound()

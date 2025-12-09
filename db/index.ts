@@ -1,6 +1,10 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from './schema'
+import * as dotenv from "dotenv"
+
+// Load environment variables
+dotenv.config({ path: ".env.local" })
 
 // For Drizzle ORM, we use the direct database connection
 // This follows the official Drizzle-Supabase integration guide

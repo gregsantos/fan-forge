@@ -1,0 +1,1 @@
+CREATE INDEX "assets_uploaded_by_idx" ON "assets" USING btree ("uploaded_by");

@@ -79,6 +79,7 @@ export const mockCampaigns: CampaignWithAssets[] = [
       updatedAt: new Date("2024-01-01"),
     },
     submissionCount: 24,
+    featured: true,
   },
   {
     id: "2",
@@ -101,6 +102,7 @@ export const mockCampaigns: CampaignWithAssets[] = [
       updatedAt: new Date("2024-01-01"),
     },
     submissionCount: 12,
+    featured: true,
   },
   {
     id: "3",

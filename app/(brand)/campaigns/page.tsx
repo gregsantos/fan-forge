@@ -1,269 +1,295 @@
-"use client"
-
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { mockCampaigns } from "@/lib/mock-data"
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Calendar, 
-  Users, 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {Badge} from "@/components/ui/badge"
+import {Button} from "@/components/ui/button"
+import {
+  Plus,
+  Calendar,
+  Users,
   Eye,
   Edit,
   MoreHorizontal,
-  FileText
+  FileText,
 } from "lucide-react"
 import Link from "next/link"
+import {CampaignFilters} from "./campaign-filters"
+import {createSearchParams} from "@/lib/utils"
+import {getCampaigns} from "@/lib/data/campaigns"
+import {getCurrentUser, getUserWithRoles, getUserBrandIds} from "@/lib/auth-utils"
+import OnboardingModal from "@/components/shared/onboarding-modal"
 
-export default function BrandCampaignsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+function getStatusColor(status: string) {
+  switch (status) {
+    case "active":
+      return "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent"
+    case "draft":
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
+    case "closed":
+      return "bg-gradient-to-r from-red-500 to-rose-500 text-white border-transparent"
+    case "paused":
+      return "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent"
+    default:
+      return "bg-gradient-to-r from-gray-500 to-slate-500 text-white border-transparent"
+  }
+}
 
-  const filteredCampaigns = mockCampaigns.filter(campaign => {
-    const matchesSearch = campaign.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         campaign.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || campaign.status === statusFilter
-    
-    return matchesSearch && matchesStatus
-  })
+function getStatusText(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1)
+}
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "default"
-      case "draft":
-        return "secondary"
-      case "closed":
-        return "outline"
-      default:
-        return "secondary"
-    }
+function formatDate(date: string | Date) {
+  const dateObj = typeof date === "string" ? new Date(date) : date
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(dateObj)
+}
+
+export default async function BrandCampaignsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{[key: string]: string | string[] | undefined}>
+}) {
+  const resolvedSearchParams = await searchParams
+  const params = {
+    search: Array.isArray(resolvedSearchParams.search)
+      ? resolvedSearchParams.search[0]
+      : resolvedSearchParams.search,
+    status: Array.isArray(resolvedSearchParams.status)
+      ? resolvedSearchParams.status[0]
+      : resolvedSearchParams.status,
+    page: Array.isArray(resolvedSearchParams.page)
+      ? resolvedSearchParams.page[0]
+      : resolvedSearchParams.page || "1",
   }
 
-  const getStatusText = (status: string) => {
-    return status.charAt(0).toUpperCase() + status.slice(1)
+  // Get current user and check role
+  const user = await getCurrentUser()
+  
+  // Clear cache to ensure fresh data (fixes brand creation redirect timing)
+  if (user) {
+    const { clearUserRoleCache } = await import('@/lib/auth-utils')
+    clearUserRoleCache(user.id)
   }
+  
+  const userWithRoles = user ? await getUserWithRoles(user.id, false) : null // Force fresh query
+  const isBrandAdmin = userWithRoles?.roles?.some((r: any) => r.role.name === "brand_admin")
+  const brandIds = user ? await getUserBrandIds(user.id, false) : [] // Force fresh query
+  const showBrandCreation = isBrandAdmin && brandIds.length === 0
+
+  const data = await getCampaigns(params)
+  const {campaigns, pagination} = data
+  const hasCampaigns = campaigns.length > 0
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className='container mx-auto p-6 space-y-8'>
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Campaigns</h1>
-          <p className="text-muted-foreground">
-            Create and manage your creator collaboration campaigns
+          <h1 className='text-3xl font-bold tracking-tight'>Campaigns</h1>
+          <p className='text-muted-foreground mt-2'>
+            Manage your brand&apos;s creative campaigns and track submissions
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          New Campaign
-        </Button>
+        {!showBrandCreation && (
+          <Link href='/campaigns/new'>
+            <Button variant='gradient' className='flex items-center gap-2'>
+              <Plus className='h-4 w-4' />
+              Create Campaign
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search campaigns..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={statusFilter === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("all")}
-              >
-                All
-              </Button>
-              <Button
-                variant={statusFilter === "active" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("active")}
-              >
-                Active
-              </Button>
-              <Button
-                variant={statusFilter === "draft" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("draft")}
-              >
-                Draft
-              </Button>
-              <Button
-                variant={statusFilter === "closed" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("closed")}
-              >
-                Closed
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {!showBrandCreation && <CampaignFilters />}
 
-      {/* Campaign Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Campaigns
-            </CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockCampaigns.length}</div>
-            <p className="text-xs text-muted-foreground">
-              All time
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Campaigns
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {mockCampaigns.filter(c => c.status === "active").length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Currently running
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Submissions
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {mockCampaigns.reduce((total, campaign) => total + (campaign.submissionCount || 0), 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              All campaigns
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Campaigns Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredCampaigns.map((campaign) => (
-          <Card key={campaign.id} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-lg line-clamp-1">
-                    {campaign.title}
-                  </CardTitle>
-                  <Badge variant={getStatusColor(campaign.status)}>
-                    {getStatusText(campaign.status)}
-                  </Badge>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
+      {/* Brand Creation Message */}
+      {showBrandCreation && (
+        <Card className='border-0 shadow-lg bg-gradient-to-br from-gradient-blue/5 via-card to-gradient-cyan/5'>
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-gradient-blue to-gradient-cyan">
+                <FileText className="h-8 w-8 text-white" />
               </div>
-              <CardDescription className="line-clamp-2">
-                {campaign.description}
+              <CardTitle className="text-2xl">Create Your Brand First</CardTitle>
+              <CardDescription className="text-base">
+                To create campaigns and manage your brand content, you need to set up your brand identity first.
               </CardDescription>
             </CardHeader>
-            
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Brand:</span>
-                  <span className="font-medium">{campaign.brand?.name}</span>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-3 gap-6 text-center">
+                <div className="space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-gradient-blue/20 to-gradient-cyan/20 flex items-center justify-center">
+                    <span className="text-gradient-blue font-bold">1</span>
+                  </div>
+                  <h4 className="font-medium">Create Brand</h4>
+                  <p className="text-sm text-muted-foreground">Set up your brand identity and information</p>
                 </div>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Submissions:</span>
-                  <span className="font-medium">{campaign.submissionCount}</span>
+                <div className="space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-gradient-purple/20 to-gradient-pink/20 flex items-center justify-center">
+                    <span className="text-gradient-purple font-bold">2</span>
+                  </div>
+                  <h4 className="font-medium">Upload Assets</h4>
+                  <p className="text-sm text-muted-foreground">Upload and organize your brand assets</p>
                 </div>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Assets:</span>
-                  <span className="font-medium">{campaign.assets.length}</span>
-                </div>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Deadline:</span>
-                  <span className="font-medium">
-                    {campaign.endDate ? campaign.endDate.toLocaleDateString() : 'No deadline'}
-                  </span>
+                <div className="space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                    <span className="text-green-600 font-bold">3</span>
+                  </div>
+                  <h4 className="font-medium">Launch Campaigns</h4>
+                  <p className="text-sm text-muted-foreground">Create campaigns for creators to participate</p>
                 </div>
               </div>
+              
+              <div className="flex justify-center">
+                <OnboardingModal 
+                  trigger={
+                    <Button variant='gradient' size="lg" className='shadow-lg'>
+                      <Plus className='mr-2 h-5 w-5' />
+                      Create Your Brand
+                    </Button>
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+      )}
 
-              <div className="flex gap-2 pt-2">
-                <Link href={`/campaigns/${campaign.id}`} className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full">
-                    <Eye className="mr-2 h-4 w-4" />
-                    View
+      {/* Campaign Grid */}
+      {!showBrandCreation && (
+        <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
+        {campaigns.map((campaign: any) => (
+          <Card
+            key={campaign.id}
+            className='group border-0 shadow-lg bg-gradient-to-br from-card via-card to-muted/30 hover:shadow-xl transition-all duration-300'
+          >
+            <CardHeader className='space-y-4'>
+              <div className='flex items-start justify-between'>
+                <Badge
+                  className={`font-medium shadow-sm ${getStatusColor(campaign.status)}`}
+                >
+                  {getStatusText(campaign.status)}
+                </Badge>
+                <div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+                  <Link href={`/campaigns/${campaign.id}`}>
+                    <Button variant='ghost' size='sm'>
+                      <Eye className='h-4 w-4' />
+                    </Button>
+                  </Link>
+                  <Link href={`/campaigns/${campaign.id}/edit`}>
+                    <Button variant='ghost' size='sm'>
+                      <Edit className='h-4 w-4' />
+                    </Button>
+                  </Link>
+                  <Button variant='ghost' size='sm'>
+                    <MoreHorizontal className='h-4 w-4' />
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <CardTitle className='text-xl mb-2 line-clamp-2'>
+                  {campaign.title}
+                </CardTitle>
+                <CardDescription className='line-clamp-3'>
+                  {campaign.description}
+                </CardDescription>
+              </div>
+            </CardHeader>
+
+            <CardContent className='pt-0 space-y-4'>
+              <div className='text-sm text-muted-foreground'>
+                <span className='font-medium'>{campaign.brand_name}</span>
+              </div>
+
+              <div className='flex items-center justify-between text-sm'>
+                <div className='flex items-center gap-2'>
+                  <Calendar className='h-4 w-4 text-muted-foreground' />
+                  <span>
+                    {campaign.deadline
+                      ? formatDate(campaign.deadline)
+                      : "No deadline"}
+                  </span>
+                </div>
+                {campaign.featured && (
+                  <Badge variant='outline' className='text-xs'>
+                    Featured
+                  </Badge>
+                )}
+              </div>
+
+              <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t'>
+                <div className='flex flex-wrap items-center gap-4 text-sm text-muted-foreground'>
+                  <div className='flex items-center gap-1'>
+                    <FileText className='h-4 w-4' />
+                    <span>{campaign.asset_count} assets</span>
+                  </div>
+                  <div className='flex items-center gap-1'>
+                    <Users className='h-4 w-4' />
+                    <span>{campaign.submission_count} submissions</span>
+                  </div>
+                </div>
+                <Link
+                  href={`/campaigns/${campaign.id}`}
+                  className='w-full sm:w-auto'
+                >
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='w-full sm:w-auto'
+                  >
+                    View Details
                   </Button>
                 </Link>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
               </div>
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      {/* Empty State */}
-      {filteredCampaigns.length === 0 && (
-        <Card className="mt-6">
-          <CardContent className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No campaigns found</h3>
-            <p className="text-muted-foreground mb-6">
-              {searchTerm || statusFilter !== "all" 
-                ? "Try adjusting your search or filters."
-                : "Get started by creating your first campaign."
-              }
-            </p>
-            {(!searchTerm && statusFilter === "all") && (
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Campaign
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        </div>
       )}
 
-      {/* Pagination placeholder */}
-      {filteredCampaigns.length > 0 && (
-        <div className="flex justify-center mt-8">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled>
-              Previous
-            </Button>
-            <span className="text-sm text-muted-foreground px-4">
-              Page 1 of 1
-            </span>
-            <Button variant="outline" size="sm" disabled>
-              Next
-            </Button>
-          </div>
+      {/* Empty State */}
+      {!showBrandCreation && campaigns.length === 0 && (
+        <div className='text-center py-12'>
+          <FileText className='mx-auto h-12 w-12 text-muted-foreground mb-4' />
+          <h3 className='text-lg font-medium mb-2'>No campaigns found</h3>
+          <p className='text-muted-foreground mb-4'>
+            {params.search || (params.status && params.status !== "all")
+              ? "Try adjusting your search or filters"
+              : "Create your first campaign to get started"}
+          </p>
+          {!(params.search || (params.status && params.status !== "all")) && (
+            <Link href='/campaigns/new'>
+              <Button variant='gradient'>
+                <Plus className='mr-2 h-4 w-4' />
+                Create Your First Campaign
+              </Button>
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {campaigns.length > 0 && pagination.pages > 1 && (
+        <div className='flex justify-center gap-2'>
+          {Array.from({length: pagination.pages}, (_, i) => i + 1).map(page => (
+            <Link
+              key={page}
+              href={`?${createSearchParams({...params, page: page.toString()}).toString()}`}
+            >
+              <Button
+                variant={page === pagination.page ? "default" : "outline"}
+                size='sm'
+              >
+                {page}
+              </Button>
+            </Link>
+          ))}
         </div>
       )}
     </div>

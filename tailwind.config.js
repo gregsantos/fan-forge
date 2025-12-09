@@ -50,6 +50,14 @@ module.exports = {
           800: "#86198f",
           900: "#701a75",
         },
+        gradient: {
+          purple: "hsl(var(--gradient-purple))",
+          pink: "hsl(var(--gradient-pink))",
+          blue: "hsl(var(--gradient-blue))",
+          cyan: "hsl(var(--gradient-cyan))",
+          indigo: "hsl(var(--gradient-indigo))",
+          rose: "hsl(var(--gradient-rose))",
+        },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
@@ -85,10 +93,46 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: 0 },
         },
+        float: {
+          "0%, 100%": {
+            transform: "translateY(0px) rotate(0deg)",
+          },
+          "50%": {
+            transform: "translateY(-15px) rotate(180deg)",
+          },
+        },
+        "float-delayed": {
+          "0%, 100%": {
+            transform: "translateY(0px) rotate(0deg)",
+          },
+          "50%": {
+            transform: "translateY(-20px) rotate(-180deg)",
+          },
+        },
+        "float-slow": {
+          "0%, 100%": {
+            transform: "translateY(0px) rotate(0deg)",
+          },
+          "50%": {
+            transform: "translateY(-10px) rotate(90deg)",
+          },
+        },
+        "float-fast": {
+          "0%, 100%": {
+            transform: "translateY(0px) rotate(0deg)",
+          },
+          "50%": {
+            transform: "translateY(-25px) rotate(270deg)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        float: "float 6s ease-in-out infinite",
+        "float-delayed": "float-delayed 8s ease-in-out infinite 2s",
+        "float-slow": "float-slow 10s ease-in-out infinite 4s",
+        "float-fast": "float-fast 4s ease-in-out infinite 1s",
       },
     },
   },

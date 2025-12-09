@@ -4,48 +4,89 @@
 
 @layer base {
   :root {
+    /* Base colors */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 300 100% 25%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+
+    /* Enhanced purple-pink-blue theme */
+    --primary: 271 100% 60%; /* Vibrant purple */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 320 100% 74%; /* Bright pink */
+    --secondary-foreground: 0 0% 100%;
+
+    /* Accent colors for gradients and highlights */
+    --accent: 224 100% 70%; /* Bright blue */
+    --accent-foreground: 0 0% 100%;
+
+    /* Muted colors with slight purple tint */
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    /* Interactive states */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 199 89% 48%;
-    --radius: 0.5rem;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 271 100% 60%;
+    --radius: 0.75rem;
+
+    /* Custom gradient colors for animations */
+    --gradient-purple: 271 100% 60%;
+    --gradient-pink: 320 100% 74%;
+    --gradient-blue: 224 100% 70%;
+    --gradient-cyan: 180 100% 70%;
+    --gradient-indigo: 243 100% 70%;
+    --gradient-rose: 351 100% 74%;
+
+    /* Light mode shadow colors */
+    --shadow-color: rgb(0 0 0 / 0.1);
+    --shadow-hover: rgb(0 0 0 / 0.15);
+    --shadow-strong: rgb(0 0 0 / 0.25);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 300 100% 25%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Dark theme with slightly lighter background for better shadow visibility */
+    --background: 240 8% 8%; /* Lightened from 3.9% to 8% */
+    --foreground: 0 0% 98%;
+    --card: 240 8% 8%; /* Lightened from 3.9% to 8% */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 8% 8%; /* Lightened from 3.9% to 8% */
+    --popover-foreground: 0 0% 98%;
+
+    /* Vibrant colors maintained in dark mode */
+    --primary: 271 100% 65%; /* Slightly brighter in dark */
+    --primary-foreground: 210 20% 98%;
+    --secondary: 320 100% 78%; /* Slightly brighter in dark */
+    --secondary-foreground: 210 20% 98%;
+
+    --accent: 224 100% 75%; /* Brighter blue in dark */
+    --accent-foreground: 210 20% 98%;
+
+    /* Dark mode with purple tints - improved contrast */
+    --muted: 240 4% 18%; /* Slightly lighter for better contrast */
+    --muted-foreground: 240 5% 65%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 199 89% 48%;
+    --border: 240 4% 20%; /* Slightly lighter for better visibility */
+    --input: 240 6% 12%; /* Slightly lighter */
+    --ring: 271 100% 65%;
+
+    /* Enhanced gradient colors for dark mode */
+    --gradient-purple: 271 100% 65%;
+    --gradient-pink: 320 100% 78%;
+    --gradient-blue: 224 100% 75%;
+    --gradient-cyan: 180 100% 75%;
+    --gradient-indigo: 243 100% 75%;
+    --gradient-rose: 351 100% 78%;
+
+    /* Dark mode shadow colors - use lighter colors for visibility */
+    --shadow-color: rgb(255 255 255 / 0.06);
+    --shadow-hover: rgb(255 255 255 / 0.08);
+    --shadow-strong: rgb(255 255 255 / 0.12);
   }
 }
 
@@ -58,21 +99,76 @@
   }
 }
 
+/* Enhanced shadow utilities for better dark mode visibility */
+@layer utilities {
+  .shadow-sm {
+    box-shadow: 0 1px 2px 0 var(--shadow-color);
+  }
+
+  .shadow {
+    box-shadow:
+      0 1px 3px 0 var(--shadow-color),
+      0 1px 2px -1px var(--shadow-color);
+  }
+
+  .shadow-md {
+    box-shadow:
+      0 4px 6px -1px var(--shadow-color),
+      0 2px 4px -2px var(--shadow-color);
+  }
+
+  .shadow-lg {
+    box-shadow:
+      0 10px 15px -3px var(--shadow-hover),
+      0 4px 6px -4px var(--shadow-color);
+  }
+
+  .shadow-xl {
+    box-shadow:
+      0 20px 25px -5px var(--shadow-hover),
+      0 8px 10px -6px var(--shadow-color);
+  }
+
+  .shadow-2xl {
+    box-shadow: 0 25px 50px -12px var(--shadow-strong);
+  }
+
+  .shadow-inner {
+    box-shadow: inset 0 2px 4px 0 var(--shadow-color);
+  }
+
+  .shadow-none {
+    box-shadow: 0 0 #0000;
+  }
+}
+
 /* Custom FanForge styles */
 .canvas-element {
-  @apply cursor-move border-2 border-transparent hover:border-primary-300 transition-colors;
+  @apply border-2 border-transparent hover:border-primary-300 transition-colors;
 }
 
 .canvas-element.selected {
-  @apply border-primary-500;
+  @apply border-primary-500 ring-2 ring-primary ring-offset-2;
+}
+
+.canvas-element:hover:not(.selected) {
+  @apply border-primary-300;
+}
+
+/* Prevent text selection during drag */
+.canvas-element {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .asset-palette-item {
-  @apply aspect-square border border-neutral-200 rounded cursor-move hover:border-primary-500 hover:shadow-md transition-all;
+  @apply aspect-square border border-neutral-200 rounded cursor-move hover:border-primary-500 hover:shadow-md transition-all overflow-hidden;
 }
 
 .campaign-card {
-  @apply bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer;
+  @apply bg-card border border-border rounded-lg;
 }
 
 .submission-status-pending {
@@ -85,4 +181,83 @@
 
 .submission-status-rejected {
   @apply bg-red-100 text-red-800 border-red-300;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Floating animations for background elements */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(180deg);
+  }
+}
+
+@keyframes float-delayed {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(-180deg);
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(90deg);
+  }
+}
+
+@keyframes float-fast {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-25px) rotate(270deg);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 8s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.animate-float-slow {
+  animation: float-slow 10s ease-in-out infinite;
+  animation-delay: 4s;
+}
+
+.animate-float-fast {
+  animation: float-fast 4s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-float-delayed,
+  .animate-float-slow,
+  .animate-float-fast {
+    animation: none;
+  }
 }

@@ -77,7 +77,8 @@ export interface Asset {
     mimeType: string
     colorPalette?: string[]
   }
-  ipKitId: string
+  ipId?: string // Optional blockchain address
+  ipKitId: string | null // Now nullable for campaign assets
   uploadedBy?: string
   createdAt: Date
 }
@@ -88,6 +89,8 @@ export interface Campaign {
   description: string
   guidelines?: string
   briefDocument?: string
+  imageUrl?: string // Campaign cover image
+  thumbnailUrl?: string // Campaign thumbnail
   brandId: string
   ipKitId?: string
   status: CampaignStatus
@@ -97,6 +100,7 @@ export interface Campaign {
   rewardAmount?: number
   rewardCurrency?: string
   featuredUntil?: Date
+  featured?: boolean
   createdBy: string
   createdAt: Date
   updatedAt: Date
@@ -113,9 +117,21 @@ export interface Submission {
     canvasSize: { width: number; height: number }
     version: string
   }
+  assetMetadata?: {
+    usedAssetIds: string[]
+    assetUsageInfo: AssetUsageInfo[]
+    ipKitId?: string
+    elementCounts: {
+      total: number
+      assets: number
+      text: number
+    }
+  }
   tags: string[]
   campaignId: string
   creatorId: string
+  ipId?: string // IP Kit used for source assets (not destination after approval)
+  storyProtocolIpId?: string // Story Protocol blockchain IP Asset ID (0x address)
   status: SubmissionStatus
   reviewedBy?: string
   reviewedAt?: Date
@@ -180,13 +196,31 @@ export interface PortfolioItem {
 // Canvas and UI types
 export interface CanvasElement {
   id: string
-  assetId: string
+  type: 'asset' | 'text'
+  // Asset-specific properties
+  assetId?: string
+  // Text-specific properties
+  text?: string
+  fontSize?: number
+  fontFamily?: string
+  fontWeight?: 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900'
+  fontStyle?: 'normal' | 'italic'
+  textAlign?: 'left' | 'center' | 'right'
+  color?: string
+  backgroundColor?: string
+  // Common properties
   x: number
   y: number
   width: number
   height: number
   rotation: number
   zIndex: number
+  opacity?: number
+  locked?: boolean
+  // Background-specific properties
+  isBackground?: boolean
+  flipHorizontal?: boolean
+  flipVertical?: boolean
 }
 
 export interface CanvasState {
@@ -206,6 +240,7 @@ export interface CampaignWithAssets extends Campaign {
 export interface SubmissionWithDetails extends Submission {
   campaign: Campaign
   creator: User
+  ipKit?: IPKit
   reviewer?: User
 }
 
@@ -265,4 +300,36 @@ export interface LegacySubmission {
   feedback?: string
   created_at: Date
   updated_at: Date
+}
+
+// Asset tracking and submission types
+export interface AssetUsageInfo {
+  assetId: string
+  count: number
+  transformations: {
+    x: number
+    y: number
+    width: number
+    height: number
+    rotation: number
+    opacity?: number
+  }[]
+}
+
+export interface SubmissionUploadProgress {
+  stage: 'preparing' | 'uploading_artwork' | 'uploading_thumbnail' | 'complete' | 'error'
+  progress: number // 0-100
+  message: string
+}
+
+export interface CanvasValidationResult {
+  valid: boolean
+  errors: string[]
+  warnings: string[]
+  summary: {
+    usedAssetIds: string[]
+    totalElements: number
+    assetElements: number
+    textElements: number
+  }
 }

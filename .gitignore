@@ -30,3 +30,9 @@ node_modules
 .vscode/
 .idea/
 
+# Claude Code configuration (sensitive tokens only)
+.claude/settings.local.json
+.claude/**/credentials.json
+.claude/**/*.local.*
+
+.claude/settings.local.json

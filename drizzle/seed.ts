@@ -1,4 +1,7 @@
-import { db } from '../db'
+import * as dotenv from "dotenv"
+dotenv.config({ path: ".env.local" })
+
+import { db } from '../db/index'
 import {
   users,
   roles,

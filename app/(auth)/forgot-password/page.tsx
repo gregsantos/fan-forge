@@ -1,0 +1,163 @@
+"use client"
+
+import {useState} from "react"
+import {useForm} from "react-hook-form"
+import {zodResolver} from "@hookform/resolvers/zod"
+import Link from "next/link"
+import {Button} from "@/components/ui/button"
+import {Input} from "@/components/ui/input"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card"
+import {useAuth} from "@/lib/contexts/auth"
+import {AnimatedBackground} from "@/components/shared/animated-background"
+import {ArrowLeft, CheckCircle} from "lucide-react"
+import {z} from "zod"
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+})
+
+type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>
+
+export default function ForgotPasswordPage() {
+  const [error, setError] = useState<string>("")
+  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const {resetPassword} = useAuth()
+
+  const {
+    register,
+    handleSubmit,
+    formState: {errors},
+  } = useForm<ForgotPasswordForm>({
+    resolver: zodResolver(forgotPasswordSchema),
+  })
+
+  const onSubmit = async (data: ForgotPasswordForm) => {
+    try {
+      setError("")
+      setLoading(true)
+      await resetPassword(data.email)
+      setSuccess(true)
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while sending reset email"
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (success) {
+    return (
+      <AnimatedBackground variant='default'>
+        <div className='min-h-screen flex items-center justify-center px-4'>
+          <Card className='w-full max-w-md bg-white/95 dark:bg-card/95 backdrop-blur-md border-white/20 dark:border-white/10 shadow-2xl'>
+            <CardHeader className='text-center'>
+              <div className='mx-auto w-16 h-16 bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center mb-4'>
+                <CheckCircle className='w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 bg-clip-text text-transparent' />
+              </div>
+              <CardTitle className='text-2xl'>Check Your Email</CardTitle>
+              <p className='text-muted-foreground'>
+                We&apos;ve sent a password reset link to your email address.
+              </p>
+            </CardHeader>
+            <CardContent className='text-center text-sm text-muted-foreground'>
+              <p>
+                Click the link in the email to reset your password. If you
+                don&apos;t see the email, check your spam folder.
+              </p>
+            </CardContent>
+            <CardFooter className='flex flex-col space-y-4'>
+              <Link href='/login' className='w-full'>
+                <Button variant='outline' className='w-full'>
+                  <ArrowLeft className='mr-2 h-4 w-4' />
+                  Back to Sign In
+                </Button>
+              </Link>
+              <div className='text-center text-sm text-muted-foreground border-t pt-4'>
+                <Link
+                  href='/'
+                  className='text-muted-foreground hover:text-primary transition-colors'
+                >
+                  ← Back to FanForge
+                </Link>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+      </AnimatedBackground>
+    )
+  }
+
+  return (
+    <AnimatedBackground variant='default'>
+      <div className='min-h-screen flex items-center justify-center px-4'>
+        <Card className='w-full max-w-md bg-white/95 dark:bg-card/95 backdrop-blur-md border-white/20 dark:border-white/10 shadow-2xl'>
+          <CardHeader className='text-center'>
+            <CardTitle className='text-2xl'>Reset Your Password</CardTitle>
+            <p className='text-muted-foreground'>
+              Enter your email address and we&apos;ll send you a link to reset
+              your password.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+              {error && (
+                <div className='p-4 bg-destructive/10 border border-destructive/20 rounded-md'>
+                  <p className='text-sm text-destructive'>{error}</p>
+                </div>
+              )}
+              <div className='space-y-2'>
+                <label htmlFor='email' className='text-sm font-medium'>
+                  Email address
+                </label>
+                <Input
+                  id='email'
+                  type='email'
+                  placeholder='Enter your email address'
+                  {...register("email")}
+                  error={errors.email?.message}
+                />
+              </div>
+              <Button
+                type='submit'
+                variant='gradient'
+                className='w-full'
+                loading={loading}
+              >
+                Send Reset Link
+              </Button>
+            </form>
+          </CardContent>
+          <CardFooter className='flex flex-col space-y-4'>
+            <div className='text-center text-sm text-muted-foreground'>
+              Remember your password?{" "}
+              <Link
+                href='/login'
+                className='text-primary hover:underline font-medium'
+              >
+                Sign in
+              </Link>
+            </div>
+            <div className='text-center text-sm text-muted-foreground border-t pt-4'>
+              <Link
+                href='/'
+                className='text-muted-foreground hover:text-primary transition-colors'
+              >
+                ← Back to FanForge
+              </Link>
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
+    </AnimatedBackground>
+  )
+}
