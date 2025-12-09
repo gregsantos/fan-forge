@@ -3,13 +3,14 @@ import { CampaignDetailClient } from "./campaign-detail-client"
 import { getCampaignById } from "@/lib/data/campaigns"
 
 interface CampaignDetailPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function CampaignDetailPage({ params }: CampaignDetailPageProps) {
-  const campaign = await getCampaignById(params.id)
+  const { id } = await params
+  const campaign = await getCampaignById(id)
   
   if (!campaign) {
     notFound()

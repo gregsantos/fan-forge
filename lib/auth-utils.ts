@@ -280,7 +280,7 @@ export async function getUserBrandIds(userId: string, useCache = true): Promise<
  */
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     
     const { data: { user }, error } = await supabase.auth.getUser()

@@ -5,7 +5,7 @@ import {createPermissionService} from "@/lib/auth/permissions"
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const {
       data: {user},

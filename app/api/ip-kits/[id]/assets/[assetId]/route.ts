@@ -10,15 +10,16 @@ import { getUserBrandIds } from '@/lib/auth-utils'
 export const dynamic = 'force-dynamic'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string      // IP Kit ID
     assetId: string // Asset ID
-  }
+  }>
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const cookieStore = cookies()
+    const { id, assetId } = await params
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -26,8 +27,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const ipKitId = params.id
-    const assetId = params.assetId
+    const ipKitId = id
 
     // Verify IP Kit exists and user has access
     const [ipKit] = await db

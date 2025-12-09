@@ -8,10 +8,11 @@ import { getUserBrandIds } from '@/lib/auth-utils'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = cookies()
+    const { id } = await params
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -20,7 +21,7 @@ export async function POST(
     }
 
     const { ipKitId } = await request.json()
-    const assetId = params.id
+    const assetId = id
 
     if (!ipKitId) {
       return NextResponse.json({ error: 'IP Kit ID is required' }, { status: 400 })
@@ -73,10 +74,11 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = cookies()
+    const { id } = await params
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -85,7 +87,7 @@ export async function DELETE(
     }
 
     const { ipKitId } = await request.json()
-    const assetId = params.id
+    const assetId = id
 
     if (!ipKitId) {
       return NextResponse.json({ error: 'IP Kit ID is required' }, { status: 400 })

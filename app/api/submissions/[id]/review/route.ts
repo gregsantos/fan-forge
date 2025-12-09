@@ -41,9 +41,10 @@ async function getCurrentUser(request: NextRequest) {
 
 export async function POST(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  {params}: {params: Promise<{id: string}>}
 ) {
   try {
+    const { id } = await params
     // Get current user
     const user = await getCurrentUser(request)
     if (!user) {
@@ -92,7 +93,7 @@ export async function POST(
       })
       .from(submissions)
       .leftJoin(users, eq(submissions.creatorId, users.id))
-      .where(eq(submissions.id, params.id))
+      .where(eq(submissions.id, id))
       .limit(1)
 
     if (submissionResults.length === 0) {
@@ -124,14 +125,14 @@ export async function POST(
         updatedAt: now,
         ...(action === "approve" ? {isPublic: true} : {}), // Make approved submissions public
       })
-      .where(eq(submissions.id, params.id))
+      .where(eq(submissions.id, id))
       .returning()
 
     // Create review record for audit trail
     const [reviewRecord] = await db
       .insert(reviews)
       .values({
-        submissionId: params.id,
+        submissionId: id,
         reviewerId: user.id,
         status: newStatus,
         feedback: feedback || null,
@@ -145,7 +146,7 @@ export async function POST(
       userId: user.id,
       action: `submission_${action}`,
       entityType: "submission",
-      entityId: params.id,
+      entityId: id,
       oldValues: {status: "pending"},
       newValues: {
         status: newStatus,
@@ -183,7 +184,7 @@ export async function POST(
         title: notificationTitle,
         message: notificationMessage,
         data: {
-          submissionId: params.id,
+          submissionId: id,
           submissionTitle: submission.title,
           campaignId: submission.campaignId,
           feedback: feedback || null,
@@ -195,11 +196,11 @@ export async function POST(
     // Log and verify asset IP IDs for approved submissions
     if (action === "approve") {
       try {
-        const assetIpIds = await getSubmissionAssetIpIds(params.id)
+        const assetIpIds = await getSubmissionAssetIpIds(id)
         console.log(
-          `🎉 SUBMISSION APPROVED (via review) - Asset IP IDs for submission ${params.id}:`,
+          `🎉 SUBMISSION APPROVED (via review) - Asset IP IDs for submission ${id}:`,
           {
-            submissionId: params.id,
+            submissionId: id,
             submissionTitle: submission.title,
             campaignId: submission.campaignId,
             assetIpIds,
@@ -211,30 +212,30 @@ export async function POST(
 
         if (assetIpIds.length === 0) {
           console.warn(
-            `⚠️  WARNING: Approved submission ${params.id} has no asset IP IDs. This may indicate missing asset relationships.`
+            `⚠️  WARNING: Approved submission ${id} has no asset IP IDs. This may indicate missing asset relationships.`
           )
         }
       } catch (error) {
         console.error(
-          `❌ ERROR: Failed to retrieve asset IP IDs for approved submission ${params.id}:`,
+          `❌ ERROR: Failed to retrieve asset IP IDs for approved submission ${id}:`,
           error
         )
       }
 
       // Automatically register as derivative IP asset on Story Protocol
       console.log(
-        `🚀 Starting automatic Story Protocol registration for approved submission ${params.id}`
+        `🚀 Starting automatic Story Protocol registration for approved submission ${id}`
       )
 
       try {
         const {registerApprovedSubmission} = await import(
           "@/lib/services/story-protocol"
         )
-        const storyResult = await registerApprovedSubmission(params.id)
+        const storyResult = await registerApprovedSubmission(id)
 
         if (storyResult.success) {
           console.log(
-            `✅ Successfully registered submission ${params.id} as derivative IP asset:`,
+            `✅ Successfully registered submission ${id} as derivative IP asset:`,
             {
               submissionTitle: submission.title,
               ipId: storyResult.ipId,
@@ -244,14 +245,14 @@ export async function POST(
           )
         } else {
           console.error(
-            `❌ Failed to register submission ${params.id} on Story Protocol:`,
+            `❌ Failed to register submission ${id} on Story Protocol:`,
             storyResult.error
           )
           // Continue with approval even if Story Protocol registration fails
         }
       } catch (storyError) {
         console.error(
-          `❌ Error during Story Protocol registration for submission ${params.id}:`,
+          `❌ Error during Story Protocol registration for submission ${id}:`,
           storyError
         )
         // Continue with approval even if Story Protocol registration fails
@@ -273,9 +274,10 @@ export async function POST(
 // GET endpoint to fetch review history for a submission
 export async function GET(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  {params}: {params: Promise<{id: string}>}
 ) {
   try {
+    const { id } = await params
     // Get current user for authorization
     const user = await getCurrentUser(request)
     if (!user) {
@@ -297,7 +299,7 @@ export async function GET(
       })
       .from(reviews)
       .leftJoin(users, eq(reviews.reviewerId, users.id))
-      .where(eq(reviews.submissionId, params.id))
+      .where(eq(reviews.submissionId, id))
       .orderBy(reviews.createdAt)
 
     return NextResponse.json({

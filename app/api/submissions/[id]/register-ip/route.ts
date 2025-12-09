@@ -31,9 +31,10 @@ async function getCurrentUser(request: NextRequest) {
 
 export async function POST(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  {params}: {params: Promise<{id: string}>}
 ) {
   try {
+    const { id } = await params
     // Get current user
     const user = await getCurrentUser(request)
     if (!user) {
@@ -43,7 +44,7 @@ export async function POST(
       )
     }
 
-    const submissionId = params.id
+    const submissionId = id
 
     // Dynamically import Story Protocol service to avoid build-time issues
     const { isSubmissionEligibleForRegistration } = await import("@/lib/services/story-protocol")
@@ -98,10 +99,11 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  {params}: {params: Promise<{id: string}>}
 ) {
   try {
-    const submissionId = params.id
+    const { id } = await params
+    const submissionId = id
 
     // Dynamically import Story Protocol service to avoid build-time issues
     const { isSubmissionEligibleForRegistration } = await import("@/lib/services/story-protocol")

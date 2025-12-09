@@ -14,9 +14,10 @@ const addAssetsSchema = z.object({
   assetIds: z.array(z.string().uuid()).min(1, 'At least one asset ID is required')
 })
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const cookieStore = cookies()
+    const { id } = await params
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const ipKitId = params.id
+    const ipKitId = id
     const body = await request.json()
     const { assetIds } = addAssetsSchema.parse(body)
 

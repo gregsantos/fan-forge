@@ -8,7 +8,7 @@ import { getUserBrandIds } from '@/lib/auth-utils'
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 

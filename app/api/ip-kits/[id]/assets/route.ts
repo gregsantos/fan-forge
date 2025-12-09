@@ -30,9 +30,10 @@ const bulkAssetOperationSchema = z.object({
   }).optional()
 })
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const cookieStore = cookies()
+    const { id } = await params
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const ipKitId = params.id
+    const ipKitId = id
     const { searchParams } = new URL(request.url)
     const query = ipKitAssetsQuerySchema.parse({
       category: searchParams.get('category'),
@@ -164,9 +165,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const cookieStore = cookies()
+    const { id } = await params
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -174,7 +176,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const ipKitId = params.id
+    const ipKitId = id
     const body = await request.json()
     const operation = bulkAssetOperationSchema.parse(body)
 

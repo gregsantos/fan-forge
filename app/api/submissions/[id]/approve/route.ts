@@ -34,9 +34,10 @@ async function getCurrentUser(request: NextRequest) {
 
 export async function POST(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  {params}: {params: Promise<{id: string}>}
 ) {
   try {
+    const { id } = await params
     // Get current user
     const user = await getCurrentUser(request)
     if (!user) {
@@ -46,7 +47,7 @@ export async function POST(
       )
     }
 
-    const submissionId = params.id
+    const submissionId = id
     const body = await request.json()
     const {feedback, rating} = body
 

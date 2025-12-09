@@ -26,7 +26,7 @@ export class PermissionService {
     try {
       // Get current user if not provided
       if (!userId) {
-        const supabase = createClient(cookies())
+        const supabase = createClient(await cookies())
         const {
           data: {user},
           error,
@@ -294,7 +294,7 @@ export class PermissionService {
   ): Promise<Array<{id: string; name: string; role: string}>> {
     try {
       if (!userId) {
-        const supabase = createClient(cookies())
+        const supabase = createClient(await cookies())
         const {
           data: {user},
           error,

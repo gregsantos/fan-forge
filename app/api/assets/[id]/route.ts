@@ -110,9 +110,10 @@ async function checkAssetAccess(userId: string, assetData: any) {
   return { hasAccess: true, reason: 'Access granted' }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const cookieStore = cookies()
+    const { id } = await params
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -120,7 +121,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const assetId = params.id
+    const assetId = id
 
     // Get asset with IP Kit and brand information
     const [assetResult] = await db
@@ -160,9 +161,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const cookieStore = cookies()
+    const { id } = await params
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -170,7 +172,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const assetId = params.id
+    const assetId = id
     const body = await request.json()
     const updateData = updateAssetSchema.parse(body)
 
@@ -223,9 +225,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const cookieStore = cookies()
+    const { id } = await params
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -233,7 +236,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const assetId = params.id
+    const assetId = id
     const { searchParams } = new URL(request.url)
     const forceDelete = searchParams.get('force') === 'true'
 

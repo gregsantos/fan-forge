@@ -54,18 +54,19 @@ function formatDate(date: string | Date) {
 export default async function BrandCampaignsPage({
   searchParams,
 }: {
-  searchParams: {[key: string]: string | string[] | undefined}
+  searchParams: Promise<{[key: string]: string | string[] | undefined}>
 }) {
+  const resolvedSearchParams = await searchParams
   const params = {
-    search: Array.isArray(searchParams.search)
-      ? searchParams.search[0]
-      : searchParams.search,
-    status: Array.isArray(searchParams.status)
-      ? searchParams.status[0]
-      : searchParams.status,
-    page: Array.isArray(searchParams.page)
-      ? searchParams.page[0]
-      : searchParams.page || "1",
+    search: Array.isArray(resolvedSearchParams.search)
+      ? resolvedSearchParams.search[0]
+      : resolvedSearchParams.search,
+    status: Array.isArray(resolvedSearchParams.status)
+      ? resolvedSearchParams.status[0]
+      : resolvedSearchParams.status,
+    page: Array.isArray(resolvedSearchParams.page)
+      ? resolvedSearchParams.page[0]
+      : resolvedSearchParams.page || "1",
   }
 
   // Get current user and check role

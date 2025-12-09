@@ -7,7 +7,7 @@ import {ensureUserExists} from "@/lib/auth-utils"
 import {canvasAssetTracker} from "@/lib/canvas-asset-tracker"
 
 async function getCurrentUser(request: NextRequest) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
 
   const {

@@ -4,10 +4,11 @@ import {eq, and, desc, asc, ilike, or} from "drizzle-orm"
 
 export async function GET(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  {params}: {params: Promise<{id: string}>}
 ) {
   try {
-    const campaignId = params.id
+    const { id } = await params
+    const campaignId = id
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get("status") || "approved" // Default to approved for public showcase
     const page = parseInt(searchParams.get("page") || "1")

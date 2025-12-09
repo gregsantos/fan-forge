@@ -3,14 +3,16 @@ import { CampaignSubmissionsClient } from "./submissions-client"
 import { getCampaignById, getCampaignSubmissions } from "@/lib/data/campaigns"
 
 interface CampaignSubmissionsPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
-  searchParams: { [key: string]: string | string[] | undefined }
+  }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export default async function CampaignSubmissionsPage({ params, searchParams }: CampaignSubmissionsPageProps) {
-  const campaign = await getCampaignById(params.id)
+  const { id } = await params
+  const resolvedSearchParams = await searchParams
+  const campaign = await getCampaignById(id)
   
   if (!campaign) {
     notFound()
@@ -18,13 +20,13 @@ export default async function CampaignSubmissionsPage({ params, searchParams }: 
 
   // Convert searchParams to the format expected by getCampaignSubmissions
   const normalizedSearchParams = Object.fromEntries(
-    Object.entries(searchParams).map(([key, value]) => [
+    Object.entries(resolvedSearchParams).map(([key, value]) => [
       key,
       Array.isArray(value) ? value[0] : value
     ])
   )
 
-  const submissionsData = await getCampaignSubmissions(params.id, normalizedSearchParams)
+  const submissionsData = await getCampaignSubmissions(id, normalizedSearchParams)
 
   return <CampaignSubmissionsClient campaign={campaign} initialData={submissionsData} />
 }

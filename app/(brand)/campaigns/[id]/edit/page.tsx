@@ -5,11 +5,12 @@ import EditCampaignClient from "./edit-campaign-client"
 export default async function EditCampaignPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   // Fetch campaign data and IP kits in parallel
   const [campaignData, ipKitsResponse] = await Promise.all([
-    getCampaignById(params.id),
+    getCampaignById(id),
     getIpKits({ published: "true" }),
   ])
 

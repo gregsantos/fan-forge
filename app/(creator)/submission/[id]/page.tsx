@@ -56,14 +56,15 @@ function formatDate(date: string | Date) {
 }
 
 interface CreatorSubmissionDetailPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function CreatorSubmissionDetailPage({
   params,
 }: CreatorSubmissionDetailPageProps) {
+  const { id } = await params
   // Get current user (server-side)
   const user = await getCurrentUser()
 
@@ -71,7 +72,7 @@ export default async function CreatorSubmissionDetailPage({
     redirect("/login")
   }
 
-  const submission = await getSubmissionById(params.id)
+  const submission = await getSubmissionById(id)
 
   if (!submission) {
     notFound()

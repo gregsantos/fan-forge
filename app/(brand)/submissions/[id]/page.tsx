@@ -55,15 +55,16 @@ function formatDate(date: string | Date) {
 }
 
 interface SubmissionDetailPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function SubmissionDetailPage({
   params,
 }: SubmissionDetailPageProps) {
-  const submission = await getSubmissionById(params.id)
+  const { id } = await params
+  const submission = await getSubmissionById(id)
 
   if (!submission) {
     notFound()

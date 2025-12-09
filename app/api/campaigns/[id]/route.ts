@@ -5,10 +5,11 @@ import { eq } from "drizzle-orm"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const campaign = await getCampaignById(params.id)
+    const { id } = await params
+    const campaign = await getCampaignById(id)
     
     if (!campaign) {
       return NextResponse.json(
@@ -20,8 +21,9 @@ export async function GET(
     return NextResponse.json({ campaign })
     
   } catch (error) {
+    const { id } = await params
     console.error('Failed to fetch campaign:', {
-      campaignId: params.id,
+      campaignId: id,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     })
@@ -34,14 +36,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Check if campaign exists
     const existingCampaign = await db
       .select()
       .from(campaigns)
-      .where(eq(campaigns.id, params.id))
+      .where(eq(campaigns.id, id))
       .limit(1)
     
     if (existingCampaign.length === 0) {
@@ -147,7 +150,7 @@ export async function PUT(
         briefDocument: briefDocument || null,
         updatedAt: new Date(),
       })
-      .where(eq(campaigns.id, params.id))
+      .where(eq(campaigns.id, id))
       .returning()
 
     return NextResponse.json({

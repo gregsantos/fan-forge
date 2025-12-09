@@ -33,10 +33,11 @@ async function getCurrentUser(request: NextRequest) {
 
 export async function GET(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  {params}: {params: Promise<{id: string}>}
 ) {
   try {
-    const submissionId = params.id
+    const { id } = await params
+    const submissionId = id
 
     // Get submission with relations
     const submissionResult = await db
@@ -86,9 +87,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  {params}: {params: Promise<{id: string}>}
 ) {
   try {
+    const { id } = await params
     // Get current user
     const user = await getCurrentUser(request)
     if (!user) {
@@ -98,7 +100,7 @@ export async function PUT(
       )
     }
 
-    const submissionId = params.id
+    const submissionId = id
     const body = await request.json()
 
     // Get existing submission to verify ownership
@@ -159,9 +161,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  {params}: {params: Promise<{id: string}>}
 ) {
   try {
+    const { id } = await params
     // Get current user
     const user = await getCurrentUser(request)
     if (!user) {
@@ -171,7 +174,7 @@ export async function DELETE(
       )
     }
 
-    const submissionId = params.id
+    const submissionId = id
 
     // Get existing submission to verify ownership
     const existingSubmission = await db

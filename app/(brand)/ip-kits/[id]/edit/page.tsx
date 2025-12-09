@@ -7,12 +7,13 @@ import { eq } from 'drizzle-orm'
 import IpKitEditClient from "./ip-kit-edit-client"
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function IpKitEditPage({ params }: PageProps) {
+  const { id } = await params
   // Get current user (server-side)
   const user = await getCurrentUser()
   
@@ -21,7 +22,7 @@ export default async function IpKitEditPage({ params }: PageProps) {
   }
 
   try {
-    const ipKitId = params.id
+    const ipKitId = id
 
     // Fetch IP kit data using shared data layer
     const ipKitData = await getIpKitById(ipKitId)

@@ -2,6 +2,7 @@
 
 import {useEffect, useState, Suspense} from "react"
 import {useSearchParams} from "next/navigation"
+import Link from "next/link"
 import {CreationCanvas} from "@/components/canvas/creation-canvas"
 import {Asset, Campaign, CanvasElement} from "@/types"
 import {mockAssets} from "@/lib/mock-data"
@@ -117,13 +118,13 @@ function CreatePageContent() {
           <h1 className='text-2xl font-bold text-destructive mb-2'>Error</h1>
           <p className='text-muted-foreground'>{error}</p>
           <p className='text-sm mt-4'>
-            <a href='/discover' className='text-primary hover:underline'>
+            <Link href='/discover' className='text-primary hover:underline'>
               Browse campaigns
-            </a>
+            </Link>
             {" or "}
-            <a href='/create' className='text-primary hover:underline'>
+            <Link href='/create' className='text-primary hover:underline'>
               try demo mode
-            </a>
+            </Link>
           </p>
         </div>
       </div>

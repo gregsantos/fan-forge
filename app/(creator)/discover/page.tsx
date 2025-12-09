@@ -9,11 +9,12 @@ interface SearchParams {
   limit?: string
 }
 
-export default async function DiscoverPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function DiscoverPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   try {
+    const resolvedSearchParams = await searchParams
     // Fetch initial campaigns and featured campaigns server-side
     const [campaignsData, featuredData] = await Promise.all([
-      getCampaigns({ ...searchParams, page: searchParams.page || '1' }),
+      getCampaigns({ ...resolvedSearchParams, page: resolvedSearchParams.page || '1' }),
       getCampaigns({ featured: 'true', limit: '3' })
     ])
 

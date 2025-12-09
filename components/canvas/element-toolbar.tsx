@@ -34,7 +34,7 @@ interface ElementToolbarProps {
   onLayerUp: () => void
   onLayerDown: () => void
   onPosition: (position: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => void
-  canvasRef: React.RefObject<HTMLDivElement>
+  canvasRef: React.RefObject<HTMLDivElement | null>
   zoom: number
   panOffset: { x: number; y: number }
   canvasScale: number

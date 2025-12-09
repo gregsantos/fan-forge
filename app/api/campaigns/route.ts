@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the authenticated user
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
